@@ -1,0 +1,3 @@
+# tools/ble/*.py (Bluetooth) and tools/sim/make_sheet.py + panelctl.py image (pictures)
+bleak>=0.22
+pillow>=10

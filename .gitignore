@@ -1,0 +1,22 @@
+# firmware build output
+firmware/build/
+
+# simulator
+tools/sim/sim
+tools/sim/sim.exe
+tools/sim/frames.bin
+tools/sim/*.png
+
+# firmware images (built ones and the vendor's) never belong in this repository
+*.bin
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

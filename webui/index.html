@@ -1,0 +1,1441 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>openpanel32</title>
+<style>
+:root {
+  --alu: #111316;      /* page: dark anodised enclosure */
+  --plate: #1A1D22;    /* raised controls */
+  --field: #0B0D10;    /* inputs, recessed */
+  --ink: #E6E8EC;
+  --on-ink: #111316;   /* text on light (primary) buttons */
+  --muted: #8E96A3;
+  --hair: #2B3038;
+  --hair-hi: #474E5A;
+  --bezel: #040405;
+  --red: #F2555A;
+  --green: #2BC47A;
+  --blue: #5B8CFF;
+  --r-s: 6px;
+  --r-l: 16px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body {
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,.014) 0 1px, transparent 1px 3px),
+    var(--alu);
+  color: var(--ink);
+  font: 15px/1.5 "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+.app {
+  display: grid;
+  grid-template-columns: minmax(320px, 430px) minmax(0, 700px);
+  gap: 48px;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 32px 28px 64px;
+}
+
+/* ---- left: the rig -------------------------------------------------------------------------- */
+.rig { position: sticky; top: 24px; align-self: start; display: grid; gap: 18px; }
+.device { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px 16px; }
+.device .led { grid-column: 1 / -1; }
+.conn { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+.conn .dot { width: 10px; height: 10px; border-radius: 50%; background: #4a515c; }
+.conn.on .dot { background: var(--green); box-shadow: 0 0 0 3px rgba(43,196,122,.18), 0 0 12px rgba(43,196,122,.8); }
+.conn.on { color: var(--ink); }
+.facts { grid-column: 1 / -1; display: grid; grid-template-columns: auto 1fr; gap: 2px 14px; margin: 0; font-size: 13.5px; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; font-variant-numeric: tabular-nums; }
+
+.bezel {
+  background: var(--bezel);
+  border-radius: 20px;
+  padding: 14px;
+  box-shadow: 0 0 0 1px var(--hair), 0 24px 50px -20px rgba(0,0,0,.9), inset 0 0 0 1px rgba(255,255,255,.03);
+}
+#mirror { display: block; width: 100%; aspect-ratio: 1; border-radius: 6px; touch-action: none; }
+#mirror.drawing { cursor: crosshair; }
+.mirror-note { font-size: 13px; color: var(--muted); margin-top: -8px; }
+
+.quick { display: grid; gap: 12px; }
+.slider-row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; }
+.slider-row output { min-width: 3.2em; text-align: right; font-variant-numeric: tabular-nums; }
+input[type=range] { accent-color: var(--ink); width: 100%; }
+.rotate { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.rotate .btn { padding: 8px 6px; white-space: nowrap; }
+.status-line { font-size: 13px; min-height: 1.5em; color: var(--muted); }
+.status-line.err { color: var(--red); }
+
+/* ---- right: controls ------------------------------------------------------------------------ */
+.controls { display: grid; gap: 40px; }
+.controls > section { border-top: 1px solid var(--hair); padding-top: 18px; display: grid; gap: 14px; }
+.controls > section > p { margin: 0; color: var(--muted); max-width: 62ch; }
+.led { display: block; height: 28px; }
+
+.btn {
+  border: 1px solid var(--hair);
+  background: var(--plate);
+  border-radius: var(--r-s);
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: background .12s, border-color .12s;
+}
+.btn:hover { border-color: var(--hair-hi); }
+.btn:active { transform: translateY(1px); }
+.btn.primary { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+.btn.danger { background: var(--red); border-color: var(--red); color: #fff; }
+.btn.lit { border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue), 0 0 14px -4px var(--blue); }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+.tile {
+  display: grid; gap: 6px; text-align: left; padding: 8px; border-radius: 10px;
+  border: 1px solid var(--hair); background: var(--plate); cursor: pointer;
+}
+.tile:hover { border-color: var(--hair-hi); }
+.tile .swatch { height: 34px; border-radius: 6px; background: #222; }
+.tile.lit { border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue), 0 0 18px -6px var(--blue); }
+
+.field { display: grid; gap: 6px; }
+.field > span { font-size: 13.5px; color: var(--muted); }
+.tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px 14px; }
+.tgrid select { width: 100%; }
+.tmem { font-size: 13px; color: var(--muted); }
+.tmem.err { color: var(--red); }
+#msgTabs .btn { min-width: 2.6em; }
+#msgTabs .btn.lit { background: var(--ink); color: var(--on-ink); }
+input[type=text], input[type=number], select {
+  border: 1px solid var(--hair); background: var(--field); border-radius: var(--r-s); padding: 8px 10px;
+}
+input[type=text] { width: 100%; }
+input[type=number] { width: 5.5em; }
+input[type=color] { width: 44px; height: 36px; border: 1px solid var(--hair); border-radius: var(--r-s); background: var(--field); padding: 2px; }
+.check { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.check input { width: 18px; height: 18px; accent-color: var(--ink); }
+
+.drop {
+  border: 1.5px dashed var(--hair-hi); border-radius: 12px; padding: 22px; text-align: center; color: var(--muted);
+  cursor: pointer; background: rgba(255,255,255,.02);
+}
+.drop:hover { color: var(--ink); }
+.drop.over { border-color: var(--blue); color: var(--ink); }
+
+.palette { display: flex; flex-wrap: wrap; gap: 6px; }
+.palette button { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--alu); box-shadow: 0 0 0 1px var(--hair-hi); cursor: pointer; }
+.palette button.lit { box-shadow: 0 0 0 2px var(--ink); }
+.seg { display: inline-flex; border: 1px solid var(--hair); border-radius: var(--r-s); overflow: hidden; }
+.seg button { border: 0; background: var(--plate); padding: 7px 12px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--hair); }
+.seg button.lit { background: var(--ink); color: var(--on-ink); }
+
+.eq { display: grid; grid-template-columns: repeat(11, 1fr); gap: 4px; height: 150px; }
+.eq input { writing-mode: vertical-lr; direction: rtl; width: 100%; height: 100%; }
+
+.score { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; max-width: 420px; }
+.score .side { display: grid; justify-items: center; gap: 8px; }
+.score .num { font-size: 44px; font-weight: 650; font-variant-numeric: tabular-nums; line-height: 1; }
+.score .p1 .num { color: #ff5a5f; text-shadow: 0 0 18px rgba(255,90,95,.45); }
+.score .p2 .num { color: #5b8cff; text-shadow: 0 0 18px rgba(91,140,255,.45); }
+.score .colon { font-size: 36px; color: var(--muted); padding-bottom: 44px; }
+
+.fw { border-top-color: var(--red) !important; }
+.fw-facts { display: grid; grid-template-columns: auto 1fr; gap: 2px 14px; font-size: 13.5px; margin: 0; }
+.fw-facts dt { color: var(--muted); }
+.fw-facts dd { margin: 0; font-variant-numeric: tabular-nums; }
+progress { width: 100%; height: 10px; accent-color: var(--ink); }
+.log { font-size: 12.5px; color: var(--muted); max-height: 160px; overflow: auto; margin: 0; padding: 0; list-style: none; }
+.log li.err { color: var(--red); }
+
+.banner { background: #2a2210; border: 1px solid #6b5617; color: #f3d98b; border-radius: 10px; padding: 12px 14px; }
+code { font-size: .92em; background: var(--plate); border: 1px solid var(--hair); border-radius: 4px; padding: 0 4px; }
+::selection { background: rgba(91,140,255,.35); }
+
+.rig, .controls, .controls > section, .device { min-width: 0; }
+@media (max-width: 860px) {
+  .app { grid-template-columns: minmax(0, 1fr); gap: 32px; padding: 20px 16px 48px; }
+  .rig { position: static; }
+}
+@media (max-width: 480px) {
+  .rotate { grid-template-columns: repeat(2, 1fr); }
+  .device .led { max-width: 100%; height: auto !important; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="rig">
+    <header class="device">
+      <canvas class="led" data-text="openpanel32" data-scale="4"></canvas>
+      <div class="conn" id="conn"><span class="dot"></span><span id="connText">Not connected</span></div>
+      <button class="btn primary" id="btnConnect">Connect panel</button>
+      <dl class="facts">
+        <dt>Firmware</dt><dd id="fwVer">–</dd>
+        <dt>Panel clock</dt><dd id="panelTime">–</dd>
+        <dt>Showing</dt><dd id="nowShowing">–</dd>
+        <dt>Saved</dt><dd id="savedState">–</dd>
+      </dl>
+    </header>
+
+    <div class="bezel"><canvas id="mirror" width="512" height="512" aria-label="Panel preview"></canvas></div>
+    <div class="mirror-note" id="mirrorNote">Preview of what you send to the panel.</div>
+
+    <div class="quick">
+      <div class="slider-row">
+        <label for="bright">Brightness</label>
+        <input type="range" id="bright" min="0" max="100" step="5" value="80">
+        <output id="brightOut">80%</output>
+      </div>
+      <div class="row">
+        <button class="btn" id="btnPower" aria-pressed="true">Turn panel off</button>
+        <button class="btn" id="btnKeyShort" title="Same as a short press on the panel's button">Press panel button</button>
+      </div>
+      <div class="rotate" role="group" aria-label="Rotation">
+        <button class="btn" data-orient="2">Upright</button>
+        <button class="btn" data-orient="3">Turn left</button>
+        <button class="btn" data-orient="0">Upside down</button>
+        <button class="btn" data-orient="1">Turn right</button>
+      </div>
+      <div class="status-line" id="statusLine"></div>
+    </div>
+  </aside>
+
+  <main class="controls">
+    <div class="banner" id="noBt" hidden>This browser can't use Bluetooth. Open this page in Chrome or Edge.</div>
+
+    <section id="secEffects">
+      <canvas class="led" data-text="Effects"></canvas>
+      <div class="tiles" id="effectTiles"></div>
+      <div class="row">
+        <label class="check"><input type="checkbox" id="autoplay"> Cycle through all effects every</label>
+        <input type="number" id="autoSecs" min="3" max="255" value="15" aria-label="Seconds per effect"> seconds
+      </div>
+    </section>
+
+    <section id="secClock">
+      <canvas class="led" data-text="Clock"></canvas>
+      <p>Picking a face also sets the panel's clock to this computer's time and date.</p>
+      <div class="tiles" id="clockTiles"></div>
+      <div class="row">
+        <label class="check"><input type="checkbox" id="h24" checked> 24-hour time</label>
+        <label class="check"><input type="checkbox" id="showDate" checked> Show date</label>
+      </div>
+    </section>
+
+    <section id="secText">
+      <canvas class="led" data-text="Text"></canvas>
+      <p>Up to 4 messages play one after another. Each one comes in with an effect, does something while it's shown, and leaves with another effect. Any language works; Arabic is joined and runs right to left. The panel font can show live values: <code>{time}</code> <code>{secs}</code> <code>{date}</code> <code>{day}</code> <code>{year}</code>. Needs firmware 99.17.</p>
+      <div class="row" id="msgTabs" role="tablist" aria-label="Messages"></div>
+      <label class="field"><span>Message</span><input type="text" id="tMsg" maxlength="120" dir="auto"></label>
+      <div class="tgrid">
+        <label class="field"><span>Font</span><select id="tFont"></select></label>
+        <label class="field"><span>Size</span><select id="tSize"></select></label>
+        <label class="field"><span>Comes in</span><select id="tIn"></select></label>
+        <label class="field"><span>While shown</span><select id="tHold"></select></label>
+        <label class="field"><span>Goes out</span><select id="tOut"></select></label>
+        <label class="field"><span>Position</span><select id="tAlign"><option value="0">Middle</option><option value="1">Top</option><option value="2">Bottom</option></select></label>
+        <label class="field"><span>Colours</span><select id="tColor"></select></label>
+        <div class="field"><span>Colour 1 and 2</span><div class="row"><input type="color" id="tC1" aria-label="Colour 1"><input type="color" id="tC2" aria-label="Colour 2"></div></div>
+        <label class="field"><span>Background</span><select id="tBg"></select></label>
+        <label class="field"><span>Background brightness</span><input type="range" id="tBgDim" min="10" max="255"></label>
+        <label class="field"><span>Speed</span><input type="range" id="tSpeed" min="1" max="10"></label>
+        <label class="field"><span>Stays for <output id="tStayOut"></output></span><input type="range" id="tStay" min="2" max="60"></label>
+        <label class="field"><span>Plays</span><select id="tRepeat"><option value="1">once</option><option value="2">2 times</option><option value="3">3 times</option><option value="5">5 times</option></select></label>
+      </div>
+      <div class="row">
+        <label class="check"><input type="checkbox" id="tShadow"> Shadow</label>
+        <label class="check"><input type="checkbox" id="tOutline"> Outline</label>
+        <label class="check"><input type="checkbox" id="tGlow"> Glow</label>
+        <label class="check"><input type="checkbox" id="tRails"> Rails</label>
+      </div>
+      <div class="row" id="tPresets" aria-label="Styles"></div>
+      <div class="row">
+        <button class="btn primary" id="btnText">Send to panel</button>
+        <button class="btn" id="tAdd">Add a message</button>
+        <button class="btn" id="tRemove">Remove this message</button>
+        <span class="tmem" id="tMem"></span>
+      </div>
+    </section>
+
+    <section id="secPicture">
+      <canvas class="led" data-text="Picture"></canvas>
+      <label class="drop" id="drop"><input type="file" id="picFile" accept="image/*" hidden>Drop a picture here or choose one. It's cut to a square and shrunk to 32 × 32.</label>
+      <div class="row">
+        <span class="seg" id="fitSeg"><button class="lit" data-fit="cover">Fill</button><button data-fit="contain">Fit whole picture</button></span>
+        <button class="btn primary" id="btnPicture" disabled>Send picture</button>
+      </div>
+    </section>
+
+    <section id="secDraw">
+      <canvas class="led" data-text="Draw"></canvas>
+      <p>Draw on the preview. With live painting on, every stroke appears on the panel as you draw.</p>
+      <div class="row">
+        <button class="btn primary" id="btnDraw">Start drawing</button>
+        <span class="seg" id="toolSeg"><button class="lit" data-tool="pen">Pen</button><button data-tool="erase">Eraser</button><button data-tool="fill">Fill</button></span>
+        <input type="color" id="penColor" value="#ff3355" aria-label="Pen colour">
+        <label class="check"><input type="checkbox" id="livePaint" checked> Live painting</label>
+      </div>
+      <div class="palette" id="palette"></div>
+      <div class="row">
+        <button class="btn" id="btnClearDraw">Clear drawing</button>
+        <button class="btn" id="btnSendDraw">Send whole drawing</button>
+      </div>
+    </section>
+
+    <section id="secEq">
+      <canvas class="led" data-text="Equalizer"></canvas>
+      <p>Move the bars to set each level, or let the panel animate them.</p>
+      <div class="eq" id="eq"></div>
+      <div class="row">
+        <span class="seg" id="eqStyle"><button class="lit" data-style="0">Green to red</button><button data-style="1">Rainbow</button><button data-style="2">Mirrored</button></span>
+        <button class="btn" id="btnEqDance">Animate by itself</button>
+      </div>
+    </section>
+
+    <section id="secScore">
+      <canvas class="led" data-text="Scoreboard"></canvas>
+      <div class="score">
+        <div class="side p1"><div class="num" id="s1">0</div><div class="row"><button class="btn" data-score="1:-1">−</button><button class="btn" data-score="1:1">+</button></div></div>
+        <div class="colon">:</div>
+        <div class="side p2"><div class="num" id="s2">0</div><div class="row"><button class="btn" data-score="2:-1">−</button><button class="btn" data-score="2:1">+</button></div></div>
+      </div>
+      <div class="row"><button class="btn" id="btnScoreReset">Reset scores</button></div>
+    </section>
+
+    <section id="secTimer">
+      <canvas class="led" data-text="Stopwatch"></canvas>
+      <div class="row">
+        <button class="btn primary" data-timer="1">Start</button>
+        <button class="btn" data-timer="2">Pause</button>
+        <button class="btn" data-timer="0">Reset</button>
+      </div>
+    </section>
+
+    <section id="secExtras">
+      <canvas class="led" data-text="Test patterns"></canvas>
+      <p>Use these to check every LED, the colours and which way up the picture is.</p>
+      <div class="row" id="testRow"></div>
+    </section>
+
+    <section id="secSettings">
+      <canvas class="led" data-text="Settings"></canvas>
+      <p>The panel remembers brightness, rotation, what it shows (effect, clock face, text, scoreboard, equalizer) and the last picture or drawing. It comes back to them after it's switched off. Changes are saved a few seconds after you make them; a new picture takes about 8 seconds, and the panel goes dark for a moment while it saves.</p>
+      <div class="row"><button class="btn" id="btnFactory">Reset to factory settings</button></div>
+    </section>
+
+    <section id="secFw" class="fw">
+      <canvas class="led" data-text="Firmware"></canvas>
+      <p>Installs a firmware file over Bluetooth. Use the encoded update file (the kind <code>tools/fwcodec.py encode</code> makes, like <code>firmware/build/fw.ota.bin</code>). Check flash writing first: it writes a test block, installs nothing, and the panel restarts about 10 seconds later.</p>
+      <label class="drop" id="fwDrop"><input type="file" id="fwFile" accept=".bin" hidden>Choose a firmware file (.bin)</label>
+      <dl class="fw-facts" id="fwFacts" hidden>
+        <dt>File</dt><dd id="fwName"></dd>
+        <dt>Size</dt><dd id="fwSize"></dd>
+        <dt>Contains</dt><dd id="fwKind"></dd>
+      </dl>
+      <div class="row">
+        <button class="btn" id="btnSelfTest">Check flash writing</button>
+        <button class="btn danger" id="btnInstall" disabled>Install firmware</button>
+      </div>
+      <progress id="fwProgress" value="0" max="1" hidden></progress>
+      <ul class="log" id="fwLog"></ul>
+    </section>
+  </main>
+</div>
+
+<script src="font5x7.js"></script>
+<script>
+"use strict";
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => [...document.querySelectorAll(s)];
+
+/* ================================================================================================
+   Panel font (same table as the firmware) - section titles are drawn as LED dots
+   ================================================================================================ */
+function glyph(ch) {
+  let c = ch.charCodeAt(0);
+  if (c < 32 || c > 126) c = 63;
+  return FONT5X7[c - 32];
+}
+function glyphSpan(g) {
+  let first = 0, last = 4;
+  while (first < 4 && g[first] === 0) first++;
+  while (last > first && g[last] === 0) last--;
+  return [first, last];
+}
+function textColumns(text) {
+  const cols = [];
+  for (const ch of text) {
+    if (ch === " ") { cols.push(0, 0, 0); continue; }
+    const g = glyph(ch), [a, b] = glyphSpan(g);
+    for (let i = a; i <= b; i++) cols.push(g[i]);
+    cols.push(0);
+  }
+  if (cols.length) cols.pop();
+  return cols;
+}
+function drawLedTitle(cv) {
+  const scale = Number(cv.dataset.scale || 4), cols = textColumns(cv.dataset.text || "");
+  const dpr = window.devicePixelRatio || 1;
+  const w = (cols.length + 1) * scale, h = 8 * scale;
+  cv.style.width = w + "px"; cv.style.height = h + "px";
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  const ctx = cv.getContext("2d");
+  ctx.scale(dpr, dpr);
+  const ink = getComputedStyle(document.documentElement).getPropertyValue("--ink").trim();
+  for (let x = 0; x < cols.length; x++)
+    for (let y = 0; y < 7; y++) {
+      const on = (cols[x] >> y) & 1;
+      ctx.fillStyle = on ? ink : "rgba(255,255,255,.06)";
+      ctx.beginPath();
+      ctx.arc(x * scale + scale / 2, y * scale + scale / 2, scale * 0.42, 0, Math.PI * 2);
+      ctx.fill();
+    }
+}
+$$("canvas.led").forEach(drawLedTitle);
+
+/* ================================================================================================
+   Mirror (on-screen panel)
+   ================================================================================================ */
+const mirror = $("#mirror"), mctx = mirror.getContext("2d");
+let pix = new Uint8Array(32 * 32 * 3);
+function setPix(x, y, r, g, b) { const i = (y * 32 + x) * 3; pix[i] = r; pix[i + 1] = g; pix[i + 2] = b; }
+function drawMirror() {
+  const s = mirror.width / 32;
+  mctx.fillStyle = "#07080a";
+  mctx.fillRect(0, 0, mirror.width, mirror.height);
+  for (let y = 0; y < 32; y++)
+    for (let x = 0; x < 32; x++) {
+      const i = (y * 32 + x) * 3, r = pix[i], g = pix[i + 1], b = pix[i + 2];
+      const lit = r + g + b > 24;
+      mctx.fillStyle = lit ? `rgb(${r},${g},${b})` : "#16181c";
+      mctx.beginPath();
+      mctx.arc(x * s + s / 2, y * s + s / 2, s * (lit ? 0.43 : 0.36), 0, Math.PI * 2);
+      mctx.fill();
+    }
+}
+function previewText(text, rgb, rainbow) {
+  pix.fill(0);
+  let x = 1;
+  [...text].forEach((ch, n) => {
+    if (x > 31) return;
+    const g = glyph(ch);
+    if (ch === " ") { x += 3; return; }
+    const [a, b] = glyphSpan(g);
+    const col = rainbow ? hsv((n * 18) % 256) : rgb;
+    for (let i = a; i <= b; i++, x++)
+      for (let y = 0; y < 7; y++) if ((g[i] >> y) & 1 && x < 32) setPix(x, 12 + y, ...col);
+    x++;
+  });
+  drawMirror();
+  $("#mirrorNote").textContent = "Text preview. On the panel it scrolls.";
+}
+function hsv(h) {
+  const r = Math.floor(h / 43), rem = (h - r * 43) * 6, q = 255 - rem, t = rem;
+  return [[255, t, 0], [q, 255, 0], [0, 255, t], [0, q, 255], [t, 0, 255], [255, 0, q]][Math.min(r, 5)];
+}
+drawMirror();
+
+/* ================================================================================================
+   Bluetooth link - same packets as tools/ble/panelctl.py
+   ================================================================================================ */
+const SVC = 0x00fa, WR = 0xfa02, NT = 0xfa03;
+let device = null, chWrite = null, chNotify = null, waiter = null, chain = Promise.resolve();
+let custom = false, busy = false, pollTimer = null, fwMinor = 0;
+
+function status(msg, err) {
+  const el = $("#statusLine");
+  el.textContent = msg;
+  el.classList.toggle("err", !!err);
+}
+function packet(cmd, payload = []) {
+  const p = new Uint8Array(4 + payload.length);
+  p[0] = p.length & 255; p[1] = p.length >> 8; p[2] = cmd & 255; p[3] = cmd >> 8;
+  p.set(payload, 4);
+  return p;
+}
+/* Every reply repeats the command it answers (bytes 2-3). The Bluetooth module delivers 16-byte replies
+   (status, diagnostics) twice, so a reply only counts for the request with the same command; strays
+   are ignored. A request finishes when its write has completed AND its reply has arrived, so the next
+   write never starts while Chrome is still busy with the previous one. */
+function onNotify(ev) {
+  const dv = ev.target.value;
+  const v = new Uint8Array(dv.buffer.slice(dv.byteOffset, dv.byteOffset + dv.byteLength));
+  if (waiter && v.length >= 4 && (v[2] | (v[3] << 8)) === waiter.cmd) waiter.take(v);
+}
+function rawSend(bytes, timeout) {
+  return new Promise(async (resolve, reject) => {
+    if (!chWrite) { reject(new Error("Connect the panel first.")); return; }
+    let reply = null, written = false, done = false;
+    const end = (fn, arg) => { if (done) return; done = true; clearTimeout(w.timer); if (waiter === w) waiter = null; fn(arg); };
+    const w = waiter = {
+      cmd: bytes[2] | (bytes[3] << 8),
+      take: (v) => { if (!reply) reply = v; if (written) end(resolve, reply); },
+      timer: setTimeout(() => end(reject, new Error("The panel didn't answer.")), timeout),
+    };
+    try {
+      for (let o = 0; o < bytes.length; o += 244) await chWrite.writeValueWithResponse(bytes.slice(o, o + 244));
+      written = true;
+      if (reply) end(resolve, reply);
+    } catch (e) {
+      end(reject, e);
+    }
+  });
+}
+function send(cmd, payload = [], timeout = 4000) {
+  if (busy) return Promise.reject(new Error("Wait until the firmware step finishes."));
+  const job = chain.then(() => rawSend(packet(cmd, payload), timeout));
+  chain = job.catch(() => {});
+  return job;
+}
+async function act(label, fn) {
+  if (!chWrite) { status("Connect the panel first.", true); $("#btnConnect").focus(); return; }
+  try { await fn(); status(label); refreshSoon(); }
+  catch (e) { status(e.message, true); }
+}
+
+const MODES = ["Effect", "Clock", "Text", "Picture or drawing", "Equalizer", "Scoreboard", "Stopwatch", "Test pattern", "Starting up"];
+const EFFECTS = ["Plasma", "Fire", "Matrix rain", "Starfield", "Game of Life", "Fireworks", "Ripples", "Sparkles",
+                 "Rainbow swirl", "Tunnel", "Snake", "Pong", "Bouncing balls", "Equalizer",
+                 "Aurora", "Lava lamp", "Rainstorm", "DNA helix", "Warp speed", "Radar"];
+const SWATCH = [
+  "linear-gradient(135deg,#ff3cac,#784ba0 40%,#2b86c5)", "linear-gradient(0deg,#ffd200,#ff5e00 45%,#3a0000)",
+  "repeating-linear-gradient(90deg,#00ff66 0 2px,#001a0a 2px 7px)", "radial-gradient(circle,#fff 0 2px,#0a0f2a 3px)",
+  "repeating-conic-gradient(#b05cff 0 25%,#140a20 0 50%) 0 0/10px 10px", "radial-gradient(circle at 50% 40%,#ffe066 0 8%,#ff3c78 22%,#10061a 60%)",
+  "radial-gradient(circle,#4cc3ff 0 20%,#0a2a55 45%,#06152d)", "radial-gradient(#fff 1px,transparent 2px) 0 0/8px 8px,#111",
+  "conic-gradient(red,yellow,lime,cyan,blue,magenta,red)", "repeating-radial-gradient(circle,#36c 0 3px,#0b1530 3px 7px)",
+  "linear-gradient(90deg,#0b0b0f 20%,#3bd16f 20% 70%,#0b0b0f 70% 82%,#ff3b3b 82%)", "linear-gradient(90deg,#4c8dff 0 6%,#0b0b0f 6% 47%,#fff 47% 53%,#0b0b0f 53% 94%,#ff6a4c 94%)",
+  "radial-gradient(circle at 25% 40%,#ff4d6d 0 9%,transparent 10%),radial-gradient(circle at 70% 60%,#3cf 0 9%,transparent 10%),#0b0b0f",
+  "linear-gradient(0deg,#22c55e 0 35%,#eab308 35% 60%,#ef4444 60% 70%,#0b0b0f 70%)",
+  "linear-gradient(#0b0b1a 0 12%,#3cff8c 32%,#20c8c8 52%,#5a2a9a 74%,#0b0b1a)",
+  "radial-gradient(circle at 35% 40%,#ffe066 0 12%,#ff3a2a 26%,transparent 33%),radial-gradient(circle at 70% 72%,#ffd04a 0 10%,#ff3a2a 22%,transparent 30%),#2a0640",
+  "repeating-linear-gradient(115deg,#8aa6e6 0 1px,transparent 1px 8px),linear-gradient(#2a2d3a,#0c1022)",
+  "repeating-linear-gradient(0deg,#ff4646 0 2px,#46dc5a 2px 4px,#0b0b0f 4px 9px)",
+  "repeating-conic-gradient(#aac8ff 0 3deg,#05060c 3deg 16deg)",
+  "conic-gradient(#3cff5a 0deg,#0a3a12 70deg,#031a08 71deg 360deg)",
+];
+const CLOCKS = ["Digital with date", "Analog", "Binary", "Big digits", "Digits on plasma",
+                "Flip cards", "Nixie tubes", "Rings", "Day and night sky", "Pong clock"];
+const CLOCK_SWATCH = ["linear-gradient(90deg,#2f6bff,#b04cff,#ff4c8a)", "radial-gradient(circle,#ffb347 0 6%,#0b0b0f 7%)",
+                      "repeating-linear-gradient(90deg,#ff4d4d 0 6px,#0b0b0f 6px 9px)", "linear-gradient(#ff8a3d 0 48%,#0b0b0f 48% 52%,#3ca8ff 52%)",
+                      "linear-gradient(135deg,#ff3cac,#2b86c5)",
+                      "linear-gradient(#2a2a32 0 47%,#050506 47% 53%,#2a2a32 53%)",
+                      "radial-gradient(circle,#ff7d1e 0 14%,#3a1404 40%,#0b0b0f 70%)",
+                      "radial-gradient(circle,#0b0b0f 0 30%,#3c64ff 31% 40%,#0b0b0f 41% 48%,#3cdc5a 49% 58%,#0b0b0f 59% 66%,#e03c3c 67% 76%,#0b0b0f 77%)",
+                      "radial-gradient(circle at 40% 35%,#ffe164 0 10%,transparent 12%),linear-gradient(#2860e8 0 55%,#a0c8ff 75%,#1e5a1e 76%)",
+                      "radial-gradient(circle at 55% 50%,#fff 0 5%,transparent 6%),linear-gradient(90deg,#0b0b0f 8%,#fff 8% 12%,#0b0b0f 12% 49%,#444 49% 51%,#0b0b0f 51% 88%,#fff 88% 92%,#0b0b0f 92%)"];
+
+function setConnected(on, name) {
+  $("#conn").classList.toggle("on", on);
+  $("#connText").textContent = on ? `Connected to ${name}` : "Not connected";
+  $("#btnConnect").textContent = on ? "Disconnect" : "Connect panel";
+  if (!on) for (const id of ["#fwVer", "#panelTime", "#nowShowing", "#savedState"]) $(id).textContent = "–";
+}
+/* Let go of the panel completely. On Windows, Chrome otherwise keeps the Bluetooth link open (and even
+   reconnects after the panel restarts) while this page still holds the device: the panel then stops
+   advertising and no tab or app can find it until this tab is closed. */
+function releaseDevice() {
+  const d = device;
+  device = null;
+  if (!d) return;
+  d.removeEventListener("gattserverdisconnected", onDisconnected);
+  try { d.gatt.disconnect(); } catch (e) { /* already gone */ }
+}
+function onDisconnected() {
+  chWrite = chNotify = null; waiter = null; custom = false; fwMinor = 0;
+  clearInterval(pollTimer);
+  releaseDevice();
+  setConnected(false);
+  status(busy ? "Panel restarted. Connect again when it's back." : "Panel disconnected.");
+  busy = false;
+}
+window.addEventListener("pagehide", releaseDevice);
+async function connect() {
+  if (device) { const d = device; onDisconnected(); try { d.gatt.disconnect(); } catch (e) { /* */ } return; }
+  try {
+    device = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: "LED_BLE" }, { services: [SVC] }], optionalServices: [SVC] });
+    device.addEventListener("gattserverdisconnected", onDisconnected);
+    status("Connecting…");
+    const server = await device.gatt.connect();
+    const svc = await server.getPrimaryService(SVC);
+    chWrite = await svc.getCharacteristic(WR);
+    chNotify = await svc.getCharacteristic(NT);
+    await chNotify.startNotifications();
+    chNotify.addEventListener("characteristicvaluechanged", onNotify);
+    setConnected(true, device.name || "panel");
+    const now = new Date();
+    await send(0x8001, [now.getHours(), now.getMinutes(), now.getSeconds(), 0]);
+    const v = await send(0x8005);
+    custom = v[4] === 99;
+    fwMinor = custom ? v[5] : 0;
+    $("#fwVer").textContent = `${v[4]}.${String(v[5]).padStart(2, "0")}${custom ? " (openpanel32)" : " (vendor firmware)"} · Bluetooth ${v[6]}.${String(v[7]).padStart(2, "0")}`;
+    status(custom ? "Ready." : "This panel runs the vendor firmware. Install openpanel32 to use these controls.", !custom);
+    await refreshStatus();
+    clearInterval(pollTimer);
+    pollTimer = setInterval(() => { if (!busy) refreshStatus(); }, 4000);
+  } catch (e) {
+    if (e.name === "NotFoundError") {
+      status("No panel picked. If it isn't in the list: it takes one connection at a time, so close other tabs " +
+             "or apps using it (on Windows also older tabs of this page), then switch the panel off and on.");
+    } else {
+      if (device) onDisconnected();
+      status(e.message, true);
+    }
+  }
+}
+let refreshTimer = null;
+function refreshSoon() { clearTimeout(refreshTimer); refreshTimer = setTimeout(refreshStatus, 400); }
+async function refreshStatus() {
+  if (!chWrite || !custom || busy) return;
+  try {
+    const r = await send(0xF106);
+    if (r[2] !== 0x06 || r[3] !== 0xF1) return;
+    const mode = r[5], eff = r[6], bright = r[7], power = r[8], flags = r[12];
+    $("#panelTime").textContent = `${String(r[9]).padStart(2, "0")}:${String(r[10]).padStart(2, "0")}:${String(r[11]).padStart(2, "0")}${flags & 1 ? "" : " (not set)"}`;
+    $("#nowShowing").textContent = mode === 0 ? `${EFFECTS[eff] || "Effect " + eff}${flags & 2 ? ", cycling" : ""}` :
+                                   mode === 1 ? `Clock: ${CLOCKS[r[14]] || ""}` : (MODES[mode] || "–");
+    if (document.activeElement !== $("#bright")) { $("#bright").value = bright; $("#brightOut").value = bright + "%"; }
+    $("#btnPower").textContent = power ? "Turn panel off" : "Turn panel on";
+    $("#btnPower").setAttribute("aria-pressed", power ? "true" : "false");
+    $("#autoplay").checked = !!(flags & 2);
+    if (r.length >= 16 && document.activeElement !== $("#autoSecs")) $("#autoSecs").value = r[15];
+    $$("#effectTiles .tile").forEach((t, i) => t.classList.toggle("lit", mode === 0 && i === eff));
+    $$("#clockTiles .tile").forEach((t, i) => t.classList.toggle("lit", mode === 1 && r.length >= 15 && i === r[14]));
+    if (r.length >= 14) $$(".rotate .btn").forEach((b) => b.classList.toggle("lit", Number(b.dataset.orient) === r[13]));
+    if (fwMinor < 12) { $("#savedState").textContent = "Not kept (needs firmware 99.12)"; return; }
+    const s = await send(0xF109);
+    if (s[2] === 0x09 && s[3] === 0xF1 && s.length >= 13) $("#savedState").textContent = savedText(s);
+  } catch (e) { /* the next poll retries */ }
+}
+/* 0xF109 reply: seq(4) next_slot picture_saved flags last_rc - see firmware/src/app/settings.c */
+function savedText(s) {
+  const f = s[11];
+  if (!(f & 1)) return "–";
+  if (f & 8) return `Can't save on the panel (error ${(s[12] << 24) >> 24})`;
+  if (f & 2) return "Saving in a few seconds…";
+  if (f & 4) return "Saving the picture or text…";
+  return "Everything is saved on the panel";
+}
+
+/* ================================================================================================
+   Controls
+   ================================================================================================ */
+$("#btnConnect").addEventListener("click", connect);
+if (!navigator.bluetooth) { $("#noBt").hidden = false; $("#btnConnect").disabled = true; }
+
+// effects
+EFFECTS.forEach((name, i) => {
+  const b = document.createElement("button");
+  b.className = "tile";
+  b.innerHTML = `<span class="swatch" style="background:${SWATCH[i]}"></span><span>${name}</span>`;
+  b.addEventListener("click", () => act(`Showing ${name}.`, () => send(0xF101, [0, i])));
+  $("#effectTiles").appendChild(b);
+});
+function sendAutoplay() {
+  const secs = Math.max(3, Math.min(255, Number($("#autoSecs").value) || 15));
+  const on = $("#autoplay").checked;
+  act(on ? `Cycling every ${secs} seconds.` : "Cycling stopped.", () => send(0xF104, [on ? 1 : 0, secs & 255, secs >> 8]));
+}
+$("#autoplay").addEventListener("change", sendAutoplay);
+$("#autoSecs").addEventListener("change", () => { if ($("#autoplay").checked) sendAutoplay(); });
+
+// clock
+CLOCKS.forEach((name, i) => {
+  const b = document.createElement("button");
+  b.className = "tile";
+  b.innerHTML = `<span class="swatch" style="background:${CLOCK_SWATCH[i]}"></span><span>${name}</span>`;
+  b.addEventListener("click", () => act(`Clock set to this computer's time.`, async () => {
+    const d = new Date();
+    await send(0x8001, [d.getHours(), d.getMinutes(), d.getSeconds(), 0]);
+    const dow = d.getDay() === 0 ? 7 : d.getDay();
+    await send(0x0106, [i, $("#h24").checked ? 1 : 0, $("#showDate").checked ? 1 : 0, d.getFullYear() % 100, d.getMonth() + 1, d.getDate(), dow]);
+  }));
+  $("#clockTiles").appendChild(b);
+});
+
+// brightness / power / rotation / key
+let brightTimer = null;
+$("#bright").addEventListener("input", (e) => {
+  $("#brightOut").value = e.target.value + "%";
+  clearTimeout(brightTimer);
+  brightTimer = setTimeout(() => act(`Brightness ${e.target.value}%.`, () => send(0x8004, [Number(e.target.value)])), 120);
+});
+$("#btnPower").addEventListener("click", () => {
+  const on = $("#btnPower").getAttribute("aria-pressed") !== "true";
+  act(on ? "Panel on." : "Panel off.", () => send(0x0107, [on ? 1 : 0]));
+});
+$$(".rotate .btn").forEach((b) => b.addEventListener("click", () =>
+  act(`Rotation: ${b.textContent.toLowerCase()}.`, () => send(0x8006, [Number(b.dataset.orient)]))));
+$("#btnKeyShort").addEventListener("click", () => act("Button pressed.", () => send(0xF107, [1])));
+
+// factory settings: two clicks, like installing firmware
+let resetArmed = null;
+function disarmReset() { clearTimeout(resetArmed); resetArmed = null; $("#btnFactory").textContent = "Reset to factory settings"; }
+$("#btnFactory").addEventListener("click", () => {
+  if (!chWrite) { status("Connect the panel first.", true); $("#btnConnect").focus(); return; }
+  if (fwMinor < 12) { status("Resetting settings needs firmware 99.12 or newer.", true); return; }
+  if (!resetArmed) { $("#btnFactory").textContent = "Click again to reset"; resetArmed = setTimeout(disarmReset, 6000); return; }
+  disarmReset();
+  act("Back to factory settings. They're saved in a few seconds.", () => send(0xF108, [0xA5]));
+});
+
+// text: a playlist of up to 4 messages with effects (cmd 0xF10B, see firmware/src/app/textfx.h)
+const FX_NAMES = ["None (just appears)", "Scroll left", "Scroll right", "Scroll up", "Scroll down", "Typewriter", "Wipe",
+  "Opening", "Closing", "Blinds", "Dissolve", "Mesh", "Slice", "Drop", "Grow up", "Grow down", "Zoom", "Fade",
+  "Rain / melt", "Explode", "Laser", "Flip", "Matrix", "Random"];
+const HOLD_NAMES = ["Still", "Blink", "Breathe", "Wave", "Bounce", "Shake", "Shine", "Sparkle", "Neon flicker", "Jelly", "Glitch"];
+const CMODE_NAMES = ["One colour", "Rainbow", "Gradient left to right", "Gradient top to bottom", "Rainbow top to bottom",
+  "Fire", "Neon", "Candy stripes", "A colour per word"];
+const FONTS = [
+  { id: "panel", name: "Panel font (live {time})" },
+  { id: "sans",  name: "Bold",       css: '"Segoe UI", Tahoma, "Noto Sans Arabic", Arial, sans-serif', w: "bold" },
+  { id: "black", name: "Heavy",      css: 'Impact, "Arial Black", "Segoe UI Black", sans-serif',     w: "normal" },
+  { id: "serif", name: "Serif",      css: 'Georgia, "Times New Roman", serif',                        w: "bold" },
+  { id: "mono",  name: "Typewriter", css: 'Consolas, "Courier New", monospace',                       w: "bold" },
+  { id: "round", name: "Playful",    css: '"Comic Sans MS", "Segoe Print", cursive',                  w: "bold" },
+];
+const SIZES = { panel: [[7, "Normal (7 px)"], [14, "Big (14 px)"]], other: [[11, "Small (11 px)"], [16, "Normal (16 px)"], [24, "Big (24 px)"]] };
+const TEXT_POOL = 3584, TEXT_MSGS = 4;
+const RTL = /[֐-ࣿיִ-﷿ﹰ-﻿]/;
+
+function newMsg(text) {
+  return { text, font: "sans", size: 16, fin: 1, hold: 0, fout: 0, align: 0, cmode: 1, c1: "#ffc850", c2: "#ff3cac",
+           bg: 0, bgdim: 90, speed: 5, stay: 8, repeat: 1, shadow: false, outline: false, glow: false, rails: true };
+}
+let msgs = [newMsg("Hello!")], curMsg = 0;
+try { const s = JSON.parse(localStorage.getItem("op32.text") || "null"); if (Array.isArray(s) && s.length) msgs = s.slice(0, TEXT_MSGS).map((m) => Object.assign(newMsg(""), m)); } catch (e) { /* first visit */ }
+function saveMsgs() { try { localStorage.setItem("op32.text", JSON.stringify(msgs)); } catch (e) { /* private window */ } }
+
+function fillSelect(sel, items) {
+  sel.innerHTML = "";
+  for (const [v, label] of items) { const o = document.createElement("option"); o.value = v; o.textContent = label; sel.appendChild(o); }
+}
+fillSelect($("#tFont"), FONTS.map((f) => [f.id, f.name]));
+fillSelect($("#tIn"), FX_NAMES.map((n, i) => [i, n]));
+fillSelect($("#tOut"), FX_NAMES.map((n, i) => [i, i === 0 ? "None (just goes)" : n]));
+fillSelect($("#tHold"), HOLD_NAMES.map((n, i) => [i, n]));
+fillSelect($("#tColor"), CMODE_NAMES.map((n, i) => [i, n]));
+fillSelect($("#tBg"), [[0, "Black"], [1, "Colour 2"], ...EFFECTS.map((n, i) => [2 + i, "Animation: " + n])]);
+
+function sizeOptions(font, keep) {
+  const list = font === "panel" ? SIZES.panel : SIZES.other;
+  fillSelect($("#tSize"), list);
+  const v = list.some(([s]) => s === keep) ? keep : list[font === "panel" ? 0 : 1][0];
+  $("#tSize").value = v;
+  return v;
+}
+function renderTabs() {
+  const box = $("#msgTabs");
+  box.innerHTML = "";
+  msgs.forEach((m, i) => {
+    const b = document.createElement("button");
+    b.className = "btn" + (i === curMsg ? " lit" : "");
+    b.textContent = String(i + 1);
+    b.title = m.text || "(empty)";
+    b.setAttribute("role", "tab");
+    b.setAttribute("aria-selected", i === curMsg ? "true" : "false");
+    b.addEventListener("click", () => { curMsg = i; msgToEditor(); renderTabs(); pvRestart(); });
+    box.appendChild(b);
+  });
+  $("#tAdd").disabled = msgs.length >= TEXT_MSGS;
+  $("#tRemove").disabled = msgs.length <= 1;
+}
+function msgToEditor() {
+  const m = msgs[curMsg];
+  $("#tMsg").value = m.text;
+  $("#tFont").value = m.font;
+  m.size = sizeOptions(m.font, m.size);
+  for (const [id, k] of [["#tIn", "fin"], ["#tHold", "hold"], ["#tOut", "fout"], ["#tAlign", "align"], ["#tColor", "cmode"],
+                         ["#tBg", "bg"], ["#tBgDim", "bgdim"], ["#tSpeed", "speed"], ["#tRepeat", "repeat"]]) $(id).value = m[k];
+  $("#tC1").value = m.c1; $("#tC2").value = m.c2;
+  $("#tStay").value = Math.max(2, Math.round(m.stay / 2));
+  $("#tStayOut").value = (m.stay / 4).toFixed(1) + " s";
+  for (const k of ["shadow", "outline", "glow", "rails"]) $("#t" + k[0].toUpperCase() + k.slice(1)).checked = !!m[k];
+}
+function editorToMsg() {
+  const m = msgs[curMsg], wasRtl = RTL.test(m.text);
+  m.text = $("#tMsg").value;
+  if (m.font !== $("#tFont").value) { m.font = $("#tFont").value; m.size = sizeOptions(m.font, m.size); }
+  else m.size = Number($("#tSize").value);
+  for (const [id, k] of [["#tIn", "fin"], ["#tHold", "hold"], ["#tOut", "fout"], ["#tAlign", "align"], ["#tColor", "cmode"],
+                         ["#tBg", "bg"], ["#tBgDim", "bgdim"], ["#tSpeed", "speed"], ["#tRepeat", "repeat"]]) m[k] = Number($(id).value);
+  m.c1 = $("#tC1").value; m.c2 = $("#tC2").value;
+  m.stay = Number($("#tStay").value) * 2;
+  $("#tStayOut").value = (m.stay / 4).toFixed(1) + " s";
+  for (const k of ["shadow", "outline", "glow", "rails"]) m[k] = $("#t" + k[0].toUpperCase() + k.slice(1)).checked;
+  const isRtl = RTL.test(m.text);                    // Arabic reads right to left: the marquee goes the other way
+  if (isRtl !== wasRtl) { if (isRtl && m.fin === 1) m.fin = 2; else if (!isRtl && m.fin === 2) m.fin = 1; $("#tIn").value = m.fin; }
+  if (m.font === "panel" && /[^\x20-\x7E]/.test(m.text)) status("The panel font has English letters only. Pick another font for other languages.", true);
+}
+
+/* Draw text with this computer's fonts (the browser joins Arabic letters and orders right to left) into a
+   strip h px tall, then turn it into dots: column after column, bit 0 = top row. */
+function renderStrip(msg, h, family, weight) {
+  const rtl = RTL.test(msg);
+  const c = document.createElement("canvas"), ctx = c.getContext("2d");
+  let size = h + 2, m;
+  for (; size > 6; size--) {                        // largest font whose ink fits the strip height
+    ctx.font = `${weight} ${size}px ${family}`;
+    m = ctx.measureText(msg);
+    if (m.actualBoundingBoxAscent + m.actualBoundingBoxDescent <= h) break;
+  }
+  const w = Math.max(1, Math.min(1024, Math.ceil(m.actualBoundingBoxLeft + m.actualBoundingBoxRight) + 2));
+  c.width = w; c.height = h;
+  ctx.font = `${weight} ${size}px ${family}`;
+  ctx.direction = rtl ? "rtl" : "ltr";
+  ctx.textAlign = "left";
+  ctx.fillStyle = "#fff";
+  ctx.fillText(msg, 1 + m.actualBoundingBoxLeft, Math.round((h - (m.actualBoundingBoxAscent + m.actualBoundingBoxDescent)) / 2 + m.actualBoundingBoxAscent));
+  const d = ctx.getImageData(0, 0, w, h).data, bpc = Math.ceil(h / 8);
+  let first = w, last = -1;
+  const on = (x, y) => d[(y * w + x) * 4] > 110;
+  for (let x = 0; x < w; x++) for (let y = 0; y < h; y++) if (on(x, y)) { first = Math.min(first, x); last = Math.max(last, x); }
+  if (last < 0) return null;
+  const cols = last - first + 1, bits = new Uint8Array(cols * bpc);
+  for (let x = 0; x < cols; x++)
+    for (let y = 0; y < h; y++) if (on(first + x, y)) bits[x * bpc + (y >> 3)] |= 1 << (y & 7);
+  return { h, w: cols, bpc, rtl, bits };
+}
+
+const p2 = (n) => String(n).padStart(2, "0");
+function expandTokens(t) {
+  const d = new Date();
+  return t.replace(/\{time\}/g, `${p2(d.getHours())}:${p2(d.getMinutes())}`)
+          .replace(/\{secs\}/g, `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`)
+          .replace(/\{date\}/g, `${p2(d.getDate())}.${p2(d.getMonth() + 1)}`)
+          .replace(/\{day\}/g, ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"][d.getDay()])
+          .replace(/\{year\}/g, String(d.getFullYear()));
+}
+function panelColumns(text, scale) {                 // same as the firmware: 5x7 font, trimmed, 1 px gap
+  const cols = [];
+  for (const ch of text) {
+    if (ch === " ") { for (let k = 0; k < 3 * scale; k++) cols.push(0); continue; }
+    const g = glyph(ch), [a, b] = glyphSpan(g);
+    for (let i = a; i <= b; i++) {
+      let v = g[i] & 0x7f;
+      if (scale === 2) { let dd = 0; for (let r = 0; r < 7; r++) if ((v >> r) & 1) dd |= 3 << (2 * r); v = dd; }
+      for (let k = 0; k < scale; k++) cols.push(v);
+    }
+    for (let k = 0; k < scale; k++) cols.push(0);
+  }
+  while (cols.length > 1 && !cols[cols.length - 1]) cols.pop();
+  return cols.length ? cols : [0];
+}
+const hexRgb = (h) => [1, 3, 5].map((i) => parseInt(h.substr(i, 2), 16));
+
+/* message -> { kind, style[16], data } ; the packet layout is in firmware/src/app/textfx.h */
+function compileMsg(m) {
+  const rtl = m.font !== "panel" && RTL.test(m.text);
+  const style = new Uint8Array(16);
+  style[0] = m.fin; style[1] = m.hold; style[2] = m.fout; style[3] = m.cmode;
+  style.set(hexRgb(m.c1), 4); style.set(hexRgb(m.c2), 7);
+  style[10] = m.speed; style[11] = m.stay;
+  style[12] = m.align | (rtl ? 4 : 0) | (((m.shadow ? 1 : 0) | (m.outline ? 2 : 0) | (m.glow ? 4 : 0) | (m.rails ? 8 : 0)) << 4);
+  style[13] = m.bg; style[14] = m.bgdim; style[15] = m.repeat;
+  if (m.font === "panel") {
+    const text = [...m.text].map((c) => c.charCodeAt(0)).filter((k) => k >= 32 && k <= 126).slice(0, 120);
+    if (!text.length) return null;
+    return { kind: 1, style, scale: m.size >= 14 ? 1 : 0, text, bytes: text.length, rtl: false, raw: m.text };
+  }
+  if (!m.text.trim()) return null;
+  const f = FONTS.find((x) => x.id === m.font) || FONTS[1];
+  const s = renderStrip(m.text, m.size, f.css, f.w);
+  return s ? { kind: 0, style, strip: s, bytes: s.bits.length, rtl } : null;
+}
+function updateMem() {
+  const used = msgs.reduce((a, m) => { const c = compileMsg(m); return a + (c ? c.bytes : 0); }, 0);
+  const el = $("#tMem");
+  el.textContent = `Panel memory: ${Math.round(used * 100 / TEXT_POOL)}%`;
+  el.classList.toggle("err", used > TEXT_POOL);
+  return used;
+}
+
+/* ---- live preview: the firmware's timeline and effects (textfx.c), ported line by line ---------------- */
+const SIN8 = Array.from({ length: 256 }, (_, i) => Math.round(128 + 127 * Math.sin(2 * Math.PI * i / 256)));
+const sin8 = (i) => SIN8[i & 255];
+const idiv = (a, b) => Math.trunc(a / b);
+const clampi = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
+function hsh(a, b) {
+  let h = (Math.imul(a >>> 0, 2654435761) ^ Math.imul((b + 0x9E3779B9) >>> 0, 2246822519)) >>> 0;
+  h ^= h >>> 15; h = Math.imul(h, 2246822519) >>> 0; h ^= h >>> 13;
+  return h >>> 0;
+}
+function hsvc(h, s, v) {                              // gfx_hsv
+  h &= 255;
+  const region = Math.floor(h / 43), rem = (h - region * 43) * 6;
+  const p = (v * (255 - s)) >> 8, q = (v * (255 - ((s * rem) >> 8))) >> 8, t = (v * (255 - ((s * (255 - rem)) >> 8))) >> 8;
+  return [[v, t, p], [q, v, p], [p, v, t], [p, q, v], [t, p, v], [v, p, q]][Math.min(region, 5)];
+}
+const scaleC = (c, v) => c.map((x) => idiv(x * v, 255));
+const mixC = (a, b, f, n) => (n <= 0 ? a : a.map((x, i) => idiv(x * (n - clampi(f, 0, n)) + b[i] * clampi(f, 0, n), n)));
+function pset(x, y, c) { if (x >= 0 && x < 32 && y >= 0 && y < 32) setPix(x, y, c[0], c[1], c[2]); }
+function padd(x, y, c) {
+  if (x < 0 || x > 31 || y < 0 || y > 31) return;
+  const i = (y * 32 + x) * 3;
+  for (let k = 0; k < 3; k++) pix[i + k] = Math.min(255, pix[i + k] + c[k]);
+}
+
+const PV = { list: [], cur: 0, phase: 0, t0: 0, dur: 0, rep: 0, fin: 0, fout: 0, w: 1, h: 7, x0: 0, y0: 0, win: 1,
+             marquee: false, np: 1, cols: [0], running: false, raf: 0, last: 0, fnext: 0 };
+const speedOf = (st) => (st[10] < 1 ? 5 : st[10] > 10 ? 10 : st[10]);
+const ppsOf = (st) => 6 + speedOf(st) * 4;
+const fxMs = (fx, st) => (fx === 0 ? 0 : 1700 - speedOf(st) * 130);
+function pvLoad(i) {
+  const c = PV.list[i];
+  if (c.kind === 1) { PV.cols = panelColumns(expandTokens(c.raw), c.scale ? 2 : 1); PV.h = c.scale ? 14 : 7; }
+  else { const s = c.strip; PV.cols = Array.from({ length: s.w }, (_, x) => s.bits[x * s.bpc] | (s.bpc > 1 ? s.bits[x * s.bpc + 1] << 8 : 0) | (s.bpc > 2 ? s.bits[x * s.bpc + 2] << 16 : 0)); PV.h = s.h; }
+  PV.w = PV.cols.length;
+}
+function pvGeometry() {
+  const st = PV.list[PV.cur].style;
+  PV.win = Math.min(PV.w, 32);
+  const al = st[12] & 3;
+  PV.y0 = Math.max(0, al === 1 ? 1 : al === 2 ? 31 - PV.h : idiv(32 - PV.h, 2));
+  PV.x0 = PV.w < 32 ? idiv(32 - PV.w, 2) : 0;
+  PV.marquee = PV.w > 32 && (PV.fin === 1 || PV.fin === 2);
+  let np = 0, gap = 1;
+  for (let c = 0; c < PV.w; c++) { if (PV.cols[c]) { if (gap) np++; gap = 0; } else gap = 1; }
+  PV.np = np || 1;
+}
+function pvHoldMs(st) {
+  const pause = st[11] ? st[11] * 250 : 2000, pps = ppsOf(st);
+  if (PV.marquee) return idiv((PV.w + 32) * 1000, pps);
+  if (PV.w > 32) return 700 + idiv((PV.w - 32) * 1000, pps) + pause;
+  return pause;
+}
+const pick = (fx) => (fx >= 23 ? 1 + Math.floor(Math.random() * 22) : fx);
+function pvPhase(ph, now) {
+  const st = PV.list[PV.cur].style;
+  PV.phase = ph; PV.t0 = now;
+  PV.dur = ph === 0 ? fxMs(PV.fin, st) : ph === 2 ? fxMs(PV.fout, st) : ph === 1 ? pvHoldMs(st) : 250;
+}
+function pvStartMsg(i, now, first) {
+  const st = PV.list[i].style;
+  PV.cur = i;
+  if (first) PV.rep = 0;
+  PV.fin = pick(st[0]); PV.fout = pick(st[2]);
+  pvLoad(i); PV.fnext = now + 500;
+  pvGeometry();
+  pvPhase(PV.marquee ? 1 : 0, now);
+}
+function pvAdvance(now) {
+  for (let g = 0; g < 8 && now - PV.t0 >= PV.dur; g++) {
+    const end = PV.t0 + PV.dur;
+    if (PV.phase === 0) pvPhase(1, end);
+    else if (PV.phase === 1) pvPhase(PV.marquee ? 3 : 2, end);
+    else if (PV.phase === 2) pvPhase(3, end);
+    else {
+      const rep = PV.list[PV.cur].style[15] || 1;
+      if (++PV.rep < rep) pvStartMsg(PV.cur, end, false);
+      else pvStartMsg((PV.cur + 1) % PV.list.length, end, true);
+    }
+  }
+}
+function applyFx(fx, out, p, k, c, r, piece, rtl, s) {
+  const W = PV.win, H = PV.h, q = out ? 1000 - p : p, hh = hsh(c, r);
+  switch (fx) {
+  case 1: s.x += out ? idiv(-p * (PV.x0 + W), 1000) : idiv((1000 - p) * (32 - PV.x0), 1000); return true;
+  case 2: s.x += out ? idiv(p * (32 - PV.x0), 1000) : idiv(-(1000 - p) * (PV.x0 + W), 1000); return true;
+  case 3: s.y += out ? idiv(-p * (PV.y0 + H), 1000) : idiv((1000 - p) * (32 - PV.y0), 1000); return true;
+  case 4: s.y += out ? idiv(p * (32 - PV.y0), 1000) : idiv(-(1000 - p) * (PV.y0 + H), 1000); return true;
+  case 5: case 6: case 20: { const kk = rtl ? W - 1 - k : k; return kk * 1000 < q * W; }
+  case 7: return Math.abs(2 * k - (W - 1)) * 1000 < q * W;
+  case 8: { const d = Math.min(k, W - 1 - k); return 2 * d * 1000 < q * W; }
+  case 9: return (k % 4) * 1000 < q * 4;
+  case 10: return (hh % 1000) < q;
+  case 11:
+    if (k & 1) s.y += idiv((out ? p : 1000 - p) * (32 - PV.y0), 1000); else s.y -= idiv((out ? p : 1000 - p) * (PV.y0 + H), 1000);
+    return true;
+  case 12: {
+    const lp = clampi(idiv((idiv(p * (W + 6), 1000) - k) * 1000, 6), 0, 1000);
+    if (!out) s.x += idiv((1000 - lp) * (32 - s.x), 1000); else s.x -= idiv(lp * (s.x + 1), 1000);
+    return true; }
+  case 13: {
+    const lp = clampi(idiv(p * (PV.np + 1) - piece * 1000, 2), 0, 1000);
+    if (!out) { const e = lp < 700 ? idiv(lp * lp, 490) : 1000 - idiv((lp - 700) * (1000 - lp), 190); s.y -= idiv((1000 - e) * (PV.y0 + H + 2), 1000); }
+    else s.y += idiv(idiv(lp * lp, 1000) * (33 - PV.y0), 1000);
+    return true; }
+  case 14: return (H - 1 - r) * 1000 < q * H;
+  case 15: return r * 1000 < q * H;
+  case 16: {
+    if (q < 40) return false;
+    const cx = PV.x0 + idiv(W, 2), cy = PV.y0 + idiv(H, 2);
+    s.x = cx + idiv((s.x - cx) * q, 1000); s.y = cy + idiv((s.y - cy) * q, 1000);
+    return true; }
+  case 17: s.a = idiv(s.a * q, 1000); return true;
+  case 18: case 22: {
+    const lp = clampi(idiv(p * 3, 2) - (hh % 500), 0, 1000);
+    if (!out) { if (!lp) return false; s.y -= idiv((1000 - lp) * (s.y + 1), 1000); if (fx === 22 && lp < 1000) s.green = true; return true; }
+    if (fx === 22 && lp) s.green = true;
+    s.y += idiv(idiv(lp * lp, 1000) * (33 - s.y), 1000);
+    return s.y < 32; }
+  case 19: {
+    const ox = (hh % 48) - 8, oy = ((hh >>> 8) % 48) - 8;
+    if (!out) { if (!p) return false; const e = 1000 - idiv((1000 - p) * (1000 - p), 1000); s.x = ox + idiv((s.x - ox) * e, 1000); s.y = oy + idiv((s.y - oy) * e, 1000); }
+    else { s.x += idiv(((s.x - 15) * 3 + ox - 16) * p, 1000); s.y += idiv(((s.y - 15) * 3 + oy - 16) * p, 1000); s.a = idiv(s.a * (1000 - p), 1000); }
+    return true; }
+  case 21: { if (q < 60) return false; const cy = PV.y0 + idiv(H, 2); s.y = cy + idiv((s.y - cy) * q, 1000); return true; }
+  default: return true;
+  }
+}
+function applyHold(hold, holding, now, c, r, piece, s) {
+  switch (hold) {
+  case 1: if (holding && (Math.floor(now / 400) & 1)) s.a = 0; break;
+  case 2: if (holding) s.a = idiv(s.a * (60 + idiv(sin8(Math.floor(now / 6)) * 195, 255)), 255); break;
+  case 3: s.y += idiv((sin8(c * 14 + Math.floor(now / 4)) - 128) * 2, 127); break;
+  case 4: s.y -= idiv((sin8(Math.floor(now / 4) & 127) - 128) * 3, 127); break;
+  case 5: { const h = hsh(Math.floor(now / 60), 7); s.x += (h & 1) - ((h >>> 1) & 1); s.y += ((h >>> 2) & 1) - ((h >>> 3) & 1); break; }
+  case 6: { const pos = (Math.floor(now / 25) % 80) - 20, b = s.x + s.y - pos; if (b >= 0 && b < 3) s.white = 200; break; }
+  case 7: if (hsh(c * 31 + r, Math.floor(now / 90)) % 17 === 0) s.white = 255; break;
+  case 8: if (holding && hsh(Math.floor(now / 70), 3) % 9 === 0) s.a = idiv(s.a, 4); break;
+  case 9: s.y += idiv((sin8(piece * 50 + Math.floor(now / 3)) - 128) * 2, 127); break;
+  case 10: if (now % 1700 < 160) s.x += (hsh(r, Math.floor(now / 40)) % 5) - 2; break;
+  }
+}
+function fireC(heat) {
+  heat = clampi(heat, 0, 255);
+  if (heat < 85) return [heat * 3, 0, 0];
+  if (heat < 170) return [255, (heat - 85) * 3, 0];
+  return [255, 255, (heat - 170) * 3];
+}
+function textColorC(st, c, r, x, y, piece, now) {
+  const c1 = [st[4], st[5], st[6]], c2 = [st[7], st[8], st[9]];
+  switch (st[3]) {
+  case 1: return hsvc(c * 4 - Math.floor(now / 12), 230, 255);
+  case 2: return mixC(c1, c2, c, PV.w - 1);
+  case 3: return mixC(c1, c2, r, PV.h - 1);
+  case 4: return hsvc(idiv(r * 255, PV.h + 1) + Math.floor(now / 10), 230, 255);
+  case 5: return fireC(80 + idiv(r * 175, PV.h > 1 ? PV.h - 1 : 1) - (hsh(c * 64 + r, Math.floor(now / 70)) % 110));
+  case 6: return scaleC(c1, hsh(Math.floor(now / 90), 5) % 13 === 0 ? 140 : 255);
+  case 7: return (Math.floor((x + y + Math.floor(now / 70)) / 3) & 1) ? c1 : c2;
+  case 8: return hsvc(hsh(piece, 99) & 255, 200, 255);
+  default: return c1;
+  }
+}
+function pvBackground(st, now) {
+  const dim = st[14] || 90;
+  if (st[13] === 1) { const c = scaleC([st[7], st[8], st[9]], Math.min(255, dim)); for (let i = 0; i < 1024; i++) pix.set(c, i * 3); return; }
+  pix.fill(0);
+  if (st[13] >= 2) {                                  // the real animation plays on the panel: a soft stand-in here
+    for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) {
+      const v = sin8(x * 9 + Math.floor(now / 20)) + sin8(y * 11 - Math.floor(now / 27));
+      pix.set(scaleC(hsvc((v >> 2) + Math.floor(now / 60), 200, 255), idiv(dim, 3)), (y * 32 + x) * 3);
+    }
+  }
+}
+function pvRender(now) {
+  if (!PV.list.length) { pix.fill(0); drawMirror(); return; }
+  pvAdvance(now);
+  const cm = PV.list[PV.cur], st = cm.style;
+  if (cm.kind === 1 && now >= PV.fnext) { PV.fnext = now + 500; const ow = PV.w; pvLoad(PV.cur); if (PV.w !== ow) pvGeometry(); }
+  pvBackground(st, now);
+  const decor = st[12] >> 4, rtl = (st[12] >> 2) & 1, hold = st[1];
+  if (decor & 8) for (let i = 0; i < 32; i++) {
+    if (PV.y0 - 3 >= 0) pset(i, PV.y0 - 3, hsvc(i * 8 + Math.floor(now / 10), 255, 60));
+    if (PV.y0 + PV.h + 2 < 32) pset(i, PV.y0 + PV.h + 2, hsvc(i * 8 - Math.floor(now / 10), 255, 60));
+  }
+  if (PV.phase === 3) { drawMirror(); return; }
+  const t = now - PV.t0, p = PV.dur ? clampi(Math.floor(t * 1000 / PV.dur), 0, 1000) : 1000, pps = ppsOf(st);
+  let x0 = PV.x0, view = 0, cLo, cHi;
+  if (PV.marquee) {
+    const travel = Math.floor(t * pps / 1000);
+    x0 = PV.fin === 1 ? 32 - travel : -PV.w + travel;
+    cLo = clampi(-x0 - 3, 0, PV.w); cHi = clampi(35 - x0, 0, PV.w);
+  } else {
+    if (PV.w > 32) {
+      let v = PV.phase === 1 ? (t > 700 ? Math.floor((t - 700) * pps / 1000) : 0) : PV.phase === 2 ? PV.w - 32 : 0;
+      v = clampi(v, 0, PV.w - 32);
+      view = rtl ? (PV.w - 32) - v : v;
+    }
+    cLo = view; cHi = view + PV.win;
+  }
+  const fx = PV.marquee ? 0 : PV.phase === 0 ? PV.fin : PV.phase === 2 ? PV.fout : 0, out = PV.phase === 2, holding = PV.phase === 1;
+  let piece0 = 0, gap = 1;
+  for (let c = 0; c < cLo; c++) { if (PV.cols[c]) { if (gap) piece0++; gap = 0; } else gap = 1; }
+  const gap0 = gap;
+  for (let pass = 0; pass < 2; pass++) {
+    if (pass === 0 && !(decor & 7)) continue;
+    let piece = piece0; gap = gap0;
+    for (let c = cLo; c < cHi; c++) {
+      const bits = PV.cols[c] || 0;
+      if (!bits) { gap = 1; continue; }
+      if (gap) { piece++; gap = 0; }
+      const k = c - view;
+      for (let r = 0; r < PV.h; r++) {
+        if (!((bits >> r) & 1)) continue;
+        const s = { x: x0 + (c - view), y: PV.y0 + r, a: 255, green: false, white: 0 };
+        if (fx && !applyFx(fx, out, p, k, c, r, piece - 1, rtl, s)) continue;
+        applyHold(hold, holding, now, c, r, piece - 1, s);
+        if (s.a <= 0) continue;
+        let col = s.green ? [40, 255, 90] : textColorC(st, c, r, s.x, s.y, piece - 1, now);
+        if (s.white) col = mixC(col, [255, 255, 255], s.white, 255);
+        if (pass === 0) {
+          if (decor & 4) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) padd(s.x + dx, s.y + dy, scaleC(col, 45));
+          if (decor & 2) for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) pset(s.x + dx, s.y + dy, [0, 0, 0]);
+          if (decor & 1) pset(s.x + 1, s.y + 1, [0, 0, 0]);
+        } else pset(s.x, s.y, s.a >= 255 ? col : scaleC(col, s.a));
+      }
+    }
+  }
+  if ((fx === 5 || fx === 6 || fx === 20) && p < 1000) {
+    const q = out ? 1000 - p : p, kk = idiv(q * PV.win, 1000), ex = x0 + (rtl ? PV.win - 1 - kk : kk);
+    if (fx === 5) { if (Math.floor(now / 150) & 1) for (let y = 0; y < PV.h; y++) pset(ex, PV.y0 + y, textColorC(st, kk + view, 0, ex, PV.y0, 0, now)); }
+    else if (fx === 6) { for (let y = -1; y <= PV.h; y++) { pset(ex, PV.y0 + y, [255, 255, 255]); pset(ex + 1, PV.y0 + y, [255, 255, 255]); } }
+    else {
+      const ty = PV.y0 + (hsh(Math.floor(now / 40), 11) % PV.h), sx = rtl ? 0 : 31, n = Math.max(Math.abs(ex - sx), ty) || 1;
+      for (let i = 0; i <= n; i++) pset(sx + Math.round((ex - sx) * i / n), Math.round(ty * i / n), [255, 40, 40]);
+      pset(ex, ty, [255, 255, 255]);
+    }
+  }
+  drawMirror();
+}
+function pvTick(ts) {
+  if (!PV.running) return;
+  PV.raf = requestAnimationFrame(pvTick);
+  if (ts - PV.last < 24) return;
+  PV.last = ts;
+  pvRender(ts);
+}
+function pvRestart() {
+  PV.list = msgs.map(compileMsg).filter(Boolean);
+  if (!PV.list.length) { pvStop(); pix.fill(0); drawMirror(); return; }
+  const now = performance.now();
+  pvStartMsg(Math.min(curMsg, PV.list.length - 1), now, true);
+  $("#mirrorNote").textContent = "Text preview, as it plays on the panel." + (PV.list.some((c) => c.style[13] >= 2) ? " Background animations show on the panel only." : "");
+  if (!PV.running) { PV.running = true; PV.raf = requestAnimationFrame(pvTick); }
+}
+function pvStop() { PV.running = false; cancelAnimationFrame(PV.raf); }
+
+/* ---- editor events --------------------------------------------------------------------------------- */
+function onEdit() { editorToMsg(); saveMsgs(); renderTabs(); updateMem(); pvRestart(); }
+for (const id of ["#tMsg", "#tFont", "#tSize", "#tIn", "#tHold", "#tOut", "#tAlign", "#tColor", "#tC1", "#tC2", "#tBg",
+                  "#tBgDim", "#tSpeed", "#tStay", "#tRepeat", "#tShadow", "#tOutline", "#tGlow", "#tRails"])
+  $(id).addEventListener(id === "#tMsg" || id.startsWith("#tC") || id === "#tBgDim" || id === "#tSpeed" || id === "#tStay" ? "input" : "change", onEdit);
+$("#tAdd").addEventListener("click", () => {
+  if (msgs.length >= TEXT_MSGS) return;
+  msgs.push(Object.assign(newMsg("Message " + (msgs.length + 1)), { cmode: msgs[curMsg].cmode, font: msgs[curMsg].font, size: msgs[curMsg].size }));
+  curMsg = msgs.length - 1;
+  msgToEditor(); onEdit();
+});
+$("#tRemove").addEventListener("click", () => {
+  if (msgs.length <= 1) return;
+  msgs.splice(curMsg, 1);
+  curMsg = Math.min(curMsg, msgs.length - 1);
+  msgToEditor(); onEdit();
+});
+
+const fxIndex = (name) => Math.max(0, EFFECTS.indexOf(name));
+const PRESETS = [
+  ["Marquee", (m) => ({ fin: RTL.test(m.text) ? 2 : 1, hold: 0, fout: 0, cmode: 1, bg: 0, rails: true, glow: false, outline: false, shadow: false })],
+  ["Typewriter", (m) => ({ font: RTL.test(m.text) ? m.font : "mono", fin: 5, hold: 0, fout: 5, cmode: 0, c1: "#7cff8a", bg: 0, rails: false, glow: false })],
+  ["Neon sign", () => ({ fin: 17, hold: 8, fout: 17, cmode: 6, c1: "#ff3cac", glow: true, outline: false, bg: 0, rails: false })],
+  ["Breaking news", () => ({ fin: 6, hold: 6, fout: 6, cmode: 0, c1: "#ffffff", c2: "#c81e2d", bg: 1, bgdim: 150, outline: true, rails: false, glow: false })],
+  ["Matrix", () => ({ fin: 22, hold: 0, fout: 22, cmode: 0, c1: "#3cff5a", bg: 2 + fxIndex("Matrix rain"), bgdim: 60, outline: true, rails: false, glow: false })],
+  ["Love", () => ({ fin: 13, hold: 9, fout: 19, cmode: 2, c1: "#ff5aa0", c2: "#b45aff", bg: 2 + fxIndex("Sparkles"), bgdim: 70, glow: true, outline: false, rails: false })],
+  ["Party", () => ({ fin: 19, hold: 4, fout: 19, cmode: 1, bg: 2 + fxIndex("Fireworks"), bgdim: 90, outline: true, glow: false, rails: false })],
+  ["Fire", () => ({ fin: 18, hold: 8, fout: 18, cmode: 5, bg: 0, shadow: true, outline: false, glow: false, rails: false })],
+  ["Surprise me", () => ({ fin: 1 + Math.floor(Math.random() * 22), hold: Math.floor(Math.random() * 11), fout: 1 + Math.floor(Math.random() * 22),
+                           cmode: Math.floor(Math.random() * 9), c1: "#" + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, "0"),
+                           c2: "#" + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, "0"),
+                           bg: Math.random() < 0.5 ? 0 : 2 + Math.floor(Math.random() * EFFECTS.length), bgdim: 80,
+                           outline: true, glow: Math.random() < 0.5, rails: false })],
+];
+for (const [name, fn] of PRESETS) {
+  const b = document.createElement("button");
+  b.className = "btn";
+  b.textContent = name;
+  b.addEventListener("click", () => { Object.assign(msgs[curMsg], fn(msgs[curMsg])); msgToEditor(); onEdit(); });
+  $("#tPresets").appendChild(b);
+}
+
+$("#btnText").addEventListener("click", () => {
+  editorToMsg();
+  const list = msgs.map(compileMsg);
+  if (list.some((c) => !c)) { status("Message " + (list.findIndex((c) => !c) + 1) + " has no letters to show.", true); return; }
+  if (updateMem() > TEXT_POOL) { status("The messages don't fit in the panel's memory. Make them shorter or smaller.", true); return; }
+  if (chWrite && fwMinor < 17) { status("Text effects need firmware 99.17 or newer. Install it in the Firmware section.", true); return; }
+  act(list.length > 1 ? `Sent ${list.length} messages.` : "Message sent.", async () => {
+    for (let i = 0; i < list.length; i++) {
+      const c = list[i];
+      const head = [i, list.length, c.kind, ...c.style];
+      const body = c.kind === 1 ? [c.scale, ...c.text] : [c.strip.h, c.strip.w & 255, c.strip.w >> 8, ...c.strip.bits];
+      const r = await send(0xF10B, [...head, ...body], 8000);
+      if (r[4] !== 1) throw new Error(`The panel refused message ${i + 1}.`);
+    }
+  });
+});
+renderTabs(); msgToEditor(); updateMem();
+
+// picture
+let picImage = null, fit = "cover";
+function renderPicture() {
+  if (!picImage) return;
+  pvStop();
+  const c = document.createElement("canvas");
+  c.width = c.height = 32;
+  const ctx = c.getContext("2d");
+  ctx.imageSmoothingQuality = "high";
+  ctx.fillStyle = "#000"; ctx.fillRect(0, 0, 32, 32);
+  const w = picImage.naturalWidth, h = picImage.naturalHeight;
+  const s = fit === "cover" ? Math.max(32 / w, 32 / h) : Math.min(32 / w, 32 / h);
+  ctx.drawImage(picImage, (32 - w * s) / 2, (32 - h * s) / 2, w * s, h * s);
+  const d = ctx.getImageData(0, 0, 32, 32).data;
+  for (let i = 0; i < 1024; i++) { pix[i * 3] = d[i * 4]; pix[i * 3 + 1] = d[i * 4 + 1]; pix[i * 3 + 2] = d[i * 4 + 2]; }
+  drawMirror();
+  $("#mirrorNote").textContent = "Picture preview, 32 × 32.";
+}
+function loadPicture(file) {
+  if (!file) return;
+  const img = new Image();
+  img.onload = () => { picImage = img; renderPicture(); $("#btnPicture").disabled = false; };
+  img.onerror = () => status("That file isn't a picture this browser can open.", true);
+  img.src = URL.createObjectURL(file);
+}
+$("#picFile").addEventListener("change", (e) => loadPicture(e.target.files[0]));
+const drop = $("#drop");
+drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("over"); });
+drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+drop.addEventListener("drop", (e) => { e.preventDefault(); drop.classList.remove("over"); loadPicture(e.dataTransfer.files[0]); });
+$$("#fitSeg button").forEach((b) => b.addEventListener("click", () => {
+  fit = b.dataset.fit; $$("#fitSeg button").forEach((x) => x.classList.toggle("lit", x === b)); renderPicture();
+}));
+$("#btnPicture").addEventListener("click", () => { renderPicture(); act("Picture sent.", () => send(0xF103, [...pix], 8000)); });
+
+// draw
+let drawing = false, tool = "pen", painting = false, dirty = new Map(), flushTimer = null;
+const PALETTE = ["#ffffff", "#ff3355", "#ff8a00", "#ffd400", "#3ddc84", "#00c2ff", "#3d5afe", "#b44dff", "#ff4fd8", "#000000"];
+PALETTE.forEach((c, i) => {
+  const b = document.createElement("button");
+  b.style.background = c; b.title = c; b.setAttribute("aria-label", "Colour " + c);
+  if (i === 1) b.classList.add("lit");
+  b.addEventListener("click", () => { $("#penColor").value = c; $$("#palette button").forEach((x) => x.classList.toggle("lit", x === b)); });
+  $("#palette").appendChild(b);
+});
+$$("#toolSeg button").forEach((b) => b.addEventListener("click", () => {
+  tool = b.dataset.tool; $$("#toolSeg button").forEach((x) => x.classList.toggle("lit", x === b));
+}));
+function penRGB() { const h = $("#penColor").value; return [1, 3, 5].map((i) => parseInt(h.substr(i, 2), 16)); }
+function cellAt(e) {
+  const r = mirror.getBoundingClientRect();
+  return [Math.floor((e.clientX - r.left) / r.width * 32), Math.floor((e.clientY - r.top) / r.height * 32)];
+}
+function paintCell(x, y, rgb) {
+  if (x < 0 || x > 31 || y < 0 || y > 31) return;
+  setPix(x, y, ...rgb);
+  dirty.set(y * 32 + x, rgb);
+}
+function flood(x, y, rgb) {
+  const i0 = (y * 32 + x) * 3, from = [pix[i0], pix[i0 + 1], pix[i0 + 2]];
+  if (from.every((v, k) => v === rgb[k])) return;
+  const stack = [[x, y]];
+  while (stack.length) {
+    const [cx, cy] = stack.pop();
+    if (cx < 0 || cx > 31 || cy < 0 || cy > 31) continue;
+    const i = (cy * 32 + cx) * 3;
+    if (pix[i] !== from[0] || pix[i + 1] !== from[1] || pix[i + 2] !== from[2]) continue;
+    paintCell(cx, cy, rgb);
+    stack.push([cx + 1, cy], [cx - 1, cy], [cx, cy + 1], [cx, cy - 1]);
+  }
+}
+function scheduleFlush() {
+  if (!$("#livePaint").checked || !chWrite) return;
+  clearTimeout(flushTimer);
+  flushTimer = setTimeout(flushDirty, 90);
+}
+async function flushDirty() {
+  const items = [...dirty.entries()];
+  dirty.clear();
+  for (let k = 0; k < items.length; k += 47) {
+    const payload = [];
+    for (const [idx, rgb] of items.slice(k, k + 47)) payload.push(idx % 32, Math.floor(idx / 32), ...rgb);
+    try { await send(0xF105, payload); } catch (e) { status(e.message, true); return; }
+  }
+}
+let lastCell = null;
+function strokeAt(e) {
+  const [x, y] = cellAt(e);
+  if (tool === "fill") flood(x, y, penRGB());
+  else {
+    const rgb = tool === "erase" ? [0, 0, 0] : penRGB();
+    let [x0, y0] = lastCell || [x, y];                 // join to the previous point so fast strokes have no gaps
+    const dx = Math.abs(x - x0), dy = -Math.abs(y - y0), sx = x0 < x ? 1 : -1, sy = y0 < y ? 1 : -1;
+    let err = dx + dy;
+    for (;;) {
+      paintCell(x0, y0, rgb);
+      if (x0 === x && y0 === y) break;
+      const e2 = 2 * err;
+      if (e2 >= dy) { err += dy; x0 += sx; }
+      if (e2 <= dx) { err += dx; y0 += sy; }
+    }
+    lastCell = [x, y];
+  }
+  drawMirror();
+  scheduleFlush();
+}
+mirror.addEventListener("pointerdown", (e) => {
+  if (!drawing) return;
+  painting = true; lastCell = null; mirror.setPointerCapture(e.pointerId); strokeAt(e);
+});
+mirror.addEventListener("pointermove", (e) => {
+  if (!drawing || !painting || tool === "fill") return;
+  for (const ev of e.getCoalescedEvents ? e.getCoalescedEvents() : [e]) strokeAt(ev);
+});
+["pointerup", "pointercancel"].forEach((t) => mirror.addEventListener(t, () => { painting = false; lastCell = null; }));
+$("#btnDraw").addEventListener("click", () => {
+  pvStop();
+  drawing = !drawing;
+  mirror.classList.toggle("drawing", drawing);
+  $("#btnDraw").textContent = drawing ? "Stop drawing" : "Start drawing";
+  $("#mirrorNote").textContent = drawing ? "Draw here with the mouse or a finger." : "Preview of what you send to the panel.";
+  if (drawing) act("Drawing mode. The panel shows your drawing.", () => send(0xF103, [...pix], 8000));
+});
+$("#btnClearDraw").addEventListener("click", () => {
+  pvStop();
+  pix.fill(0); dirty.clear(); drawMirror();
+  act("Drawing cleared.", () => send(0x0104, [1]));
+});
+$("#btnSendDraw").addEventListener("click", () => act("Drawing sent.", () => send(0xF103, [...pix], 8000)));
+
+// equalizer
+let eqStyle = 0, eqTimer = null;
+const eqLevels = [3, 6, 9, 12, 15, 13, 10, 8, 6, 4, 2];
+eqLevels.forEach((v, i) => {
+  const s = document.createElement("input");
+  s.type = "range"; s.min = 0; s.max = 15; s.value = v; s.setAttribute("aria-label", "Bar " + (i + 1));
+  s.addEventListener("input", () => { eqLevels[i] = Number(s.value); clearTimeout(eqTimer); eqTimer = setTimeout(sendEq, 70); });
+  $("#eq").appendChild(s);
+});
+function sendEq() { act("Equalizer levels sent.", () => send(0x0201, [eqStyle, ...eqLevels])); }
+$$("#eqStyle button").forEach((b) => b.addEventListener("click", () => {
+  eqStyle = Number(b.dataset.style); $$("#eqStyle button").forEach((x) => x.classList.toggle("lit", x === b)); sendEq();
+}));
+$("#btnEqDance").addEventListener("click", () => act("Equalizer animates by itself.", () => send(0x0200, [3, eqStyle])));
+
+// scoreboard
+const score = [0, 0];
+function sendScore() {
+  $("#s1").textContent = score[0]; $("#s2").textContent = score[1];
+  act(`Score ${score[0]} : ${score[1]}.`, () => send(0x800A, [score[0], 0, score[1]]));
+}
+$$("[data-score]").forEach((b) => b.addEventListener("click", () => {
+  const [p, d] = b.dataset.score.split(":").map(Number);
+  score[p - 1] = Math.max(0, Math.min(99, score[p - 1] + d)); sendScore();
+}));
+$("#btnScoreReset").addEventListener("click", () => { score[0] = score[1] = 0; sendScore(); });
+
+// stopwatch
+$$("[data-timer]").forEach((b) => b.addEventListener("click", () =>
+  act({ 1: "Stopwatch running.", 2: "Stopwatch paused.", 0: "Stopwatch reset." }[b.dataset.timer], () => send(0x8009, [Number(b.dataset.timer)]))));
+
+// test patterns
+["Orientation marker", "Colour bars", "Brightness ramps", "Checkerboard", "Row sweep", "Column sweep", "All white"].forEach((n, i) => {
+  const b = document.createElement("button");
+  b.className = "btn"; b.textContent = n;
+  b.addEventListener("click", () => act(`Test pattern: ${n.toLowerCase()}.`, () => send(0xF101, [7, i])));
+  $("#testRow").appendChild(b);
+});
+
+/* ================================================================================================
+   Firmware update (same rules as tools/ble/ota_flash_guarded.py)
+   ================================================================================================ */
+const CRC_T = (() => { const t = new Uint32Array(256); for (let i = 0; i < 256; i++) { let c = i; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[i] = c >>> 0; } return t; })();
+function crc32(buf) { let c = 0xFFFFFFFF; for (let i = 0; i < buf.length; i++) c = CRC_T[(c ^ buf[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+const u32 = (v) => [v & 255, (v >>> 8) & 255, (v >>> 16) & 255, (v >>> 24) & 255];
+const sameBytes = (a, b) => a.length === b.length && a.every((v, i) => v === b[i]);
+const CHUNK = 0x3000;
+let fwData = null;
+function fwLog(msg, err) {
+  const li = document.createElement("li"); li.textContent = msg; if (err) li.className = "err";
+  $("#fwLog").prepend(li);
+}
+$("#fwFile").addEventListener("change", async (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const data = new Uint8Array(await f.arrayBuffer());
+  $("#fwFacts").hidden = false;
+  $("#fwName").textContent = f.name;
+  const nBlocks = Math.ceil(data.length / CHUNK);
+  $("#fwSize").textContent = `${data.length.toLocaleString()} bytes, ${nBlocks} ${nBlocks === 1 ? "block" : "blocks"}`;
+  const decodedFirst = ((data[0] - 0x8A) & 255) ^ 0x4A;
+  let kind, ok = true;
+  if (data.length === 0 || data.length > 0xF7800) { kind = "Too big for this panel."; ok = false; }
+  else if (data[0] === 0x48) { kind = "A raw image. Encode it with tools/fwcodec.py first."; ok = false; }
+  else if (decodedFirst !== 0x48) { kind = "Not a firmware update file for this panel."; ok = false; }
+  else {
+    const dec = data.map((b) => ((b - 0x8A) & 255) ^ 0x4A);
+    const txt = new TextDecoder("latin1").decode(dec);
+    const m = txt.match(/openpanel32 (\d+\.\d+)/);
+    kind = m ? `openpanel32 ${m[1]}` : "Firmware for this panel (not openpanel32, for example the vendor's)";
+  }
+  $("#fwKind").textContent = kind;
+  $("#fwKind").style.color = ok ? "" : "var(--red)";
+  fwData = ok ? data : null;
+  disarm();
+  $("#btnInstall").disabled = !ok;
+});
+async function frame(cmd, payload, expect, timeout = 20000) {
+  const r = await rawSend(packet(cmd, payload), timeout);
+  if (expect && !sameBytes([...r.slice(0, expect.length)], expect)) throw new Error(`Unexpected answer ${[...r].map((b) => b.toString(16).padStart(2, "0")).join(" ")}`);
+  return r;
+}
+$("#btnSelfTest").addEventListener("click", async () => {
+  if (!chWrite) { status("Connect the panel first.", true); return; }
+  if (!custom) { fwLog("The flash check needs openpanel32 on the panel.", true); return; }
+  busy = true;
+  try {
+    await chain;
+    const data = new Uint8Array(CHUNK).map((_, i) => (i * 37 + 11) & 255), good = crc32(data);
+    await frame(0xC000, [1, ...u32(~good >>> 0), ...u32(data.length)], [5, 0, 0, 0xC0, 1], 10000);
+    const t0 = performance.now();
+    const r = await frame(0xC001, [0, ...u32(good), ...u32(data.length), ...data], null, 30000);
+    const s = ((performance.now() - t0) / 1000).toFixed(1);
+    if (sameBytes([...r.slice(0, 5)], [5, 0, 1, 0xC0, 0])) fwLog(`Flash writing works (12 KB in ${s} s). The panel restarts in about 10 seconds.`);
+    else fwLog(`Unexpected answer after ${s} s. Don't install firmware on this panel.`, true);
+  } catch (e) { fwLog(e.message + " Don't install firmware until this check passes.", true); }
+  busy = false;
+});
+let armed = null;
+function disarm() { clearTimeout(armed); armed = null; $("#btnInstall").textContent = "Install firmware"; }
+$("#btnInstall").addEventListener("click", async () => {
+  if (!chWrite) { status("Connect the panel first.", true); return; }
+  if (!fwData || busy) return;
+  if (!armed) {
+    const v = await send(0x8005).catch(() => null);
+    if (!v) { fwLog("The panel didn't report its version. Nothing was installed.", true); return; }
+    const cur = `${v[4]}.${String(v[5]).padStart(2, "0")}`;
+    fwLog(`The panel runs ${cur}. Keep it powered and close to this computer, then click again to install.`);
+    $("#btnInstall").textContent = "Click again to install";
+    armed = setTimeout(disarm, 8000);
+    return;
+  }
+  disarm();
+  busy = true;
+  const data = fwData, n = Math.ceil(data.length / CHUNK), prog = $("#fwProgress");
+  prog.hidden = false; prog.max = n; prog.value = 0;
+  try {
+    await chain;
+    await frame(0xC000, [n, ...u32(crc32(data)), ...u32(data.length)], [5, 0, 0, 0xC0, 1], 10000);
+    fwLog("Update accepted. Sending blocks…");
+    for (let i = 0; i < n; i++) {
+      const chunk = data.slice(i * CHUNK, (i + 1) * CHUNK);
+      await frame(0xC001, [i, ...u32(crc32(chunk)), ...u32(chunk.length), ...chunk], [5, 0, 1, 0xC0, 1], 30000);
+      prog.value = i + 1;
+    }
+    fwLog("All blocks confirmed. The panel installs the firmware and restarts. Connect again in about 20 seconds.");
+  } catch (e) {
+    fwLog(`${e.message} Nothing was installed. The panel restarts on its own after 10 seconds.`, true);
+    busy = false;
+  }
+});
+</script>
+</body>
+</html>
