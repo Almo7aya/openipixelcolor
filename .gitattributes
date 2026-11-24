@@ -1,0 +1,6 @@
+* text=auto
+# shell scripts and the Makefile must keep LF, also in Windows checkouts (the build runs them in WSL)
+*.sh text eol=lf
+Makefile text eol=lf
+*.ld text eol=lf
+*.S text eol=lf
