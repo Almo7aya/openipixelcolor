@@ -2,8 +2,8 @@
 // the bottom. Commands are logged as they're sent (ble.js), except the ones that would flood it (the status
 // poll every 4 s, animation read-back and upload pieces, firmware blocks); errors from every notice;
 // connecting, installs, releases. The last 200 lines, in this page only.
-import { $, el, on } from "./core.js?v=7cd4bac";
-import { CMD } from "./protocol.js?v=7cd4bac";
+import { $, el, on } from "./core.js?v=7d6fc0c";
+import { CMD } from "./protocol.js?v=7d6fc0c";
 
 const MAX = 200;
 const NAMES = Object.fromEntries(Object.entries(CMD).map(([k, v]) => [v, k.toLowerCase().replace(/_/g, " ")]));

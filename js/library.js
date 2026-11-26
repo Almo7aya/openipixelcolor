@@ -1,16 +1,16 @@
 // Animations stored on the panel (cmds 0xF10C-0xF111, docs/PROTOCOL.md): list, names, play, delete, speed,
 // and the upload used by Create. Thumbnails and names of animations sent from this browser are remembered
 // by checksum, so the list can show them.
-import { $, el, on, emit, store, kb } from "./core.js?v=7cd4bac";
-import { CMD, MODE, u32, rd32 } from "./protocol.js?v=7cd4bac";
-import { panel, send, act, refreshSoon } from "./ble.js?v=7cd4bac";
-import { toast, toastError } from "./toast.js?v=7cd4bac";
-import { setAnimNamer } from "./device.js?v=7cd4bac";
-import { putAnim, getAnim } from "./idb.js?v=7cd4bac";
-import { previewInto } from "./animpreview.js?v=7cd4bac";
-import { readPreview, READBACK_LEVEL } from "./readback.js?v=7cd4bac";
-import { thumbOf } from "./create/import.js?v=7cd4bac";
-import OPA from "./create/anim-codec.js?v=7cd4bac";
+import { $, el, on, emit, store, kb } from "./core.js?v=7d6fc0c";
+import { CMD, MODE, u32, rd32 } from "./protocol.js?v=7d6fc0c";
+import { panel, send, act, refreshSoon } from "./ble.js?v=7d6fc0c";
+import { toast, toastError } from "./toast.js?v=7d6fc0c";
+import { setAnimNamer } from "./device.js?v=7d6fc0c";
+import { putAnim, getAnim } from "./idb.js?v=7d6fc0c";
+import { previewInto } from "./animpreview.js?v=7d6fc0c";
+import { readPreview, READBACK_LEVEL } from "./readback.js?v=7d6fc0c";
+import { thumbOf } from "./create/import.js?v=7d6fc0c";
+import OPA from "./create/anim-codec.js?v=7d6fc0c";
 
 const FW_MIN = 18, ALL = 0xFF, KEEP = 0xFE;
 const REASONS = {

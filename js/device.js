@@ -1,12 +1,12 @@
 // The device column (and the top strip on phones): connection, the panel preview (virtual.js draws what
 // the panel shows), power, brightness. The activity log under it is log.js.
-import { $, on, emit } from "./core.js?v=7cd4bac";
-import { CMD, MODE } from "./protocol.js?v=7cd4bac";
-import { panel, supported, connect, send, act } from "./ble.js?v=7cd4bac";
-import { EFFECTS, CLOCKS, MODES } from "./catalog.js?v=7cd4bac";
-import { drawDotText } from "./led.js?v=7cd4bac";
-import { initMirror } from "./mirror.js?v=7cd4bac";
-import { sizeText } from "./size.js?v=7cd4bac";
+import { $, on, emit } from "./core.js?v=7d6fc0c";
+import { CMD, MODE } from "./protocol.js?v=7d6fc0c";
+import { panel, supported, connect, send, act } from "./ble.js?v=7d6fc0c";
+import { EFFECTS, CLOCKS, MODES } from "./catalog.js?v=7d6fc0c";
+import { drawDotText } from "./led.js?v=7d6fc0c";
+import { initMirror } from "./mirror.js?v=7d6fc0c";
+import { sizeText } from "./size.js?v=7d6fc0c";
 
 let animName = (slot) => `slot ${slot + 1}`;
 export const setAnimNamer = (fn) => { animName = fn; };
@@ -42,7 +42,10 @@ export function initDevice() {
   initMirror();
   /* the name as on the banner: "openipixel" white, "color" in five colours from the logo's ring */
   const RING = ["#ff2222", "#e3ff22", "#22ff59", "#22acff", "#9122ff"];   /* tools/make_brand.py ring_hue() */
-  drawDotText($("#wordmark"), "openipixelcolor", 16, (i) => (i < 10 ? "#f0f4ff" : RING[i - 10]));
+  const phone = matchMedia("(max-width: 860px)");                  /* layout.css: the strip at the top */
+  const wordmark = () => drawDotText($("#wordmark"), "openipixelcolor", phone.matches ? 12 : 16, (i) => (i < 10 ? "#f0f4ff" : RING[i - 10]));
+  wordmark();
+  phone.addEventListener("change", wordmark);
   if (!supported) $("#noBt").hidden = false;
   $("#btnConnect").disabled = !supported;
   $("#btnConnect").addEventListener("click", () => connect());

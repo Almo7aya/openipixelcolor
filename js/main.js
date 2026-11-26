@@ -11,22 +11,22 @@
 //   create/*.js                Create: animation maker, picture, drawing
 //   firmware.js, views/*.js    Device: firmware install and update notice, storage, rotation, details, reset
 //   pwa.js (+sw.js)            the installed app: offline use, "new version ready", install button
-import { $, on } from "./core.js?v=7cd4bac";
-import { initNav, registerSub, startNav } from "./nav.js?v=7cd4bac";
-import { mirrorOwner } from "./mirror.js?v=7cd4bac";
-import { initVirtual, showLive } from "./virtual.js?v=7cd4bac";
-import { initDevice } from "./device.js?v=7cd4bac";
-import { initPlay } from "./play.js?v=7cd4bac";
-import { initLibrary } from "./library.js?v=7cd4bac";
-import { initText } from "./views/text.js?v=7cd4bac";
-import { initAnimate } from "./create/animate.js?v=7cd4bac";
-import { initPicture } from "./create/picture.js?v=7cd4bac";
-import { initDraw } from "./create/draw.js?v=7cd4bac";
-import { initFirmware } from "./firmware.js?v=7cd4bac";
-import { initDeviceView } from "./views/device.js?v=7cd4bac";
-import { initStorage } from "./views/storage.js?v=7cd4bac";
-import { initPwa } from "./pwa.js?v=7cd4bac";
-import { initLog } from "./log.js?v=7cd4bac";
+import { $, on } from "./core.js?v=7d6fc0c";
+import { initNav, registerSub, startNav } from "./nav.js?v=7d6fc0c";
+import { mirrorOwner } from "./mirror.js?v=7d6fc0c";
+import { initVirtual, showLive } from "./virtual.js?v=7d6fc0c";
+import { initDevice } from "./device.js?v=7d6fc0c";
+import { initPlay } from "./play.js?v=7d6fc0c";
+import { initLibrary } from "./library.js?v=7d6fc0c";
+import { initText } from "./views/text.js?v=7d6fc0c";
+import { initAnimate } from "./create/animate.js?v=7d6fc0c";
+import { initPicture } from "./create/picture.js?v=7d6fc0c";
+import { initDraw } from "./create/draw.js?v=7d6fc0c";
+import { initFirmware } from "./firmware.js?v=7d6fc0c";
+import { initDeviceView } from "./views/device.js?v=7d6fc0c";
+import { initStorage } from "./views/storage.js?v=7d6fc0c";
+import { initPwa } from "./pwa.js?v=7d6fc0c";
+import { initLog } from "./log.js?v=7d6fc0c";
 
 initLog();                                             /* first: it records what the others do */
 initNav();
