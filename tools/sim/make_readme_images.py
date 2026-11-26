@@ -75,13 +75,26 @@ def main():
 
     # each screen as a GIF, frames 40 ms apart as the simulator drew them; the last frame of the ones that
     # end (boot, update, saving) stays a moment before it loops. No glow, on a dark page: small files.
+    # The caption is drawn into the GIF, so the README can show the four as plain images (24 % wide each, in
+    # one row at any width) instead of a table, which GitHub makes scroll sideways when it's too wide.
     bg = (13, 15, 18, 255)
-    for label, name, step, hold in (("boot", "boot.gif", 1, 1600), ("welcome", "first-start.gif", 1, 40),
-                                    ("update", "update.gif", 2, 1800), ("saving", "saving.gif", 1, 1200)):
+    fnt = font(17, bold=True)
+    for label, name, step, hold, caption in (("boot", "boot.gif", 1, 1600, "Starting up"),
+                                             ("welcome", "first-start.gif", 1, 40, "First start"),
+                                             ("update", "update.gif", 2, 1800, "Installing firmware"),
+                                             ("saving", "saving.gif", 1, 1200, "Saving an animation")):
         src = f[label][::step]
         if src[-1] is not f[label][-1]:
             src.append(f[label][-1])                    # always end on the last frame (the tick, "saved")
-        frames = [led_panel(px, 6, 10, bg, glow=False).convert("RGB") for px in src]   # 212 px: shown at 200
+        frames = []
+        for px in src:
+            panel = led_panel(px, 6, 10, bg, glow=False).convert("RGB")      # 212 px wide
+            tile = Image.new("RGB", (panel.width, panel.height + 34), bg[:3])
+            tile.paste(panel, (0, 0))
+            d = ImageDraw.Draw(tile)
+            tw = d.textlength(caption, font=fnt)
+            d.text(((tile.width - tw) / 2, panel.height + 6), caption, font=fnt, fill=(170, 176, 186))
+            frames.append(tile)
         durations = [40 * step] * (len(frames) - 1) + [hold]
         frames[0].save(os.path.join(out, name), save_all=True, append_images=frames[1:],
                        duration=durations, loop=0, optimize=True)
