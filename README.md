@@ -70,6 +70,8 @@ controls the panel straight from Chrome or Edge over Web Bluetooth.
   screens for an app connecting, a firmware update and an animation being saved.
 - **Remembers everything** across power cycles, in a wear-friendly log in flash.
 - **Updates itself** from the web app, with an update notice when a new release is out.
+- **The web app installs as an app** (Chrome, Edge) and works offline once opened; a new version of it is
+  offered with a Reload button.
 - **Compatible with the stock app's basic commands** and with [pypixelcolor](https://github.com/lucagoc/pypixelcolor).
 
 ## Supported devices

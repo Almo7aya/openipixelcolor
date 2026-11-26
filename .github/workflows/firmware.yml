@@ -210,6 +210,8 @@ jobs:
               "https://github.com/$GITHUB_REPOSITORY/releases/tag/$TAG" > site/firmware/latest.json
             cat site/firmware/latest.json
           fi
+          # a new URL for every script and stylesheet of this deploy, and the service worker's file list
+          python3 tools/ci/stamp_site.py site "${GITHUB_SHA::7}"
           find site -type f | sort
 
       - name: Push to gh-pages

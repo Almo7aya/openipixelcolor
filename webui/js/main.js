@@ -9,6 +9,7 @@
 //   views/text.js (+preview)   Text
 //   create/*.js                Create: animation maker, picture, drawing
 //   firmware.js, views/*.js    Device: firmware install and update notice, storage, rotation, details, reset
+//   pwa.js (+sw.js)            the installed app: offline use, "new version ready", install button
 import { $, on } from "./core.js";
 import { initNav, registerSub, startNav } from "./nav.js";
 import { mirrorOwner } from "./mirror.js";
@@ -23,6 +24,7 @@ import { initDraw } from "./create/draw.js";
 import { initFirmware } from "./firmware.js";
 import { initDeviceView } from "./views/device.js";
 import { initStorage } from "./views/storage.js";
+import { initPwa } from "./pwa.js";
 
 initNav();
 initDevice();
@@ -37,6 +39,7 @@ registerSub("create", $("#createChips"), "animation");
 initFirmware();
 initDeviceView();
 initStorage();
+initPwa();
 
 /* the preview shows the panel, except while a view shows something not sent yet; leaving that view
    brings the panel back (the views' own "view" handlers run first and take the preview when it's theirs) */

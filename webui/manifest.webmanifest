@@ -1,4 +1,5 @@
 {
+  "id": "./",
   "name": "openipixelcolor",
   "short_name": "openipixelcolor",
   "description": "Control a 32 x 32 Bluetooth LED panel running openipixelcolor: effects, clocks, text, animations, firmware updates.",
