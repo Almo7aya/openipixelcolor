@@ -83,6 +83,9 @@ export function initPlay() {
     $$(".bar-opts").forEach((o) => { o.hidden = o.dataset.for !== sub; });     /* the options beside the tabs */
     if (sub === "panel" && libReady()) refreshLibrary();
   });
+  $("#nEffects").textContent = EFFECTS.length;           /* how many of each, beside the tab names */
+  $("#nClocks").textContent = CLOCKS.length;
+  on("library", (items) => { $("#nAnims").textContent = items.length || ""; });
   on("status", (r) => {
     const mode = r[5], flags = r[12];
     $$("#effectTiles .tile").forEach((t, i) => t.setAttribute("aria-pressed", String(mode === MODE.EFFECT && i === r[6])));

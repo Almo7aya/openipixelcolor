@@ -45,16 +45,13 @@
 
     <!-- ---------- Play ---------- -->
     <section class="view" id="view-play" aria-labelledby="h-play" hidden>
-      <header class="view-head">
-        <h2 id="h-play">Play</h2>
-        <p>Pick what the panel shows. It keeps showing it after you close this page.</p>
-      </header>
-      <div class="play-bar">
-        <div class="chips" id="playChips" role="tablist" aria-label="What to play">
-          <button class="chip" role="tab" data-sub="effects" data-panel="play-effects">Effects</button>
-          <button class="chip" role="tab" data-sub="clocks" data-panel="play-clocks">Clocks</button>
-          <button class="chip" role="tab" data-sub="panel" data-panel="play-panel">My animations</button>
-          <button class="chip" role="tab" data-sub="tools" data-panel="play-tools">Tools</button>
+      <h2 class="visually-hidden" id="h-play">Play</h2>
+      <div class="view-tabs">
+        <div class="tabs" id="playChips" role="tablist" aria-label="What to play">
+          <button class="tab" role="tab" data-sub="effects" data-panel="play-effects">Effects<span class="count" id="nEffects"></span></button>
+          <button class="tab" role="tab" data-sub="clocks" data-panel="play-clocks">Clocks<span class="count" id="nClocks"></span></button>
+          <button class="tab" role="tab" data-sub="panel" data-panel="play-panel">My animations<span class="count" id="nAnims"></span></button>
+          <button class="tab" role="tab" data-sub="tools" data-panel="play-tools">Tools</button>
         </div>
         <div class="bar-opts" data-for="effects">
           <label class="switch"><input type="checkbox" id="shuffle"> Shuffle</label>
@@ -182,14 +179,13 @@
 
     <!-- ---------- Create ---------- -->
     <section class="view" id="view-create" aria-labelledby="h-create" hidden>
-      <header class="view-head">
-        <h2 id="h-create">Create</h2>
-        <p>Make something of your own: an animation saved on the panel, a picture, or a drawing.</p>
-      </header>
-      <div class="chips" id="createChips" role="tablist" aria-label="What to make">
-        <button class="chip" role="tab" data-sub="animation" data-panel="create-animation">Animation</button>
-        <button class="chip" role="tab" data-sub="picture" data-panel="create-picture">Picture</button>
-        <button class="chip" role="tab" data-sub="draw" data-panel="create-draw">Draw</button>
+      <h2 class="visually-hidden" id="h-create">Create</h2>
+      <div class="view-tabs">
+        <div class="tabs" id="createChips" role="tablist" aria-label="What to make">
+          <button class="tab" role="tab" data-sub="animation" data-panel="create-animation">Animation</button>
+          <button class="tab" role="tab" data-sub="picture" data-panel="create-picture">Picture</button>
+          <button class="tab" role="tab" data-sub="draw" data-panel="create-draw">Draw</button>
+        </div>
       </div>
 
       <!-- animation maker -->

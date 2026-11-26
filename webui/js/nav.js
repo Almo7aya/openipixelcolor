@@ -14,7 +14,7 @@ export function registerSub(dest, root, def, onshow) {
     if (!buttons.some((b) => b.dataset.sub === sub)) sub = def;
     buttons.forEach((b) => {
       const on = b.dataset.sub === sub;
-      b.setAttribute(b.classList.contains("chip") ? "aria-selected" : "aria-pressed", String(on));
+      b.setAttribute(b.getAttribute("role") === "tab" ? "aria-selected" : "aria-pressed", String(on));
       const panel = $("#" + b.dataset.panel);
       if (panel) panel.hidden = !on;
     });

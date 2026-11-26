@@ -97,10 +97,25 @@ progress { width: 100%; height: 8px; accent-color: var(--ink); }
   content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; background: var(--ok); vertical-align: 1px;
 }
 .tile .meta { padding: 0 2px; font-size: 12.5px; color: var(--muted); font-family: var(--mono); }
-.play-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; }
-.play-bar .chips { flex: 1; }
-.bar-opts { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+/* a view's parts as headline tabs on one hairline (Play, Create): the row is the view's title; the one shown
+   is bright and underlined, the others muted; options for the part shown sit at the right end */
+.view-tabs { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 24px; border-bottom: 1px solid var(--line); }
+.tabs { flex: 1; display: flex; gap: 28px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  position: relative; flex: none; padding: 2px 0 13px; border: 0; background: none; cursor: pointer;
+  color: var(--faint); font: 600 22px/1.25 var(--font); letter-spacing: -.01em; white-space: nowrap;
+  transition: color .15s var(--ease);
+}
+.tab:hover { color: var(--muted); }
+.tab[aria-selected="true"] { color: var(--ink); }
+.tab[aria-selected="true"]::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; border-radius: 2px; background: var(--ink); }
+.tab:focus-visible { outline-offset: 4px; border-radius: 4px; }
+.tab .count { margin-left: 7px; font: 500 13px var(--mono); color: var(--faint); vertical-align: 3px; }
+.tab .count:empty { display: none; }
+.bar-opts { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding-bottom: 11px; }
 .bar-opts select { width: auto; min-height: 34px; padding: 4px 8px; }
+@media (max-width: 640px) { .tab { font-size: 18px; } .tabs { gap: 20px; } }
 .screen {
   position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden;
   background: radial-gradient(circle, #1b1e23 42%, transparent 46%) 0 0 / 3.125% 3.125%, #07080a;
