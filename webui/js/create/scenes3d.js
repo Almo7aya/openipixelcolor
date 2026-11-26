@@ -367,6 +367,322 @@ SCENES.die = {
   },
 };
 
+/* ---- second set ---- */
+SCENES.knot = {
+  name: "Torus knot", color: "#ff9a2e", cam: [0, 0.5, 2.6], look: [0, 0, 0],
+  setup(p) { this.m = rotation(0.9 + 0.3 * sin(TAU * p), TAU * p, 0); },
+  map(x, y, z) {                                                     /* a (2, 3) knot: two twisted sheets of a torus */
+    T(this.m, x, y, z);
+    const a = Math.atan2(Z, X), lx = len2(X, Z) - 0.62, ly = Y;
+    let d = 9;
+    for (let k = 0; k < 2; k++) {
+      const ang = (a + TAU * k) * 1.5, c = cos(ang), s = sin(ang);
+      d = min(d, len2(c * lx - s * ly - 0.26, s * lx + c * ly) - 0.1);
+    }
+    return d * 0.7;
+  },
+  paint(x, y, z, nx, ny, nz, c) { S.shine = 0.8; T(this.m, x, y, z); return hsv(hueOf(c) + Math.atan2(Z, X) / TAU * 0.3, 0.75, 1); },
+};
+
+const RUBIK = [[1, 0.1, 0.1], [1, 0.5, 0], [1, 1, 1], [1, 0.85, 0], [0.1, 0.75, 0.2], [0.1, 0.35, 1]];   /* +x -x +y -y +z -z */
+SCENES.rubik = {
+  name: "Rubik's cube", color: "#ffffff", cam: [0, 1.0, 2.4], look: [0, 0, 0],
+  setup(p) {
+    this.m = rotation(0.5, 0.7 + TAU * p, 0);
+    const q = clamp((p * 2) % 1 * 1.25, 0, 1);                       /* the top layer turns twice a loop */
+    this.top = rotation(0, (q * q * (3 - 2 * q)) * PI / 2, 0);
+  },
+  cubes(x, y, z, lo, hi) {
+    const s = 0.36, cx = clamp(round(x / s), -1, 1), cy = clamp(round(y / s), lo, hi), cz = clamp(round(z / s), -1, 1);
+    return sdBox(x - cx * s, y - cy * s, z - cz * s, 0.165, 0.165, 0.165, 0.04);
+  },
+  map(x, y, z) {
+    T(this.m, x, y, z);
+    const bx = X, by = Y, bz = Z;
+    T(this.top, bx, by, bz);
+    return min(this.cubes(bx, by, bz, -1, 0), this.cubes(X, Y, Z, 1, 1));
+  },
+  paint(x, y, z, nx, ny, nz, c) {
+    T(this.m, x, y, z); let px = X, py = Y, pz = Z;
+    T(this.m, nx, ny, nz); let qx = X, qy = Y, qz = Z;
+    if (py > 0.2) { T(this.top, px, py, pz); px = X; py = Y; pz = Z; T(this.top, qx, qy, qz); qx = X; qy = Y; qz = Z; }
+    const s = 0.36, fx = px - round(px / s) * s, fy = py - round(py / s) * s, fz = pz - round(pz / s) * s;
+    S.shine = 0.5;
+    const ax = abs(qx), ay = abs(qy), az = abs(qz);
+    const face = ax > ay && ax > az ? (qx > 0 ? 0 : 1) : ay > az ? (qy > 0 ? 2 : 3) : (qz > 0 ? 4 : 5);
+    const outer = face < 2 ? abs(px) > 0.5 : face < 4 ? abs(py) > 0.5 : abs(pz) > 0.5;
+    const edge = max(face < 2 ? 0 : abs(fx), face >= 2 && face < 4 ? 0 : abs(fy), face >= 4 ? 0 : abs(fz)) > 0.135;
+    return outer && !edge ? RUBIK[face] : [0.03, 0.03, 0.04];
+  },
+};
+
+SCENES.mandelbulb = {
+  name: "Mandelbulb", color: "#ff7ad9", cam: [0, 0.75, 1.95], look: [0, 0, 0],
+  setup(p) { this.m = rotation(0.65, TAU * p, 0); },
+  bulb(x, y, z, trap) {
+    let wx = x, wy = y, wz = z, m = wx * wx + wy * wy + wz * wz, dz = 1, tr = 9;
+    for (let i = 0; i < 5; i++) {
+      const r = sqrt(m);
+      dz = 8 * pow(r, 7) * dz + 1;
+      const b = 8 * Math.acos(clamp(wy / r, -1, 1)), a = 8 * Math.atan2(wx, wz), r8 = pow(r, 8);
+      wx = x + r8 * sin(b) * sin(a); wy = y + r8 * cos(b); wz = z + r8 * sin(b) * cos(a);
+      m = wx * wx + wy * wy + wz * wz;
+      tr = min(tr, m);
+      if (m > 256) break;
+    }
+    return trap ? tr : 0.25 * Math.log(m) * sqrt(m) / dz;
+  },
+  map(x, y, z) { T(this.m, x / 0.85, y / 0.85, z / 0.85); return this.bulb(X, Y, Z, false) * 0.85; },
+  paint(x, y, z, nx, ny, nz, c) {                                  /* the orbit trap: deep folds darker and shifted */
+    T(this.m, x / 0.85, y / 0.85, z / 0.85);
+    S.shine = 0.5;
+    const t = clamp(this.bulb(X, Y, Z, true) * 1.4, 0, 1);
+    return hsv(hueOf(c) - 0.12 + t * 0.14, 0.8, 0.3 + 0.7 * t);
+  },
+};
+
+SCENES.gears = {
+  name: "Gears", color: "#c9ced8", cam: [0, 0.25, 2.5], look: [0, 0, 0], light: [-0.5, 0.6, 0.8],
+  setup(p) { this.a = TAU * p / 5; },                                 /* two teeth a loop: seamless */
+  gear(x, y, z, ang) {
+    const r = len2(x, y), sector = TAU / 10, a = Math.atan2(y, x) + ang;
+    const la = a - sector * round(a / sector), tx = r * cos(la), ty = r * sin(la);
+    const d2 = min(r - 0.44, sdBox(tx - 0.5, ty, 0, 0.09, 0.075, 1, 0.02));
+    return max(max(d2, 0.12 - r), abs(z) - 0.1);
+  },
+  map(x, y, z) { return min(this.gear(x + 0.5, y, z, this.a), this.gear(x - 0.5, y, z, -this.a + PI / 10)); },
+  paint(x, y, z, nx, ny, nz, c) { S.shine = 0.9; return x < 0 ? c : [c[0] * 1, c[1] * 0.75, c[2] * 0.35]; },
+};
+
+SCENES.gyroscope = {
+  name: "Gyroscope", color: "#ffd04a", cam: [0, 0.3, 2.4], look: [0, 0, 0],
+  setup(p) { const a = TAU * p; this.r = [rotation(a, 0, 0), rotation(0, 0, a * 2), rotation(a, a * 2, 0)]; },
+  map(x, y, z) {
+    let d = sdSphere(x, y, z, 0.16);
+    const R = [0.8, 0.64, 0.48];
+    for (let i = 0; i < 3; i++) { T(this.r[i], x, y, z); d = min(d, len2(len2(X, Z) - R[i], Y) - 0.035); }
+    return d;
+  },
+  paint(x, y, z, nx, ny, nz, c) {
+    S.shine = 1;
+    const r = len3(x, y, z);
+    return r < 0.2 ? [0.9, 0.2, 0.2] : r > 0.72 ? c : r > 0.56 ? [0.75, 0.78, 0.85] : [0.3, 0.6, 1];
+  },
+};
+
+SCENES.spring = {
+  name: "Spring", color: "#5fe0ff", cam: [0, 0.2, 2.7], look: [0, -0.05, 0],
+  setup(p) { this.k = 0.5 + 0.5 * cos(TAU * p * 2); this.pitch = 0.11 + 0.08 * this.k; this.h = this.pitch * 5; },
+  map(x, y, z) {
+    const yy = y + 0.75, r = len2(x, z), a = Math.atan2(z, x) / TAU;
+    if (yy > this.h + 0.2 || yy < -0.2) return max(abs(yy - this.h / 2) - this.h / 2 - 0.15, r - 0.6);
+    let f = yy / this.pitch - a;
+    f -= round(f);
+    const coil = len2(r - 0.42, f * this.pitch) - 0.06;
+    const cap = max(abs(yy - (this.h + 0.12)) - 0.05, r - 0.5);            /* a weight on top */
+    return min(max(coil * 0.7, -yy, yy - this.h), cap);
+  },
+  paint(x, y, z, nx, ny, nz, c) { S.shine = 1; return y + 0.75 > this.h + 0.04 ? [0.9, 0.3, 0.25] : c; },
+};
+
+SCENES.pawn = {
+  name: "Chess pawn", color: "#f2e6d0", cam: [0, 0.35, 2.4], look: [0, -0.1, 0], light: [-0.6, 0.7, 0.4],
+  setup(p) { this.m = rotation(0.15, TAU * p, 0); },
+  map(x, y, z) {
+    T(this.m, x, y, z);
+    const r = len2(X, Z);
+    const base = sdCyl(X, Y + 0.72, Z, 0.46, 0.08, 0.03);
+    const ring = len2(r - 0.36, Y + 0.6) - 0.06;
+    const t = clamp((Y + 0.6) / 0.8, 0, 1), body = max(r - mix(0.32, 0.11, t * t * 0.6 + t * 0.4), abs(Y + 0.2) - 0.4);
+    const collar = sdCyl(X, Y - 0.22, Z, 0.21, 0.035, 0.02);
+    const head = sdSphere(X, Y - 0.45, Z, 0.2);
+    return smin(smin(min(base, ring), body * 0.9, 0.06), min(collar, head), 0.04);
+  },
+  paint(x, y, z, nx, ny, nz, c) { S.shine = 0.7; T(this.m, x, y, z); const g = 0.9 + 0.1 * sin(X * 40 + noise3(X * 6, Y * 6, Z * 6) * 6); return [c[0] * g, c[1] * g, c[2] * g]; },
+};
+
+function sdPyramid(px, py, pz, h) {                                  /* base 1 x 1 on y = 0, height h */
+  const m2 = h * h + 0.25;
+  let ax = abs(px), az = abs(pz);
+  if (az > ax) { const t = ax; ax = az; az = t; }
+  ax -= 0.5; az -= 0.5;
+  const qx = az, qy = h * py - 0.5 * ax, qz = h * ax + 0.5 * py;
+  const s = max(-qx, 0), t = clamp((qy - 0.5 * az) / (m2 + 0.25), 0, 1);
+  const a = m2 * (qx + s) * (qx + s) + qy * qy, b = m2 * (qx + 0.5 * t) * (qx + 0.5 * t) + (qy - m2 * t) * (qy - m2 * t);
+  const d2 = min(qy, -qx * m2 - qy * 0.5) > 0 ? 0 : min(a, b);
+  return sqrt((d2 + qz * qz) / m2) * Math.sign(max(qz, -py));
+}
+SCENES.pyramid = {
+  name: "Pyramid", color: "#e8b866", cam: [0, 0.4, 2.6], look: [0, 0.05, 0], light: [-0.6, 0.45, -0.5], shadows: true,
+  setup(p) { const a = TAU * p; this.cam = [2.6 * sin(a), 0.45, 2.6 * cos(a)]; this.look = [0, 0.05, 0]; },
+  dune(x, z) { return -0.42 + 0.06 * sin(x * 2.1 + z * 0.7) + 0.04 * sin(z * 3.3 - x); },
+  map(x, y, z) { return min(sdPyramid(x / 1.3, (y + 0.42) / 1.3, z / 1.3, 0.75) * 1.3, (y - this.dune(x, z)) * 0.8); },
+  paint(x, y, z, nx, ny, nz, c) {
+    S.shine = 0.05;
+    if (y < this.dune(x, z) + 0.01) return [0.85, 0.65, 0.38];
+    return (floor((y + 0.42) * 14) & 1) ? c : [c[0] * 0.88, c[1] * 0.85, c[2] * 0.8];   /* courses of stone */
+  },
+  sky: (dx, dy) => { const k = clamp(dy * 1.6, 0, 1); return [mix(0.95, 0.25, k), mix(0.65, 0.45, k), mix(0.4, 0.9, k)]; },
+};
+
+SCENES.city = {
+  name: "Night city", color: "#ffcf5a", cam: [0, 1.2, 0], look: [0, 0.7, 1], fog: 0.12,
+  setup(p) { this.cam = [0.5, 1.25, 6 * p]; this.look = [0.5, 0.95, 6 * p + 1]; },
+  height(i, j) { return 0.25 + 1.1 * hash3(i, 7, j) ** 2; },
+  map(x, y, z) {
+    const i = floor(x), j = floor(z), fx = x - i - 0.5, fz = z - j - 0.5, h = this.height(i, j);
+    const b = i === 0 ? 9 : sdBox(fx, y - h / 2, fz, 0.3, h / 2, 0.3, 0);   /* column 0 is the street */
+    return min(b * 0.8, y, 0.5 - max(abs(fx), abs(fz)) + 0.2);            /* no step past the next block's building */
+  },
+  paint(x, y, z, nx, ny, nz, c) {
+    if (y < 0.01) { S.shine = 0.3; return abs(x - 0.5) < 0.04 && fract(z * 3) < 0.5 ? [0.5, 0.5, 0.4] : [0.05, 0.05, 0.07]; }
+    S.shine = 0.2;
+    const u = abs(nx) > 0.5 ? z : x, wx = floor(u * 5), wy = floor(y * 4.5);     /* big windows: 32 LEDs */
+    const lit = hash3(wx, wy, floor(abs(nx) > 0.5 ? x : z)) > 0.62 && fract(u * 5) > 0.35 && fract(y * 4.5) > 0.4;
+    if (lit && ny < 0.5) { S.glow = 1.4; return c; }
+    return [0.07, 0.07, 0.11];
+  },
+  sky: (dx, dy) => { const k = clamp(dy * 3 + 0.2, 0, 1); return [mix(0.35, 0.02, k), mix(0.12, 0.02, k), mix(0.3, 0.08, k)]; },
+};
+
+SCENES.solar = {
+  name: "Solar system", color: "#ffd23a", cam: [0, 1.5, 2.1], look: [0, -0.1, 0],
+  setup(p) {
+    const P = [[0.48, 3, 0.07, [0.7, 0.7, 0.75]], [0.72, 2, 0.1, [0.3, 0.6, 1]], [1.0, 1, 0.12, [1, 0.45, 0.3]]];
+    this.pl = P.map(([r, k, s, col], i) => { const a = TAU * p * k + i * 2; return [r * cos(a), 0, r * sin(a), s, col]; });
+  },
+  map(x, y, z) {
+    let d = sdSphere(x, y, z, 0.24);
+    for (const [px, py, pz, s] of this.pl) d = min(d, sdSphere(x - px, y - py, z - pz, s));
+    for (const r of [0.48, 0.72, 1.0]) d = min(d, len2(len2(x, z) - r, y) - 0.006);
+    return d;
+  },
+  paint(x, y, z, nx, ny, nz, c) {
+    if (len3(x, y, z) < 0.26) { S.glow = 1.2; S.shine = 0; return c; }
+    for (const [px, py, pz, s, col] of this.pl) if (len3(x - px, y - py, z - pz) < s + 0.01) { S.shine = 0.3; return col; }
+    S.glow = 0.6; return [0.3, 0.3, 0.4];
+  },
+  point: [0, 0, 0],                                                   /* lit by the sun in the middle */
+};
+
+SCENES.cradle = {
+  name: "Newton's cradle", color: "#cfd6e2", cam: [0, 0.2, 2.6], look: [0, 0.05, 0], light: [-0.5, 0.7, 0.6],
+  setup(p) {
+    const s = sin(TAU * p), A = 0.65;
+    this.ang = [-A * max(0, s), 0, 0, 0, A * max(0, -s)];             /* the left ball, then the right one */
+    this.balls = this.ang.map((a, i) => { const px = -0.6 + i * 0.3; return [px + 0.8 * sin(a), 0.85 - 0.8 * cos(a), 0, px]; });
+  },
+  map(x, y, z) {
+    let d = sdCapsule(x, y, z, -0.9, 0.85, 0, 0.9, 0.85, 0, 0.03);
+    for (const [bx, by, bz, px] of this.balls)
+      d = min(d, sdSphere(x - bx, y - by, z - bz, 0.145), sdCapsule(x, y, z, px, 0.85, 0, bx, by, bz, 0.008));
+    return d;
+  },
+  paint(x, y, z, nx, ny, nz, c) { S.shine = 1; return y > 0.8 ? [0.35, 0.25, 0.2] : c; },
+};
+
+SCENES.wavecubes = {
+  name: "Wave of cubes", color: "#47b2ff", cam: [2.0, 2.0, 2.0], look: [0, 0, 0],
+  setup(p) { this.t = TAU * p; },
+  h(i, j) { return 0.25 + 0.2 * sin(len2(i, j) * 1.1 - this.t); },
+  map(x, y, z) {
+    const s = 0.3, i = clamp(round(x / s), -4, 4), j = clamp(round(z / s), -4, 4), h = this.h(i, j);
+    return sdBox(x - i * s, y - h / 2 + 0.3, z - j * s, 0.13, h / 2 + 0.01, 0.13, 0.02) * 0.7;
+  },
+  paint(x, y, z, nx, ny, nz, c) { S.shine = 0.5; return hsv(hueOf(c) + (y + 0.3) * 0.5, 0.75, 1); },
+};
+
+SCENES.rocket = {
+  name: "Rocket", color: "#f04848", cam: [0, 0.1, 2.5], look: [0, 0, 0],
+  setup(p) { this.bob = 0.04 * sin(TAU * p * 2); this.m = rotation(0, TAU * p, 0.25); this.p = p; },
+  map(x, y, z) {
+    T(this.m, x, y - this.bob, z);
+    const r = len2(X, Z);
+    const body = smin(sdCapsule(X, Y, Z, 0, -0.45, 0, 0, 0.25, 0, 0.2), sdCapsule(X, Y, Z, 0, 0.25, 0, 0, 0.55, 0, 0.06), 0.25);
+    let fins = 9;
+    for (let k = 0; k < 3; k++) { const a = k * TAU / 3, c = cos(a), s = sin(a); fins = min(fins, sdBox(c * X + s * Z - 0.25, Y + 0.45, -s * X + c * Z, 0.13, 0.16, 0.015, 0.01)); }
+    const flame = max(r - 0.12 * clamp((-Y - 0.5) / -0.4 + 1, 0, 1) - 0.02, max(-Y - 1.0 + 0.1 * sin(TAU * this.p * 6), Y + 0.5));
+    return min(body, fins, flame);
+  },
+  paint(x, y, z, nx, ny, nz, c) {
+    T(this.m, x, y - this.bob, z);
+    if (Y < -0.55) { S.glow = 1.3; S.shine = 0; return Y < -0.75 ? [1, 0.35, 0.05] : [1, 0.85, 0.3]; }
+    S.shine = 0.8;
+    if (abs(Y + 0.45) < 0.17 && len2(X, Z) > 0.18) return c;                 /* fins */
+    if (len2(Y - 0.08, Z * 0 + (X - 0.17)) < 0.08 && X > 0) return [0.3, 0.7, 1];   /* window */
+    return Y > 0.38 ? c : [0.92, 0.92, 0.95];
+  },
+};
+
+SCENES.snowman = {
+  name: "Snowman", color: "#e23b3b", cam: [0, 0.3, 2.5], look: [0, -0.05, 0], light: [-0.6, 0.6, 0.6],
+  setup(p) { this.m = rotation(0, 0.6 * sin(TAU * p), 0); },
+  map(x, y, z) {
+    T(this.m, x, y, z);
+    let d = smin(smin(sdSphere(X, Y + 0.48, Z, 0.42), sdSphere(X, Y - 0.12, Z, 0.3), 0.05), sdSphere(X, Y - 0.55, Z, 0.21), 0.04);
+    d = min(d, sdCapsule(X, Y, Z, 0, 0.53, 0.19, 0, 0.5, 0.4, 0.035));                         /* carrot */
+    d = min(d, len2(len2(X, Z) - 0.22, Y - 0.34) - 0.05);                                       /* scarf */
+    d = min(d, sdCyl(X, Y - 0.8, Z, 0.16, 0.1, 0.01), sdCyl(X, Y - 0.71, Z, 0.25, 0.015, 0.01));  /* hat */
+    return min(d, y + 0.9);
+  },
+  paint(x, y, z, nx, ny, nz, c) {
+    if (y < -0.89) { S.shine = 0.1; return [0.85, 0.9, 1]; }
+    T(this.m, x, y, z);
+    S.shine = 0.2;
+    if (Y > 0.69) return [0.08, 0.08, 0.1];                                                     /* hat */
+    if (Z > 0.18 && abs(Y - 0.52) < 0.04 && Z > 0.2) return [1, 0.5, 0.1];                      /* carrot */
+    if (abs(Y - 0.34) < 0.07 && len2(X, Z) > 0.2) return c;                                     /* scarf */
+    const eye = len3(abs(X) - 0.08, Y - 0.62, Z - 0.18) < 0.035, button = abs(X) < 0.04 && Z > 0.25 && (abs(Y - 0.15) < 0.035 || abs(Y - 0.0) < 0.035);
+    return eye || button ? [0.05, 0.05, 0.08] : [0.95, 0.97, 1];
+  },
+};
+
+SCENES.tree = {
+  name: "Christmas tree", color: "#1fa84a", cam: [0, 0.2, 2.6], look: [0, 0.05, 0],
+  setup(p) { this.m = rotation(0, TAU * p, 0); this.p = p; },
+  cone(x, y, z, y0, r0, hgt) { const r = len2(x, z), t = clamp((y - y0) / hgt, 0, 1); return max(r - r0 * (1 - t), abs(y - y0 - hgt / 2) - hgt / 2) * 0.7; },
+  map(x, y, z) {
+    T(this.m, x, y, z);
+    let d = min(this.cone(X, Y, Z, -0.55, 0.62, 0.6), this.cone(X, Y, Z, -0.2, 0.5, 0.55), this.cone(X, Y, Z, 0.12, 0.36, 0.5));
+    d = min(d, sdCyl(X, Y + 0.68, Z, 0.1, 0.13, 0.01), sdOcta(X, Y - 0.68, Z, 0.13));
+    return d;
+  },
+  paint(x, y, z, nx, ny, nz, c) {
+    T(this.m, x, y, z);
+    S.shine = 0.3;
+    if (Y > 0.6) { S.glow = 1; S.shine = 1; return [1, 0.85, 0.2]; }                                   /* star */
+    if (Y < -0.55) return [0.45, 0.25, 0.1];                                                          /* trunk */
+    const a = Math.atan2(Z, X), cell = floor(a / TAU * 8 + 4) * 31 + floor(Y * 6);
+    const ball = fract(a / TAU * 8 + 0.5 * (floor(Y * 6) & 1)) < 0.28 && fract(Y * 6) < 0.32;
+    if (ball) { const h = hash3(cell, 3, 1); S.glow = (h * 7 + this.p * 4) % 1 < 0.5 ? 0.7 : 0; S.shine = 1; return hsv(h, 0.8, 1); }
+    return c;
+  },
+};
+
+SCENES.icecream = {
+  name: "Ice cream", color: "#ff8fc0", cam: [0, 0.35, 2.4], look: [0, 0.05, 0],
+  setup(p) { this.m = rotation(0.1, TAU * p, 0); },
+  map(x, y, z) {
+    T(this.m, x, y, z);
+    const r = len2(X, Z), t = clamp((Y + 0.85) / 0.75, 0, 1);
+    const cone = max(r - 0.3 * t, max(-Y - 0.85, Y + 0.1)) * 0.8;
+    const drip = sdCapsule(X, Y, Z, 0.2, -0.05, 0.15, 0.2, -0.22, 0.17, 0.05);
+    const scoop1 = smin(sdSphere(X, Y - 0.05, Z, 0.32), drip, 0.08), scoop2 = sdSphere(X, Y - 0.42, Z, 0.25);
+    return min(cone, smin(scoop1, scoop2, 0.05), sdSphere(X, Y - 0.72, Z, 0.07));
+  },
+  paint(x, y, z, nx, ny, nz, c) {
+    T(this.m, x, y, z);
+    if (Y > 0.65) { S.shine = 1; return [0.9, 0.05, 0.1]; }                                         /* cherry */
+    if (Y < -0.12 && len2(X, Z) < 0.32) {                                                            /* waffle */
+      S.shine = 0.1;
+      const a = Math.atan2(Z, X);
+      return (fract(a * 2 + Y * 6) < 0.15 || fract(a * 2 - Y * 6) < 0.15) ? [0.6, 0.35, 0.12] : [0.9, 0.62, 0.3];
+    }
+    S.shine = 0.4;
+    return Y > 0.2 ? [0.55, 0.3, 0.18] : c;                                                          /* chocolate on strawberry */
+  },
+};
+
 export const SCENE_LIST = Object.entries(SCENES).map(([id, s]) => [id, s.name]);
 export const sceneColor = (id) => (SCENES[id] || SCENES.donut).color;
 
@@ -418,7 +734,8 @@ function renderFrame(sc, w, h, bg, color, ss) {
             const nl = len3(nx, ny, nz) || 1; nx /= nl; ny /= nl; nz /= nl;
             S.shine = 0.5; S.glow = 0;
             const alb = sc.paint(x, y, z, nx, ny, nz, color);
-            const lx = sc.headlight ? -dx : L[0], ly = sc.headlight ? -dy : L[1], lz = sc.headlight ? -dz : L[2];
+            let lx = sc.headlight ? -dx : L[0], ly = sc.headlight ? -dy : L[1], lz = sc.headlight ? -dz : L[2];
+            if (sc.point) { lx = sc.point[0] - x; ly = sc.point[1] - y; lz = sc.point[2] - z; const ll = len3(lx, ly, lz) || 1; lx /= ll; ly /= ll; lz /= ll; }
             const diff = max(0, nx * lx + ny * ly + nz * lz);
             const sh = sc.shadows && diff > 0 ? shadow(sc, x + nx * 0.01, y + ny * 0.01, z + nz * 0.01, lx, ly, lz) : 1;
             const rd = dx * nx + dy * ny + dz * nz, rx = dx - 2 * rd * nx, ry = dy - 2 * rd * ny, rz = dz - 2 * rd * nz;
