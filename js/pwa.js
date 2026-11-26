@@ -2,9 +2,9 @@
 // version of the web app is ready (never in the middle of a firmware install), and "Install as an app"
 // where the browser offers it. On this computer (version "dev") there is no service worker: what you edit
 // is what you get.
-import { $ } from "./core.js?v=06a6a24";
-import { panel } from "./ble.js?v=06a6a24";
-import { toast, toastError } from "./toast.js?v=06a6a24";
+import { $ } from "./core.js?v=b9006af";
+import { panel } from "./ble.js?v=b9006af";
+import { toast, toastError } from "./toast.js?v=b9006af";
 
 const VERSION = document.querySelector('meta[name="oipc-version"]')?.content || "dev";
 
@@ -35,7 +35,12 @@ export function initPwa() {
       const w = reg.installing;
       if (w) w.addEventListener("statechange", () => { if (w.state === "installed" && navigator.serviceWorker.controller) offer(w); });
     });
-    setInterval(() => reg.update().catch(() => {}), 60 * 60 * 1000);      /* look for a new version hourly */
+    /* browsers look for a new version only when the page is opened: look while it stays open too, every
+       5 minutes and whenever the tab comes back into view or the computer back online */
+    const check = () => reg.update().catch(() => {});
+    setInterval(check, 5 * 60 * 1000);
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") check(); });
+    window.addEventListener("online", check);
   }).catch(() => { /* no offline use; the page still works */ });
 }
 
