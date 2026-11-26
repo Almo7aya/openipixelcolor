@@ -3,6 +3,7 @@
 //   core.js, protocol.js       helpers; the Bluetooth protocol
 //   ble.js                     the connection and the request queue (panel state lives in `panel`)
 //   device.js, mirror.js       the device column: connection, preview, power, brightness
+//   log.js                     the activity log under it
 //   virtual.js (+panel.wasm)   the preview of what the panel shows: the firmware's own code, in the browser
 //   nav.js                     destinations and sub-views
 //   play.js, library.js        Play: effects, clocks, animations on the panel, tools
@@ -25,7 +26,9 @@ import { initFirmware } from "./firmware.js";
 import { initDeviceView } from "./views/device.js";
 import { initStorage } from "./views/storage.js";
 import { initPwa } from "./pwa.js";
+import { initLog } from "./log.js";
 
+initLog();                                             /* first: it records what the others do */
 initNav();
 initDevice();
 initVirtual();

@@ -397,7 +397,11 @@
 
   <!-- ============================== device column ============================== -->
   <aside class="device" aria-label="Panel">
-    <div class="dev-brand"><img src="icons/logo.svg" width="30" height="30" alt=""><canvas class="wordmark" id="wordmark" role="img" aria-label="openipixelcolor"></canvas></div>
+    <div class="dev-brand">
+      <img src="icons/logo.svg" width="30" height="30" alt=""><canvas class="wordmark" id="wordmark" role="img" aria-label="openipixelcolor"></canvas>
+      <button class="btn small icon-btn" id="installApp" title="Install this page as an app: it opens in its own window and works offline" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg>Install app</button>
+    </div>
     <div class="preview">
       <div class="bezel">
         <canvas id="mirror" width="512" height="512" aria-label="Panel preview"></canvas>
@@ -418,13 +422,19 @@
       <div class="dev-controls" id="devControls" hidden>
         <label class="dev-row"><span>Power</span><span class="switch"><input type="checkbox" id="power" checked aria-label="Panel on"></span></label>
         <label class="dev-row"><span>Brightness</span><input type="range" id="bright" min="0" max="100" step="5" value="80"><output id="brightOut">80%</output></label>
-        <button class="dev-row dev-key" id="btnKey" title="Same as a short press on the panel's button"><span>Panel button</span><span class="note">Press</span></button>
       </div>
     </section>
     <div class="banner" id="noBt" hidden>This browser can't use Bluetooth. Open this page in Chrome or Edge on a computer or Android phone.</div>
+    <!-- what the page did with the panel (js/log.js) -->
+    <section class="dev-log" aria-label="Activity">
+      <div class="dev-log-head"><h2>Activity</h2><button class="btn ghost small" id="logClear">Clear</button></div>
+      <ol class="log-list" id="logList" aria-live="off"></ol>
+    </section>
     <footer class="dev-foot">
-      <button class="btn small" id="installApp" hidden>Install as an app</button>
-      <a href="https://github.com/Almo7aya/openipixelcolor" target="_blank" rel="noopener">openipixelcolor on GitHub</a>
+      <a class="gh" href="https://github.com/Almo7aya/openipixelcolor" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+        openipixelcolor on GitHub</a>
+      <span class="note" id="appVersion"></span>
     </footer>
   </aside>
 </div>

@@ -10,6 +10,7 @@ const VERSION = document.querySelector('meta[name="oipc-version"]')?.content || 
 
 export function initPwa() {
   installButton();
+  $("#appVersion").textContent = VERSION === "dev" ? "this computer's copy" : `web app ${VERSION}`;
   if (!("serviceWorker" in navigator)) return;
   if (VERSION === "dev") {                             /* a service worker from the published site would get in the way */
     navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister())).catch(() => {});

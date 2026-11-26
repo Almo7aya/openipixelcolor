@@ -1,6 +1,7 @@
 // Notices in one live region. Errors stay until closed and can carry an action (Connect, Retry...), shown on
 // the same line; confirmations go away by themselves. toast() returns { update(text), close(), node }.
 import { $, el } from "./core.js";
+import { log } from "./log.js";
 
 export function toast(text, { kind = "info", title = "", action = null, timeout } = {}) {
   const box = $("#toasts");
@@ -15,4 +16,4 @@ export function toast(text, { kind = "info", title = "", action = null, timeout 
   const timer = ms ? setTimeout(close, ms) : 0;
   return { update: (t) => { msg.lastChild.textContent = t; }, close, node };
 }
-export const toastError = (text, action) => toast(text, { kind: "err", action });
+export const toastError = (text, action) => { log(text, "err"); return toast(text, { kind: "err", action }); };

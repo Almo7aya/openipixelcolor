@@ -1,5 +1,5 @@
 // The device column (and the top strip on phones): connection, the panel preview (virtual.js draws what
-// the panel shows), power, brightness, the panel button.
+// the panel shows), power, brightness. The activity log under it is log.js.
 import { $, on, emit } from "./core.js";
 import { CMD, MODE } from "./protocol.js";
 import { panel, supported, connect, send, act } from "./ble.js";
@@ -58,5 +58,4 @@ export function initDevice() {
     brightTimer = setTimeout(() => act(() => send(CMD.BRIGHTNESS, [Number(e.target.value)])), 120);
   });
   $("#power").addEventListener("change", (e) => act(() => send(CMD.POWER, [e.target.checked ? 1 : 0])));
-  $("#btnKey").addEventListener("click", () => act(() => send(CMD.KEY, [1])));
 }

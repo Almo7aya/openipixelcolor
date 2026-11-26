@@ -4,6 +4,7 @@ import { emit, sleep } from "./core.js";
 import { CMD, packet, fwVersionOf, healthText, savedText } from "./protocol.js";
 import { toastError } from "./toast.js";
 import { setSize, typeSize } from "./size.js";
+import { logPacket } from "./log.js";
 
 const SVC = 0x00fa, WR = 0xfa02, NT = 0xfa03;
 export const supported = !!navigator.bluetooth;
@@ -43,6 +44,7 @@ export function rawSend(bytes, timeout, match) {
     try {
       for (let o = 0; o < bytes.length; o += 244) await panel.chWrite.writeValueWithResponse(bytes.slice(o, o + 244));
       written = true;
+      logPacket(bytes);
       for (const t of taps) try { t(bytes); } catch (e) { /* the preview must never break a request */ }
       if (reply) end(resolve, reply);
     } catch (e) { end(reject, e); }

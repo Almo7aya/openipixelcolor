@@ -42,7 +42,10 @@
 }
 .dev-brand { display: flex; align-items: center; gap: 10px; }
 .dev-brand img { display: block; flex: none; }
-.wordmark { display: block; image-rendering: pixelated; }
+.dev-brand .btn { margin-left: auto; }
+.wordmark { display: block; min-width: 0; image-rendering: pixelated; }
+.icon-btn { gap: 6px; padding-left: 9px; }
+.icon-btn svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
 /* the panel card: who's connected and the button; once connected, the controls as rows */
 .dev-card { display: grid; padding: 14px; border-radius: var(--r-l); background: var(--bg); border: 1px solid var(--line); }
@@ -61,13 +64,35 @@
 .dev-row:last-child { border-bottom: 0; }
 .dev-row:has(> .switch) { grid-template-columns: minmax(0, 1fr) auto; cursor: pointer; }
 .dev-row output { text-align: right; font-family: var(--mono); font-size: 13px; color: var(--muted); }
-.dev-key { grid-template-columns: minmax(0, 1fr) auto; width: 100%; padding: 0; border: 0;
-  background: none; font: inherit; text-align: left; cursor: pointer; }
-.dev-key:hover .note { color: var(--ink); }
-.dev-foot { margin-top: auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px;
+
+/* the activity log: fills what's left of the column, newest line at the bottom */
+.dev-log {
+  flex: 1 1 0; min-height: 150px; display: flex; flex-direction: column;
+  border: 1px solid var(--line); border-radius: var(--r-l); background: var(--bg); overflow: hidden;
+}
+.dev-log-head { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 6px 6px 6px 14px; border-bottom: 1px solid var(--line); }
+.dev-log-head h2 { font-size: 13.5px; font-weight: 600; color: var(--muted); }
+.dev-log-head .btn { min-height: 28px; padding: 3px 9px; }
+.log-list {
+  flex: 1 1 0; min-height: 0; overflow-y: auto; margin: 0; padding: 8px 0; list-style: none;
+  font-family: var(--mono); font-size: 12px; line-height: 1.5; color: var(--ink);
+  scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent;
+}
+.log-list li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; padding: 1px 14px; }
+.log-list li span { overflow-wrap: anywhere; }
+.log-list time { color: var(--faint); font-variant-numeric: tabular-nums; }
+.log-list .send span { color: var(--muted); }
+.log-list .ok span { color: var(--ok); }
+.log-list .err span { color: #ff8f92; }
+.log-list:empty::before { content: "Nothing yet."; display: block; padding: 1px 14px; color: var(--faint); }
+
+.dev-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px;
   padding-top: 14px; border-top: 1px solid var(--line); font-size: 13px; }
-.dev-foot a { color: var(--muted); }
+.dev-foot .note { font-size: 12.5px; color: var(--faint); }
+.dev-foot a { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); }
 .dev-foot a:hover { color: var(--ink); }
+.dev-foot a svg { width: 16px; height: 16px; flex: none; fill: currentColor; }
 
 /* ---- phones and narrow windows ---- */
 @media (max-width: 1080px) {
@@ -88,12 +113,11 @@
     display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 10px 14px; align-items: center;
     padding: 12px 16px; border-left: 0; border-bottom: 1px solid var(--line);
   }
-  .device > .dev-brand, .device > .dev-foot, .device .preview .note { display: none; }
+  .device > .dev-brand, .device > .dev-log, .device > .dev-foot, .device .preview .note { display: none; }
   .device > .preview { grid-row: span 2; }
   .device > .banner { grid-column: 1 / -1; }
   .dev-card { padding: 0; border: 0; background: none; }
   .dev-controls { margin-top: 4px; border-top: 0; }
   .dev-row { min-height: 34px; border-bottom: 0; }
-  .dev-key { display: none; }
   .content { padding: 20px 16px 110px; }
 }
