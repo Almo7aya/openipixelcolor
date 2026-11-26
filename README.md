@@ -11,7 +11,9 @@ and is installed over Bluetooth through the panel's own update path. No programm
 
 **Try it: [almo7aya.dev/openipixelcolor](https://almo7aya.dev/openipixelcolor/)** in Chrome or
 Edge on a computer with Bluetooth. Connect the panel, open **Settings**, click **Use the latest release**,
-then **Install firmware** twice. Nothing to install on the computer.
+then **Install firmware** twice. Nothing to install on the computer. Later, whenever a panel with
+openipixelcolor connects and a newer release is out, the page offers it: **Update now** installs it right
+from the notice (or **Later**, or **Skip this version**).
 
 > **Warning.** Installing firmware on these panels can leave one that will not take another update.
 > Bluetooth is the only way in on a closed panel. Read [Safety](#safety) before installing anything.
