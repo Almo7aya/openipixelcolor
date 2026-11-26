@@ -69,9 +69,10 @@ controls the panel straight from Chrome or Edge over Web Bluetooth.
   shadow, outline and glow, animated backgrounds and live `{time}` `{date}` values. Any language: the web app
   draws the text with your computer's fonts, Arabic and right-to-left included.
 - **Your own animations, stored on the panel:** from a GIF, an animated WebP or PNG, a video or a few
-  pictures, drawn frame by frame, or generated (animated emoji, or a formula for every LED). Up to 127 of
-  them (4 MB) on the panel's extra memory chip, played by the panel itself, also after it was switched off.
-  (A panel without that chip keeps 20, 640 KB, in its own flash.)
+  pictures, drawn frame by frame, or generated: 3D scenes, optical illusions, your own picture or GIF in 3D
+  or with a 2D effect ([example](examples/your-picture/)), animated emoji, or a formula for every LED. Up
+  to 127 of them (4 MB) on the panel's extra memory chip, played by the panel itself, also after it was
+  switched off. (A panel without that chip keeps 20, 640 KB, in its own flash.)
 - **Pictures and drawing**, with live painting straight onto the panel.
 - **Scoreboard, stopwatch, equalizer bars and test patterns.**
 - **Its own screens:** the logo draws itself at start-up, a welcome screen on the very first start, and
@@ -236,6 +237,7 @@ tools/
   wasm/           builds webui/panel.wasm from firmware/src/app
   ci/             checks the CI runs on the web app
 docs/             PROTOCOL.md (the Bluetooth commands), HARDWARE.md (the board)
+examples/         a picture through every "Your picture" effect, as GIFs to put on a panel
 design/logos/     the logo's design prototype
 .github/          CI: build and test every push, release firmware changes, publish the web app
 ```
@@ -262,6 +264,9 @@ installed on, and removed from, panels people own.
 THE FINALS, its name and its emblem are owned by Embark Studios. The THE FINALS animations here (effects
 47–54 and the 3D scenes named after it) are made by fans; they aren't made, approved or endorsed by Embark
 Studios, and the GPL doesn't cover the name or the emblem.
+
+The example picture in `examples/your-picture/` and the animations made from it aren't covered by the GPL
+either.
 
 openipixelcolor is an independent project. It is not affiliated with or endorsed by the makers of the
 iPixel Color app or of the panels; "iPixel Color" is used only to say which devices this works with.
