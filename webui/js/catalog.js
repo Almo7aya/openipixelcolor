@@ -6,7 +6,10 @@ export const EFFECTS = ["Plasma", "Fire", "Matrix rain", "Starfield", "Game of L
   "Rotozoom", "Twister", "Copper bars", "Shadebobs", "Kaleidoscope", "Julia fractal", "Moiré", "Sunburst",
   "Spirograph", "3D cube", "Synthwave", "Terrain flyover", "Plasma globe", "Tartan",
   "Ocean", "Falling sand", "Langton's ants", "Flock", "Galaxy", "Snowfall", "Aquarium", "Fireflies",
-  "Maze", "Sorting", "Pendulum wave", "Brick breaker", "Meadow"];
+  "Maze", "Sorting", "Pendulum wave", "Brick breaker", "Meadow",
+  /* fan-made, not by or with Embark Studios, who own THE FINALS (firmware/src/app/fx_finals.c) */
+  "THE FINALS intro", "THE FINALS live", "THE FINALS cash-out", "THE FINALS spin", "THE FINALS chrome",
+  "THE FINALS CRT", "THE FINALS neon", "THE FINALS shatter"];
 export const CLOCKS = ["Digital with date", "Analog", "Binary", "Big digits", "Digits on plasma",
   "Flip cards", "Nixie tubes", "Rings", "Day and night sky", "Pong clock",
   "Words", "Berlin clock", "Fibonacci", "Morphing digits", "Hourglass", "Falling bricks", "Matrix digits",

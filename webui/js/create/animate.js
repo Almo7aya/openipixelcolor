@@ -11,19 +11,25 @@ import { readFiles, fitFrames, thumbOf, MAX_SOURCE_FRAMES } from "./import.js";
 import { PixelCanvas, PALETTE } from "./pixelcanvas.js";
 import { FORMULAS, MOTIONS, formulaFrames, emojiFrames } from "./generators.js";
 import { SCENE_LIST, BACKDROPS, sceneFrames, sceneColor } from "./scenes3d.js";
+import { ILLUSIONS, illusionFrames, illusionNote } from "./illusions.js";
 
 const A = { src: "file", fileSrc: null, lastFiles: null, enc: null, encFrames: null, nameAuto: true, uploading: false };
 
-/* 3D scenes take a moment to draw: drawn in the background (with progress), kept for as long as nothing
-   that changes the picture changes */
+/* 3D scenes and illusions take a moment to draw: drawn in the background (with progress), kept for as long
+   as nothing that changes the picture changes */
 const R3 = { key: "", frames: null, drawing: "" };
-const key3d = () => JSON.stringify([$("#g3Scene").value, $("#g3Color").value, $("#g3Bg").value, $("#gSecs").value, $("#gFps").value, size.w, size.h]);
-function draw3d(key) {
+const slowKind = () => ["3d", "illusion"].includes($("#gKind").value);
+const keyGen = () => JSON.stringify($("#gKind").value === "3d"
+  ? ["3d", $("#g3Scene").value, $("#g3Color").value, $("#g3Bg").value, $("#gSecs").value, $("#gFps").value, size.w, size.h]
+  : ["illusion", $("#gIllusion").value, $("#gSecs").value, $("#gFps").value, size.w, size.h]);
+function drawGen(key) {
   if (R3.drawing === key) return;
   R3.drawing = key;
-  sceneFrames({ scene: $("#g3Scene").value, color: $("#g3Color").value, bg: $("#g3Bg").value, secs: Number($("#gSecs").value),
-    fps: Number($("#gFps").value), w: size.w, h: size.h, ss: 3,
-    onFrame: (i, n) => { if (R3.drawing === key) facts(`Drawing the 3D scene… ${Math.round(i * 100 / n)}%`); } })
+  const is3d = $("#gKind").value === "3d", what = is3d ? "3D scene" : "illusion";
+  const common = { secs: Number($("#gSecs").value), fps: Number($("#gFps").value), w: size.w, h: size.h,
+    onFrame: (i, n) => { if (R3.drawing === key) facts(`Drawing the ${what}… ${Math.round(i * 100 / n)}%`); } };
+  (is3d ? sceneFrames({ ...common, scene: $("#g3Scene").value, color: $("#g3Color").value, bg: $("#g3Bg").value, ss: 3 })
+        : illusionFrames({ ...common, kind: $("#gIllusion").value }))
     .then((frames) => { if (R3.drawing !== key) return; Object.assign(R3, { key, frames, drawing: "" }); encodeNow(true); })
     .catch((e) => { if (R3.drawing === key) { R3.drawing = ""; facts(e.message, true); } });
 }
@@ -157,7 +163,7 @@ async function importFiles(list) {
 const fileFrames = () => (A.fileSrc ? fitFrames(A.fileSrc.frames, { step: Number($("#aStep").value), fit: $("#aFit").value, smooth: $("#aSmooth").value === "1", bg: $("#aBg").value, w: size.w, h: size.h }) : null);
 function genFrames() {
   const secs = Number($("#gSecs").value), fps = Number($("#gFps").value), kind = $("#gKind").value;
-  if (kind === "3d") return R3.key === key3d() ? R3.frames : null;     /* encodeNow() starts the drawing */
+  if (slowKind()) return R3.key === keyGen() ? R3.frames : null;       /* encodeNow() starts the drawing */
   return kind === "emoji"
     ? emojiFrames({ text: $("#gText").value, motion: $("#gMotion").value, ink: $("#gInk").value, bg: $("#gBg").value, secs, fps, w: size.w, h: size.h })
     : formulaFrames($("#gFormula").value, secs, fps, size.w, size.h);
@@ -172,6 +178,7 @@ function defaultName() {
   if (A.src === "draw") return "Drawing";
   const kind = $("#gKind").value;
   return kind === "3d" ? $("#g3Scene").selectedOptions[0].textContent
+       : kind === "illusion" ? $("#gIllusion").selectedOptions[0].textContent
        : kind === "emoji" ? `${$("#gText").value.trim()} ${$("#gMotion").selectedOptions[0].textContent.toLowerCase()}`
        : $("#gPreset").selectedOptions[0].textContent;
 }
@@ -185,9 +192,9 @@ function buttons() { $("#aSave").disabled = !A.enc || !A.enc.fits || A.uploading
 const capacity = () => { const st = libraryState(); return st ? st.slots * st.slotKb * 1024 : OPA.MAX_BYTES; };
 function encodeNow(play) {
   if (A.nameAuto) $("#aName").value = defaultName().slice(0, 40);
-  if (A.src === "gen" && $("#gKind").value === "3d" && R3.key !== key3d()) {   /* not drawn yet: draw, then come back */
+  if (A.src === "gen" && slowKind() && R3.key !== keyGen()) {         /* not drawn yet: draw, then come back */
     A.enc = A.encFrames = null; buttons();
-    draw3d(key3d());
+    drawGen(keyGen());
     return;
   }
   let frames;
@@ -258,6 +265,9 @@ export function initAnimate() {
   $("#g3Color").value = sceneColor($("#g3Scene").value);
   $("#g3Scene").addEventListener("change", (e) => { $("#g3Color").value = sceneColor(e.target.value); A.nameAuto = true; schedule(true); });
   for (const id of ["#g3Color", "#g3Bg"]) $(id).addEventListener("change", () => schedule(true));
+  fillSelect($("#gIllusion"), ILLUSIONS.map(([k, n]) => [k, n]));
+  $("#gIllusionNote").textContent = illusionNote($("#gIllusion").value);
+  $("#gIllusion").addEventListener("change", (e) => { $("#gIllusionNote").textContent = illusionNote(e.target.value); A.nameAuto = true; schedule(true); });
   const genKind = () => { const k = $("#gKind").value; $$("[data-gen]").forEach((e) => { e.hidden = e.dataset.gen !== k; }); };
   $("#gKind").addEventListener("change", () => { genKind(); A.nameAuto = true; schedule(true); });
   $("#gPreset").addEventListener("change", (e) => { $("#gFormula").value = FORMULAS[Number(e.target.value)][1]; A.nameAuto = true; schedule(true); });

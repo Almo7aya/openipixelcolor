@@ -195,7 +195,7 @@
 
       <!-- animation maker -->
       <div class="subview stack" id="create-animation">
-        <p class="muted">Bring a GIF, a video or a few pictures, draw one frame by frame, or generate one: a 3D scene, a moving emoji or a formula. It's saved on the panel, which plays it by itself.</p>
+        <p class="muted">Bring a GIF, a video or a few pictures, draw one frame by frame, or generate one: a 3D scene, an optical illusion, a moving emoji or a formula. It's saved on the panel, which plays it by itself.</p>
         <div><span class="seg" id="aSrcSeg"><button data-value="file" aria-pressed="true">From files</button><button data-value="draw">Draw frames</button><button data-value="gen">Generate</button></span></div>
 
         <div id="aSrcFile" class="stack">
@@ -235,7 +235,8 @@
 
         <div id="aSrcGen" class="stack" hidden>
           <div class="fields">
-            <label class="field"><span>Kind</span><select id="gKind"><option value="3d">3D scene</option><option value="emoji">Emoji or letters</option><option value="formula">Formula</option></select></label>
+            <label class="field"><span>Kind</span><select id="gKind"><option value="3d">3D scene</option><option value="illusion">Optical illusion</option><option value="emoji">Emoji or letters</option><option value="formula">Formula</option></select></label>
+            <label class="field" data-gen="illusion"><span>Illusion</span><select id="gIllusion"></select></label>
             <label class="field" data-gen="3d"><span>Scene</span><select id="g3Scene"></select></label>
             <label class="field" data-gen="3d"><span>Colour</span><input type="color" id="g3Color" value="#ff5fae"></label>
             <label class="field" data-gen="3d"><span>Background</span><select id="g3Bg"></select></label>
@@ -247,6 +248,7 @@
             <label class="field"><span>Length</span><select id="gSecs"><option value="1">1 second</option><option value="2">2 seconds</option><option value="3" selected>3 seconds</option><option value="5">5 seconds</option><option value="8">8 seconds</option></select></label>
             <label class="field"><span>Frames per second</span><select id="gFps"><option>10</option><option selected>15</option><option>20</option><option>25</option></select></label>
           </div>
+          <p class="note" data-gen="illusion" id="gIllusionNote"></p>
           <label class="field" data-gen="formula"><span>The colour of each LED. <code>x</code> and <code>y</code> count from 0, <code>w</code> and <code>h</code> are the panel's size, <code>cx</code> and <code>cy</code> its middle, <code>t</code> is the time in seconds. Give <code>[r, g, b]</code> (0–255) or <code>hsv(hue, sat, val)</code> (0–1, the hue wraps around).</span>
             <textarea id="gFormula" spellcheck="false"></textarea></label>
         </div>

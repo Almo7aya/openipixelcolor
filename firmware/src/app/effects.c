@@ -4,6 +4,7 @@
 #include "fx_more.h"
 #include "fx_demo.h"
 #include "fx_sim.h"
+#include "fx_finals.h"
 #include "gfx.h"
 #include "tables.h"
 
@@ -527,5 +528,14 @@ const effect_t effects[] = {
     { "pendulums", pend_init,    pend_frame     },
     { "bricks",    brk_init,     brk_frame      },
     { "meadow",    fx_nop_init,  meadow_frame   },
+    /* fx_finals.c (47..54): fan-made THE FINALS logo animations */
+    { "finals",         fin_intro_init, fin_intro_frame   },
+    { "finals-live",    fin_live_init,  fin_live_frame    },
+    { "finals-cash",    fin_cash_init,  fin_cash_frame    },
+    { "finals-spin",    fin_spin_init,  fin_spin_frame    },
+    { "finals-chrome",  fin_em_init,    fin_chrome_frame  },
+    { "finals-crt",     fin_em_init,    fin_crt_frame     },
+    { "finals-neon",    fin_em_init,    fin_neon_frame    },
+    { "finals-shatter", fin_em_init,    fin_shatter_frame },
 };
 const unsigned effect_count = sizeof effects / sizeof effects[0];

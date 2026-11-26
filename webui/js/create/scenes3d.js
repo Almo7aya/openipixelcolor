@@ -683,7 +683,182 @@ SCENES.icecream = {
   },
 };
 
-export const SCENE_LIST = Object.entries(SCENES).map(([id, s]) => [id, s.name]);
+/* ---- THE FINALS: fan-made scenes with the game's emblem. THE FINALS, its name and its emblem belong to
+   Embark Studios; these aren't made or endorsed by them (README "Licence"). The emblem as geometry, after
+   tools/gen_emblem.py: a rounded triangle (emblem units: 28 wide, apex at v = -1.6, base at v = 17), a notch
+   between the left and middle legs, and a diagonal gap parallel to the right edge. ---- */
+function sdTri2(px, py, ax, ay, bx, by, cx, cy) {                    /* exact distance to a triangle */
+  const e0x = bx - ax, e0y = by - ay, e1x = cx - bx, e1y = cy - by, e2x = ax - cx, e2y = ay - cy;
+  const v0x = px - ax, v0y = py - ay, v1x = px - bx, v1y = py - by, v2x = px - cx, v2y = py - cy;
+  const k0 = clamp((v0x * e0x + v0y * e0y) / (e0x * e0x + e0y * e0y), 0, 1);
+  const k1 = clamp((v1x * e1x + v1y * e1y) / (e1x * e1x + e1y * e1y), 0, 1);
+  const k2 = clamp((v2x * e2x + v2y * e2y) / (e2x * e2x + e2y * e2y), 0, 1);
+  const s = Math.sign(e0x * e2y - e0y * e2x);
+  const a0 = (v0x - e0x * k0) ** 2 + (v0y - e0y * k0) ** 2, b0 = s * (v0x * e0y - v0y * e0x);
+  const a1 = (v1x - e1x * k1) ** 2 + (v1y - e1y * k1) ** 2, b1 = s * (v1x * e1y - v1y * e1x);
+  const a2 = (v2x - e2x * k2) ** 2 + (v2y - e2y * k2) ** 2, b2 = s * (v2x * e2y - v2y * e2x);
+  return -sqrt(min(a0, a1, a2)) * Math.sign(min(b0, b1, b2));
+}
+function sdSeg2(px, py, ax, ay, bx, by) {
+  const bax = bx - ax, bay = by - ay, h = clamp(((px - ax) * bax + (py - ay) * bay) / (bax * bax + bay * bay), 0, 1);
+  return len2(px - ax - bax * h, py - ay - bay * h);
+}
+const EMB = (() => {                                                 /* the outline, its corners rounded */
+  const A = [14, -1.6], B = [0, 17], C = [28, 17], d = (p, q) => len2(p[0] - q[0], p[1] - q[1]);
+  const a = d(B, C), b = d(C, A), c = d(A, B), P = a + b + c;
+  const I = [(a * A[0] + b * B[0] + c * C[0]) / P, (a * A[1] + b * B[1] + c * C[1]) / P];
+  const rho = abs((B[0] - A[0]) * (C[1] - A[1]) - (C[0] - A[0]) * (B[1] - A[1])) / P, r = 1.1, k = (rho - r) / rho;
+  const ins = (V) => [I[0] + (V[0] - I[0]) * k, I[1] + (V[1] - I[1]) * k];
+  return [...ins(A), ...ins(B), ...ins(C), r];
+})();
+function emblem2(u, v) {                                             /* emblem units */
+  let d = sdTri2(u, v, EMB[0], EMB[1], EMB[2], EMB[3], EMB[4], EMB[5]) - EMB[6];
+  d = max(d, -sdTri2(u, v, 9.6, 11.3, 3.43, 19.5, 15.77, 19.5));                 /* the notch */
+  return max(d, -(sdSeg2(u, v, 14.3, 6.8, 23.86, 19.5) - 0.62));                /* the gap */
+}
+/* the emblem in 3D: 1.75 wide, centred, facing +z, th = half its thickness */
+function sdEmblem(x, y, z, th) {
+  const d2 = emblem2(14 + x * 16, 7.7 - y * 16) / 16, dz = abs(z) - th;
+  return min(max(d2, dz), 0) + len2(max(d2, 0), max(dz, 0)) - 0.01;
+}
+/* the chrome of the 3D logo: violet, lavender, white, pink (linear light) */
+const CHROME = [[70, 45, 175], [150, 140, 255], [235, 230, 255], [235, 105, 185], [115, 75, 220], [70, 45, 175]].map((c) => c.map((v) => (v / 255) ** 2));
+function chrome(g) { g = fract(g) * 5; const i = floor(g), f = g - i; return [mix(CHROME[i][0], CHROME[i + 1][0], f), mix(CHROME[i][1], CHROME[i + 1][1], f), mix(CHROME[i][2], CHROME[i + 1][2], f)]; }
+const FIN_RED = [(210 / 255) ** 2, (31 / 255) ** 2, (60 / 255) ** 2];
+/* "THE FINALS" in the logo's tall, narrow lettering, 5 rows, 31 px wide */
+const COND = (() => {                                                /* the same glyphs as fx_finals.c */
+  const G = [["###", ".#.", ".#.", ".#.", ".#."], ["#.#", "#.#", "###", "#.#", "#.#"], ["##", "#.", "##", "#.", "##"], [".", ".", ".", ".", "."],
+    ["##", "#.", "##", "#.", "#."], ["#", "#", "#", "#", "#"], ["##.", "#.#", "#.#", "#.#", "#.#"], [".#.", "#.#", "###", "#.#", "#.#"],
+    ["#.", "#.", "#.", "#.", "##"], [".##", "#..", ".#.", "..#", "##."]];
+  return [0, 1, 2, 3, 4].map((r) => G.map((g) => g[r]).join("."));
+})();
+function finalsText(rgb, w, h, col, y0) {
+  const tw = COND[0].length, x0 = Math.floor((w - tw) / 2), y = y0 ?? h - 7;
+  for (let r = 0; r < 5; r++)
+    for (let k = 0; k < tw; k++)
+      if (COND[r][k] === "#" && x0 + k >= 0 && x0 + k < w && y + r < h) { const o = ((y + r) * w + x0 + k) * 3; rgb[o] = col[0]; rgb[o + 1] = col[1]; rgb[o + 2] = col[2]; }
+}
+
+SCENES.finchrome = {
+  name: "THE FINALS: chrome emblem", color: "#9b8cff", cam: [0, 0.1, 2.0], look: [0, 0.03, 0], rim: [0.15, 0.3, 1],
+  setup(p) { this.p = p; this.m = rotation(0.12 * sin(TAU * p * 2), 0.55 * sin(TAU * p), 0); },
+  map(x, y, z) { T(this.m, x, y - 0.32, z); return sdEmblem(X, Y, Z, 0.07); },
+  paint(x, y, z, nx, ny, nz) {
+    T(this.m, x, y - 0.32, z);
+    S.shine = 0.9;
+    const band = fract(X * 0.55 + Y * 0.45 - this.p * 2);
+    if (band < 0.05) { S.glow = 0.6; return [1, 1, 1]; }               /* the sheen */
+    T(this.m, nx, ny, nz);
+    const c = chrome(X * 0.35 + Y * 0.5 + this.p);
+    return abs(Z) > 0.6 ? c : [c[0] * 0.5, c[1] * 0.5, c[2] * 0.7];   /* the sides darker */
+  },
+  overlay(rgb, w, h) { finalsText(rgb, w, h, [215, 215, 235]); },
+};
+
+SCENES.finspin = {
+  name: "THE FINALS: red and white spin", color: "#d21f3c", cam: [0, 0.1, 2.0], look: [0, 0.03, 0],
+  setup(p) { this.m = rotation(0, TAU * p, 0); },
+  map(x, y, z) { T(this.m, x, y - 0.32, z); return sdEmblem(X, Y, Z, 0.09); },
+  paint(x, y, z, nx, ny, nz, c) {
+    T(this.m, nx, ny, nz);
+    S.shine = 0.6;
+    return abs(Z) > 0.6 ? (Z > 0 ? [0.92, 0.92, 0.95] : c) : [c[0] * 0.6, c[1] * 0.6, c[2] * 0.6];   /* white front, red back */
+  },
+  overlay(rgb, w, h) { finalsText(rgb, w, h, [240, 240, 240]); },
+};
+
+SCENES.finneon = {
+  name: "THE FINALS: neon emblem", color: "#3cd2ff", cam: [0, 0.1, 2.0], look: [0, 0.03, 0],
+  setup(p) { this.p = p; this.m = rotation(0.2 * sin(TAU * p), 0.45 * sin(TAU * p), 0); },
+  map(x, y, z) {
+    T(this.m, x, y - 0.32, z);
+    const d2 = abs(emblem2(14 + X * 16, 7.7 - Y * 16) / 16) - 0.022;    /* a tube along the outline */
+    return len2(max(d2, 0), Z) - 0.022 + min(d2, 0) * 0;
+  },
+  paint(x, y, z, nx, ny, nz, c) { S.shine = 0.4; S.glow = 1.1 + 0.25 * sin(TAU * this.p * 3); return c; },
+  overlay(rgb, w, h, p) { finalsText(rgb, w, h, ((p * 3) % 1) < 0.92 ? [60, 210, 255] : [20, 70, 90]); },
+};
+
+SCENES.finshatter = {
+  name: "THE FINALS: shatter", color: "#9b8cff", cam: [0, 0.1, 2.0], look: [0, 0.03, 0], rim: [0.15, 0.3, 1],
+  setup(p) {
+    const e = p < 0.2 ? 0 : p < 0.55 ? smoothstep(0.2, 0.55, p) : p < 0.65 ? 1 : p < 0.9 ? 1 - smoothstep(0.65, 0.9, p) : 0;
+    this.e = e; this.p = p;
+    this.cells = [];
+    for (let i = 0; i < 4; i++)
+      for (let j = 0; j < 3; j++) {
+        const cx = -0.66 + i * 0.44, cy = -0.42 + j * 0.42, h = hash3(i, j, 5);
+        this.cells.push([cx, cy, cx * 1.1 * e + (h - 0.5) * 0.4 * e, cy * 1.2 * e + (hash3(j, i, 9) - 0.6) * 0.5 * e, (h - 0.3) * 1.6 * e]);
+      }
+  },
+  map(x, y, z) {
+    let d = 9;
+    for (const [cx, cy, ox, oy, oz] of this.cells) {
+      const px = x - ox, py = y - 0.32 - oy, pz = z - oz;
+      d = min(d, max(sdEmblem(px, py, pz, 0.07), sdBox(px - cx, py - cy, pz, 0.22, 0.21, 0.5, 0)));
+    }
+    return d;
+  },
+  paint(x, y, z, nx, ny, nz) { S.shine = 0.9; const c = chrome(x * 0.35 + y * 0.5 + this.p); return abs(nz) > 0.6 ? c : [c[0] * 0.5, c[1] * 0.5, c[2] * 0.7]; },
+  overlay(rgb, w, h, p) { if (p < 0.2 || p > 0.88) finalsText(rgb, w, h, [215, 215, 235]); },
+};
+
+SCENES.fincash = {
+  name: "THE FINALS: cash-out", color: "#ffc63a", cam: [0, 0.1, 2.0], look: [0, 0.03, 0],
+  setup(p) {
+    this.m = rotation(0, 0.35 * sin(TAU * p), 0);
+    this.coins = [];
+    for (let i = 0; i < 10; i++) {
+      const k = 1 + (i % 3), ph = hash3(i, 1, 2), x = -1.05 + i * 0.235 + (hash3(i, 3, 4) - 0.5) * 0.1;
+      this.coins.push([x, 1.5 - fract(p * k + ph) * 2.9, (hash3(i, 7, 7) - 0.5) * 0.8, TAU * (p * k * 2 + ph)]);
+    }
+  },
+  map(x, y, z) {
+    T(this.m, x, y - 0.32, z);
+    let d = sdEmblem(X, Y, Z, 0.08);
+    for (const [cx, cy, cz, a] of this.coins) {
+      const px = x - cx, py = y - cy, pz = z - cz, c = cos(a), s = sin(a);
+      d = min(d, sdCyl(c * px - s * pz, py, s * px + c * pz, 0.09, 0.02, 0.008));   /* a coin, upright, turning */
+    }
+    return d;
+  },
+  paint(x, y, z, nx, ny, nz, c) {
+    S.shine = 1;
+    for (const [cx, cy, cz] of this.coins) if (len3(x - cx, y - cy, z - cz) < 0.12) return c;
+    T(this.m, nx, ny, nz);
+    return abs(Z) > 0.6 ? [0.92, 0.92, 0.95] : FIN_RED;
+  },
+  overlay(rgb, w, h, p) { finalsText(rgb, w, h, ((p * 4) % 1) < 0.5 ? [255, 215, 60] : [240, 240, 240]); },
+};
+
+/* an optical illusion: three square bars that can't make a triangle, until the eye stands where the near end
+   of the last bar hides the far end of the first (seen without perspective, along (1, 1, 1)) */
+SCENES.penrose = {
+  name: "Penrose triangle", color: "#ffb02e", cam: [3, 3, 3], look: [0, 0, 0], ortho: 1.15, light: [-0.3, 0.8, 0.5],
+  setup(p) {
+    const s = sin(TAU * p), a = 0.75 * s * s * s;                       /* lingers where it lines up */
+    const v = [cos(a) + sin(a), 1, -sin(a) + cos(a)], l = len3(v[0], v[1], v[2]), L = 1.1;
+    const c = [L / 6, -L / 6, -L / 2];                                  /* the middle of the closed triangle */
+    this.cam = [c[0] + v[0] / l * 6, c[1] + v[1] / l * 6, c[2] + v[2] / l * 6]; this.look = c;
+  },
+  map(x, y, z) {
+    const L = 1.1, t = 0.17, o = L / 2, px = x + o, py = y + o, pz = z + o;        /* the corner path, centred */
+    return min(sdBox(px - L / 2, py, pz, L / 2 + t, t, t, 0),
+               sdBox(px - L, py - L / 2, pz, t, L / 2 + t, t, 0),
+               sdBox(px - L, py - L, pz - L / 2, t, t, L / 2 + t, 0));
+  },
+  paint(x, y, z, nx, ny, nz, c) {                                   /* one shade per facing, as drawn by hand */
+    S.shine = 0.1;
+    const k = abs(nx) > 0.5 ? 1 : abs(ny) > 0.5 ? 0.72 : 0.45;
+    return [c[0] * k, c[1] * k, c[2] * k];
+  },
+};
+
+export const SCENE_LIST = Object.entries(SCENES).filter(([id]) => id !== "penrose").map(([id, s]) => [id, s.name]);
+
+/* for scenes defined elsewhere (the same rules as above): the helpers they use */
+export const kit = { rotation, T: (m, x, y, z) => { T(m, x, y, z); return [X, Y, Z]; }, sdSphere, sdBox, sdTorus, sdOcta, sdCyl, sdCapsule,
+  smin, clamp, mix, len2, len3, fract, smoothstep, hsv, hueOf, hash3, noise3, fbm, S, TAU, BACKGROUNDS };
 export const sceneColor = (id) => (SCENES[id] || SCENES.donut).color;
 
 /* ---- the renderer ---- */
@@ -723,12 +898,17 @@ function renderFrame(sc, w, h, bg, color, ss) {
         for (let sx = 0; sx < ss; sx++) {
           const uu = ((px + (sx + 0.5) / ss) / w * 2 - 1) * aspect, vv = 1 - (py + (sy + 0.5) / ss) / h * 2;
           let dx = f[0] * fl + r[0] * uu + u[0] * vv, dy = f[1] * fl + r[1] * uu + u[1] * vv, dz = f[2] * fl + r[2] * uu + u[2] * vv;
+          let ox = cam[0], oy = cam[1], oz = cam[2];
+          if (sc.ortho) {                                               /* no perspective: parallel rays */
+            const k = sc.ortho; ox += (r[0] * uu + u[0] * vv) * k; oy += (r[1] * uu + u[1] * vv) * k; oz += (r[2] * uu + u[2] * vv) * k;
+            dx = f[0]; dy = f[1]; dz = f[2];
+          }
           const dl = len3(dx, dy, dz); dx /= dl; dy /= dl; dz /= dl;
-          const t = march(sc, cam[0], cam[1], cam[2], dx, dy, dz, 12);
+          const t = march(sc, ox, oy, oz, dx, dy, dz, 12);
           let col;
           if (t < 0) col = sky(dx, dy, dz);
           else {
-            const x = cam[0] + dx * t, y = cam[1] + dy * t, z = cam[2] + dz * t, e = 0.0015;
+            const x = ox + dx * t, y = oy + dy * t, z = oz + dz * t, e = 0.0015;
             const d0 = sc.map(x, y, z);
             let nx = sc.map(x + e, y, z) - d0, ny = sc.map(x, y + e, z) - d0, nz = sc.map(x, y, z + e) - d0;
             const nl = len3(nx, ny, nz) || 1; nx /= nl; ny /= nl; nz /= nl;
@@ -762,13 +942,15 @@ const lin = (c) => c.map((v) => v * v);
 
 /* the frames of a scene: [{ rgb, delay }]. onFrame(done, total) after each one; yields to the page between
    frames (await) so it stays responsive. */
-export async function sceneFrames({ scene, color, bg = "stars", secs = 3, fps = 20, w = 32, h = 32, ss = 2, onFrame }) {
-  const sc = SCENES[scene] || SCENES.donut, n = Math.max(1, Math.round(secs * fps)), out = [], c = lin(hexRgb(color || sc.color));
+export async function sceneFrames({ scene, def, color, bg = "stars", secs = 3, fps = 20, w = 32, h = 32, ss = 2, onFrame }) {
+  const sc = def || SCENES[scene] || SCENES.donut, n = Math.max(1, Math.round(secs * fps)), out = [], c = lin(hexRgb(color || sc.color));
   const cam0 = sc.cam, look0 = sc.look;
   for (let i = 0; i < n; i++) {
     sc.cam = cam0; sc.look = look0;
     sc.setup(i / n, c);
-    out.push({ rgb: renderFrame(sc, w, h, bg, c, ss), delay: 1000 / fps });
+    const rgb = renderFrame(sc, w, h, bg, c, ss);
+    if (sc.overlay) sc.overlay(rgb, w, h, i / n);                       /* lettering drawn over the picture */
+    out.push({ rgb, delay: 1000 / fps });
     if (onFrame) onFrame(i + 1, n);
     if (i % 2 === 1) await new Promise((r) => setTimeout(r, 0));
   }
