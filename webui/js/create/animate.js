@@ -12,24 +12,31 @@ import { PixelCanvas, PALETTE } from "./pixelcanvas.js";
 import { FORMULAS, MOTIONS, formulaFrames, emojiFrames } from "./generators.js";
 import { SCENE_LIST, BACKDROPS, sceneFrames, sceneColor } from "./scenes3d.js";
 import { ILLUSIONS, illusionFrames, illusionNote } from "./illusions.js";
+import { PIC_EFFECTS, pictureFrames } from "./picfx.js";
 
-const A = { src: "file", fileSrc: null, lastFiles: null, enc: null, encFrames: null, nameAuto: true, uploading: false };
+const A = { src: "file", fileSrc: null, lastFiles: null, enc: null, encFrames: null, nameAuto: true, uploading: false, pic: null };
 
 /* 3D scenes and illusions take a moment to draw: drawn in the background (with progress), kept for as long
    as nothing that changes the picture changes */
 const R3 = { key: "", frames: null, drawing: "" };
-const slowKind = () => ["3d", "illusion"].includes($("#gKind").value);
-const keyGen = () => JSON.stringify($("#gKind").value === "3d"
-  ? ["3d", $("#g3Scene").value, $("#g3Color").value, $("#g3Bg").value, $("#gSecs").value, $("#gFps").value, size.w, size.h]
-  : ["illusion", $("#gIllusion").value, $("#gSecs").value, $("#gFps").value, size.w, size.h]);
+const slowKind = () => ["3d", "illusion", "picture"].includes($("#gKind").value);
+const keyGen = () => {
+  const k = $("#gKind").value, t = [$("#gSecs").value, $("#gFps").value, size.w, size.h];
+  return JSON.stringify(k === "3d" ? ["3d", $("#g3Scene").value, $("#g3Color").value, $("#g3Bg").value, ...t]
+    : k === "picture" ? ["picture", A.pic ? A.pic.id : "", $("#gPicFx").value, ...t]
+    : ["illusion", $("#gIllusion").value, ...t]);
+};
 function drawGen(key) {
   if (R3.drawing === key) return;
+  const kind = $("#gKind").value;
+  if (kind === "picture" && !A.pic) { facts("Choose a picture or a GIF."); return; }
   R3.drawing = key;
-  const is3d = $("#gKind").value === "3d", what = is3d ? "3D scene" : "illusion";
+  const what = kind === "3d" ? "3D scene" : kind === "picture" ? "picture" : "illusion";
   const common = { secs: Number($("#gSecs").value), fps: Number($("#gFps").value), w: size.w, h: size.h,
     onFrame: (i, n) => { if (R3.drawing === key) facts(`Drawing the ${what}… ${Math.round(i * 100 / n)}%`); } };
-  (is3d ? sceneFrames({ ...common, scene: $("#g3Scene").value, color: $("#g3Color").value, bg: $("#g3Bg").value, ss: 3 })
-        : illusionFrames({ ...common, kind: $("#gIllusion").value }))
+  (kind === "3d" ? sceneFrames({ ...common, scene: $("#g3Scene").value, color: $("#g3Color").value, bg: $("#g3Bg").value, ss: 3 })
+    : kind === "picture" ? pictureFrames({ ...common, tex: A.pic, kind: $("#gPicFx").value })
+    : illusionFrames({ ...common, kind: $("#gIllusion").value }))
     .then((frames) => { if (R3.drawing !== key) return; Object.assign(R3, { key, frames, drawing: "" }); encodeNow(true); })
     .catch((e) => { if (R3.drawing === key) { R3.drawing = ""; facts(e.message, true); } });
 }
@@ -179,6 +186,7 @@ function defaultName() {
   const kind = $("#gKind").value;
   return kind === "3d" ? $("#g3Scene").selectedOptions[0].textContent
        : kind === "illusion" ? $("#gIllusion").selectedOptions[0].textContent
+       : kind === "picture" ? `${A.pic ? A.pic.name : "Picture"} ${$("#gPicFx").selectedOptions[0].textContent.toLowerCase()}`
        : kind === "emoji" ? `${$("#gText").value.trim()} ${$("#gMotion").selectedOptions[0].textContent.toLowerCase()}`
        : $("#gPreset").selectedOptions[0].textContent;
 }
@@ -265,6 +273,17 @@ export function initAnimate() {
   $("#g3Color").value = sceneColor($("#g3Scene").value);
   $("#g3Scene").addEventListener("change", (e) => { $("#g3Color").value = sceneColor(e.target.value); A.nameAuto = true; schedule(true); });
   for (const id of ["#g3Color", "#g3Bg"]) $(id).addEventListener("change", () => schedule(true));
+  fillSelect($("#gPicFx"), PIC_EFFECTS);
+  $("#gPicFx").addEventListener("change", () => { A.nameAuto = true; schedule(true); });
+  $("#gPic").addEventListener("change", async (e) => {      /* the picture as a texture: 3 x the panel's size */
+    const f = e.target.files[0];
+    if (!f) return;
+    try {
+      const src = await readFiles([f]), w = size.w * 3, h = size.h * 3;
+      A.pic = { frames: fitFrames(src.frames, { fit: "cover", smooth: true, w, h }), w, h, name: src.name, id: `${f.name}:${f.size}:${f.lastModified}` };
+      A.nameAuto = true; schedule(true);
+    } catch (err) { facts(err.message || "That picture couldn't be read.", true); }
+  });
   fillSelect($("#gIllusion"), ILLUSIONS.map(([k, n]) => [k, n]));
   $("#gIllusionNote").textContent = illusionNote($("#gIllusion").value);
   $("#gIllusion").addEventListener("change", (e) => { $("#gIllusionNote").textContent = illusionNote(e.target.value); A.nameAuto = true; schedule(true); });

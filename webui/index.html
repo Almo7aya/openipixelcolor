@@ -195,7 +195,7 @@
 
       <!-- animation maker -->
       <div class="subview stack" id="create-animation">
-        <p class="muted">Bring a GIF, a video or a few pictures, draw one frame by frame, or generate one: a 3D scene, an optical illusion, a moving emoji or a formula. It's saved on the panel, which plays it by itself.</p>
+        <p class="muted">Bring a GIF, a video or a few pictures, draw one frame by frame, or generate one: a 3D scene, your own picture in 3D or with an effect, an optical illusion, a moving emoji or a formula. It's saved on the panel, which plays it by itself.</p>
         <div><span class="seg" id="aSrcSeg"><button data-value="file" aria-pressed="true">From files</button><button data-value="draw">Draw frames</button><button data-value="gen">Generate</button></span></div>
 
         <div id="aSrcFile" class="stack">
@@ -235,7 +235,9 @@
 
         <div id="aSrcGen" class="stack" hidden>
           <div class="fields">
-            <label class="field"><span>Kind</span><select id="gKind"><option value="3d">3D scene</option><option value="illusion">Optical illusion</option><option value="emoji">Emoji or letters</option><option value="formula">Formula</option></select></label>
+            <label class="field"><span>Kind</span><select id="gKind"><option value="3d">3D scene</option><option value="picture">Your picture</option><option value="illusion">Optical illusion</option><option value="emoji">Emoji or letters</option><option value="formula">Formula</option></select></label>
+            <label class="field" data-gen="picture"><span>Picture or GIF</span><input type="file" id="gPic" accept="image/*"></label>
+            <label class="field" data-gen="picture"><span>Effect</span><select id="gPicFx"></select></label>
             <label class="field" data-gen="illusion"><span>Illusion</span><select id="gIllusion"></select></label>
             <label class="field" data-gen="3d"><span>Scene</span><select id="g3Scene"></select></label>
             <label class="field" data-gen="3d"><span>Colour</span><input type="color" id="g3Color" value="#ff5fae"></label>
