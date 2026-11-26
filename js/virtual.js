@@ -3,13 +3,13 @@
 // each status poll (every 4 s) puts it back in step if the panel changed by itself (its button, shuffle,
 // another phone). Effects, clocks, text, pictures and animations sent from this browser come out the same
 // as on the panel; random effects (stars, fireworks) differ in the details.
-import { on, store } from "./core.js?v=b9006af";
-import { CMD, MODE, packet, u32, rd32 } from "./protocol.js?v=b9006af";
-import { panel, onPacket } from "./ble.js?v=b9006af";
-import { pix, drawMirror, claimMirror, mirrorOwner, mirrorNote, mirrorTag } from "./mirror.js?v=b9006af";
-import { getAnim } from "./idb.js?v=b9006af";
-import { is32, sizeText } from "./size.js?v=b9006af";
-import OPA from "./create/anim-codec.js?v=b9006af";
+import { on, store } from "./core.js?v=7cd4bac";
+import { CMD, MODE, packet, u32, rd32 } from "./protocol.js?v=7cd4bac";
+import { panel, onPacket } from "./ble.js?v=7cd4bac";
+import { pix, drawMirror, claimMirror, mirrorOwner, mirrorNote, mirrorTag } from "./mirror.js?v=7cd4bac";
+import { getAnim } from "./idb.js?v=7cd4bac";
+import { is32, sizeText } from "./size.js?v=7cd4bac";
+import OPA from "./create/anim-codec.js?v=7cd4bac";
 
 let vp = null, synced = false, nowCaption = "", missing = null;
 const now = () => Math.floor(performance.now()) >>> 0;
@@ -122,7 +122,7 @@ const thumbs = new Map();                                // slot -> RGB of the l
 function caption() {
   if (!live) return;
   mirrorTag(panel.chWrite ? "live" : "idle");
-  if (!panel.chWrite) mirrorNote(panel.state === "connecting" ? "Connecting…" : "Not connected: the welcome screen a new panel shows. Connect one to see what it shows.");
+  if (!panel.chWrite) mirrorNote(panel.state === "connecting" ? "Connecting…" : "The welcome screen a new panel shows.");
   else if (!is32()) mirrorNote(`A ${sizeText()} panel. The live preview is there for 32 × 32 panels for now.`);
   else if (!panel.custom) mirrorNote("The preview needs openipixelcolor on the panel.");
   else if (panel.rescue) mirrorNote("The panel is in rescue mode.");
@@ -157,7 +157,7 @@ export function showLive() {
 
 export async function initVirtual() {
   try {
-    const src = await fetch("panel.wasm?v=b9006af");
+    const src = await fetch("panel.wasm?v=7cd4bac");
     const { instance } = await WebAssembly.instantiate(await src.arrayBuffer(), {});
     vp = instance.exports;
     vp.vp_init(now());

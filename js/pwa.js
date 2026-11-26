@@ -2,14 +2,15 @@
 // version of the web app is ready (never in the middle of a firmware install), and "Install as an app"
 // where the browser offers it. On this computer (version "dev") there is no service worker: what you edit
 // is what you get.
-import { $ } from "./core.js?v=b9006af";
-import { panel } from "./ble.js?v=b9006af";
-import { toast, toastError } from "./toast.js?v=b9006af";
+import { $ } from "./core.js?v=7cd4bac";
+import { panel } from "./ble.js?v=7cd4bac";
+import { toast, toastError } from "./toast.js?v=7cd4bac";
 
 const VERSION = document.querySelector('meta[name="oipc-version"]')?.content || "dev";
 
 export function initPwa() {
   installButton();
+  $("#appVersion").textContent = VERSION === "dev" ? "this computer's copy" : `web app ${VERSION}`;
   if (!("serviceWorker" in navigator)) return;
   if (VERSION === "dev") {                             /* a service worker from the published site would get in the way */
     navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister())).catch(() => {});

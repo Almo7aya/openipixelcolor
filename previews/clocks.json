@@ -1,0 +1,12 @@
+[
+  ["clock-00", "clock-00-12h", "clock-00-nodate", "clock-00-12h-nodate"],
+  ["clock-01", "clock-01", "clock-01", "clock-01"],
+  ["clock-02", "clock-02-12h", "clock-02", "clock-02-12h"],
+  ["clock-03", "clock-03-12h", "clock-03", "clock-03-12h"],
+  ["clock-04", "clock-04-12h", "clock-04", "clock-04-12h"],
+  ["clock-05", "clock-05-12h", "clock-05-nodate", "clock-05-12h-nodate"],
+  ["clock-06", "clock-06-12h", "clock-06", "clock-06-12h"],
+  ["clock-07", "clock-07-12h", "clock-07", "clock-07-12h"],
+  ["clock-08", "clock-08-12h", "clock-08", "clock-08-12h"],
+  ["clock-09", "clock-09-12h", "clock-09-nodate", "clock-09-12h-nodate"]
+]

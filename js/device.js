@@ -1,25 +1,29 @@
 // The device column (and the top strip on phones): connection, the panel preview (virtual.js draws what
-// the panel shows), power, brightness, the panel button.
-import { $, on, emit } from "./core.js?v=b9006af";
-import { CMD, MODE } from "./protocol.js?v=b9006af";
-import { panel, supported, connect, send, act } from "./ble.js?v=b9006af";
-import { EFFECTS, CLOCKS, MODES } from "./catalog.js?v=b9006af";
-import { drawDotText } from "./led.js?v=b9006af";
-import { initMirror } from "./mirror.js?v=b9006af";
-import { sizeText } from "./size.js?v=b9006af";
+// the panel shows), power, brightness. The activity log under it is log.js.
+import { $, on, emit } from "./core.js?v=7cd4bac";
+import { CMD, MODE } from "./protocol.js?v=7cd4bac";
+import { panel, supported, connect, send, act } from "./ble.js?v=7cd4bac";
+import { EFFECTS, CLOCKS, MODES } from "./catalog.js?v=7cd4bac";
+import { drawDotText } from "./led.js?v=7cd4bac";
+import { initMirror } from "./mirror.js?v=7cd4bac";
+import { sizeText } from "./size.js?v=7cd4bac";
 
 let animName = (slot) => `slot ${slot + 1}`;
 export const setAnimNamer = (fn) => { animName = fn; };
 
+/* the panel card: not connected = a line and a big Connect button; connected = the panel's name, its
+   firmware and size, a small Disconnect, and the controls */
 function showState(s) {
-  const chip = $("#connChip"), text = $("#connText"), btn = $("#btnConnect");
-  chip.dataset.state = s === "idle" ? "" : s;
-  text.textContent = s === "connected" ? `Connected to ${panel.name}` : s === "connecting" ? "Connecting…" :
-    s === "lost" ? "Connection lost" : "Not connected";
-  btn.textContent = s === "connected" || s === "connecting" ? "Disconnect" : s === "lost" ? "Connect again" : "Connect panel";
-  btn.classList.toggle("primary", s !== "connected");
-  $("#devVersion").textContent = s === "connected" ? `${panel.custom ? `Firmware ${panel.version}` : `Vendor firmware ${panel.version}`}, ${sizeText()}` : "";
-  for (const id of ["#power", "#bright", "#btnKey"]) $(id).disabled = s !== "connected";
+  const on = s === "connected", btn = $("#btnConnect");
+  $("#devCard").dataset.state = s;
+  $("#connChip").dataset.state = s === "idle" ? "" : s;
+  $("#connText").textContent = on ? panel.name : s === "connecting" ? "Connecting…" : s === "lost" ? "Connection lost" : "Not connected";
+  $("#devVersion").textContent = on ? `${panel.custom ? `Firmware ${panel.version}` : `Stock firmware ${panel.version}`}, ${sizeText()}`
+    : s === "connecting" ? "Pick the panel in the list." : s === "lost" ? "Switch the panel off and on, then connect again." : "Switch the panel on, then connect.";
+  btn.textContent = on || s === "connecting" ? "Disconnect" : s === "lost" ? "Connect again" : "Connect panel";
+  btn.classList.toggle("primary", !on && s !== "connecting");
+  btn.classList.toggle("small", on || s === "connecting");
+  $("#devControls").hidden = !on;
 }
 
 /* the caption under the live preview: what the panel shows, in words */
@@ -43,6 +47,7 @@ export function initDevice() {
   $("#btnConnect").disabled = !supported;
   $("#btnConnect").addEventListener("click", () => connect());
   on("state", showState);
+  on("size", () => { if (panel.state === "connected") showState("connected"); });
   on("status", showStatus);
   showState("idle");
 
@@ -53,5 +58,4 @@ export function initDevice() {
     brightTimer = setTimeout(() => act(() => send(CMD.BRIGHTNESS, [Number(e.target.value)])), 120);
   });
   $("#power").addEventListener("change", (e) => act(() => send(CMD.POWER, [e.target.checked ? 1 : 0])));
-  $("#btnKey").addEventListener("click", () => act(() => send(CMD.KEY, [1])));
 }
