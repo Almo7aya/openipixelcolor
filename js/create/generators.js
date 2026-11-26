@@ -1,5 +1,5 @@
 // Generated animations: an emoji or a few letters with a motion, or a formula for the colour of every LED.
-import { rgbOf } from "./import.js";
+import { rgbOf } from "./import.js?v=d872f6f";
 
 /* x, y: the LED (from 0), w, h: the panel's size, cx, cy: its middle, t: seconds, i: the LED's number */
 export const FORMULAS = [

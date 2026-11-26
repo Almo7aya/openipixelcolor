@@ -2,8 +2,8 @@
 // round LEDs. One part of the page at a time "owns" it: normally "panel" (virtual.js: what the panel shows
 // right now), or a view showing a preview of something not sent yet (text, animation, picture, drawing).
 // Taking it stops the previous owner.
-import { $, on, emit } from "./core.js";
-import { size } from "./size.js";
+import { $, on, emit } from "./core.js?v=d872f6f";
+import { size } from "./size.js?v=d872f6f";
 
 export let pix = new Uint8Array(32 * 32 * 3);          /* a live binding: replaced when the size changes */
 let canvas = null, ctx = null, owner = null, stopOwner = null, w = 32, h = 32;
