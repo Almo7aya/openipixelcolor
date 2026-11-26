@@ -14,3 +14,4 @@
 #endif
 
 #define FW_CMD_PANEL_INFO  0xF113u  /* reply: w(2) h(2) board type */
+#define FW_CMD_XFLASH      0xF114u  /* external flash probe (proto.c) */

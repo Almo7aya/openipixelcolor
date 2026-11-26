@@ -119,8 +119,11 @@ code { font-family: var(--mono); font-size: .9em; padding: 1px 5px; border-radiu
 .st-free { color: var(--muted); font-size: 14px; }
 .st-free .big { color: var(--ink); font-size: 26px; font-weight: 600; letter-spacing: -.01em; margin-right: 4px; }
 
-.slots { display: grid; grid-template-columns: repeat(20, minmax(0, 1fr)); gap: 3px; }
+.slots { display: grid; grid-template-columns: repeat(var(--cols, 20), minmax(0, 1fr)); gap: 3px; }   /* --cols: storage.js */
 .slots .free { height: 48px; border-radius: 6px; border: 1px dashed var(--line-strong); }
+.slots.many { row-gap: 5px; }                       /* 127 slots (the extra memory chip): smaller cells, rows */
+.slots.many .free, .slots.many .run { height: 30px; border-radius: 4px; }
+.slots .run.cont { padding: 0; }                    /* the rest of an animation that goes past the end of a row */
 .slots .run {
   display: flex; align-items: center; gap: 9px; min-width: 0; height: 48px; padding: 4px 10px 4px 4px; border: 0; border-radius: 6px;
   background: color-mix(in oklab, var(--m-anim) 18%, var(--surface));
@@ -133,7 +136,7 @@ code { font-family: var(--mono); font-size: .9em; padding: 1px 5px; border-radiu
 .slots .run .label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .slots .run.hl, .slots .run:focus-visible { box-shadow: inset 0 0 0 1px var(--m-anim), inset 3px 0 0 var(--m-anim), 0 0 0 2px var(--surface), 0 0 0 4px var(--ink); }
 .slots .run .screen { margin-left: 2px; }
-@media (max-width: 640px) { .slots { grid-template-columns: repeat(10, minmax(0, 1fr)); row-gap: 6px; } .slots .run .label { display: none; } }
+@media (max-width: 640px) { .slots { row-gap: 6px; } .slots .run .label { display: none; } }
 
 .stlist { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .stlist li { display: flex; align-items: center; gap: 14px; padding: 6px 10px 6px 6px; border-radius: var(--r-m);
@@ -148,6 +151,7 @@ code { font-family: var(--mono); font-size: .9em; padding: 1px 5px; border-radiu
 .stlist .meta { font-size: 12.5px; color: var(--muted); }
 
 .memmap { display: grid; gap: 12px; padding-top: 16px; border-top: 1px solid var(--line); }
+.memmap-x { display: grid; gap: 12px; padding-top: 8px; }
 .memmap h4 { font-size: 15px; }
 .membar { display: flex; gap: 2px; height: 28px; }
 .membar .part { position: relative; min-width: 4px; border-radius: 4px; overflow: hidden; display: flex; align-items: center; }

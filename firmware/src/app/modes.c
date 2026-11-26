@@ -68,7 +68,7 @@ void modes_set(unsigned mode, unsigned arg, uint32_t now)
         break;
     case MODE_TEST:   S.test_pattern = (uint8_t)(arg % 7); break;
     case MODE_ANIM:
-        S.anim_slot = (uint8_t)(arg < ANIM_SLOTS ? arg : ANIM_ALL);
+        S.anim_slot = (uint8_t)(arg < ANIM_SLOTS_MAX ? arg : ANIM_ALL);
         anim_start(S.anim_slot, now);
         break;
     default: break;
@@ -191,7 +191,7 @@ void modes_restore(const modes_persist_t *p, uint32_t now)
     for (int i = 0; i < 11; i++) S.lvl[i] = (uint8_t)(p->lvl[i] & 15u);
     S.s1 = (uint8_t)(p->s1 % 100); S.s2 = (uint8_t)(p->s2 % 100);
     if (p->ver >= 3) {
-        S.anim_slot = (uint8_t)(p->anim_slot < ANIM_SLOTS ? p->anim_slot : ANIM_ALL);
+        S.anim_slot = (uint8_t)(p->anim_slot < ANIM_SLOTS_MAX ? p->anim_slot : ANIM_ALL);
         S.anim_speed = (uint8_t)(p->anim_speed < 2 ? 10 : p->anim_speed > 40 ? 40 : p->anim_speed);
     }
     if (S.pmode == MODE_ANIM && !anim_valid(S.anim_slot)) S.pmode = MODE_EFFECT;   /* deleted or damaged since */

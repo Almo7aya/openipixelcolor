@@ -1,16 +1,17 @@
-// Device > Storage. The animation space as its 20 slots of 32 KB (an animation always takes whole slots),
-// each animation with a moving preview, playing and deleting; then the whole 2 MB flash, area by area
-// (fixed by the firmware: firmware/src/drv/iflash.c, app/anim.h, app/settings.c).
+// Device > Storage. The animation space as its slots of 32 KB (an animation always takes whole slots; 20 in
+// the panel's own flash, 127 on the extra memory chip with openipixelcolor 104 and later), each animation
+// with a moving preview, playing and deleting; then the memory, area by area (fixed by the firmware:
+// firmware/src/drv/iflash.c, app/anim.h, app/settings.c).
 import { $, el, on, kb, holdToConfirm } from "../core.js";
 import { CMD } from "../protocol.js";
 import { panel, send, act } from "../ble.js";
-import { libraryState, refreshLibrary, deleteAnimation, ready } from "../library.js";
+import { libraryState, libraryPreparing, refreshLibrary, deleteAnimation, ready } from "../library.js";
 import { previewInto } from "../animpreview.js";
 import { READBACK_LEVEL } from "../readback.js";
 import { latest } from "../firmware.js";
 
 const K = 1024;
-/* the flash, in address order; `used` is filled in where it is known */
+/* the panel's own flash, in address order; `used` is filled in where it is known */
 const AREAS = [
   { id: "boot",  name: "Bootloader",                 size: 64 * K,  note: "From the factory, never changed" },
   { id: "fw",    name: "Firmware",                   size: 992 * K, note: "Set aside for the running firmware" },
@@ -20,20 +21,35 @@ const AREAS = [
   { id: "saved", name: "Settings, picture and text", size: 12 * K,  note: "Kept when the panel is switched off" },
   { id: "rec",   name: "Update record",              size: 4 * K,   note: "Tells the bootloader to install an update" },
 ];
+/* with the extra chip, the animations live there (app/anim.h) */
+const MOVED = { id: "free", name: "Not used", size: 640 * K, note: "Animations were kept here before the extra chip was used" };
+const xareas = (animBytes) => [
+  { id: "free", name: "Kept empty", size: 4 * K, note: "Where the original firmware lists its pictures: empty, so it has none" },
+  { id: "rec",  name: "Marker",     size: 4 * K, note: "Says the chip holds openipixelcolor's animations" },
+  { id: "free", name: "Not used",   size: 24 * K, note: "" },
+  { id: "anim", name: "Animations", size: animBytes, note: "What you save from Create" },
+];
 
 /* ---- the animation space ---- */
 function linkHover(slot, onOff) {
   for (const n of document.querySelectorAll(`#stSlots [data-slot="${slot}"], #stList [data-slot="${slot}"]`)) n.classList.toggle("hl", onOff);
 }
+const columns = (n) => {
+  const narrow = matchMedia("(max-width: 640px)").matches;
+  return n > 20 ? (narrow ? 16 : 32) : (narrow ? 10 : 20);
+};
 function renderAnimations() {
   const st = libraryState(), strip = $("#stSlots"), list = $("#stList");
   const usable = !!(ready() && st);
   $("#stClean").disabled = !usable || !st.items.length;
   $("#stRefresh").disabled = !ready();
   strip.replaceChildren(); list.replaceChildren();
-  const nSlots = st ? st.slots : 20, slotBytes = (st ? st.slotKb : 32) * K, total = nSlots * slotBytes;
+  const nSlots = st ? st.slots : 20, slotBytes = (st ? st.slotKb : 32) * K, total = nSlots * slotBytes, cols = columns(nSlots);
+  strip.style.setProperty("--cols", cols);
+  strip.classList.toggle("many", nSlots > 20);
 
-  // the strip: one block per animation over the slots it takes, free slots as empty cells
+  // the strip: one block per animation over the slots it takes (in two pieces where it goes past the end of
+  // a row), free slots as empty cells
   const starts = new Map(usable ? st.items.map((it) => [it.slot, it]) : []);
   let usedBytes = 0;
   for (let s = 0; s < nSlots;) {
@@ -41,19 +57,28 @@ function renderAnimations() {
     if (!it) { strip.append(el("span", { class: "free", title: `Slot ${s + 1}: free` })); s++; continue; }
     const n = Math.max(1, Math.min(nSlots - s, Math.ceil(it.size / slotBytes)));
     usedBytes += n * slotBytes;
-    const cv = el("canvas", { width: 32, height: 32 });
-    const run = el("button", { class: "run", style: `grid-column: span ${n}`, "data-slot": it.slot,
-      title: `${it.name || `Slot ${it.slot + 1}`}: ${kb(it.size)}, ${n} ${n === 1 ? "slot" : "slots"}. Click to play it.`,
-      onclick: () => play(it), onmouseenter: () => linkHover(it.slot, true), onmouseleave: () => linkHover(it.slot, false) },
-      el("span", { class: "screen" }, cv), n > 1 ? el("span", { class: "label" }, it.name || `Slot ${it.slot + 1}`) : null);
-    previewInto(cv, it.crc, it.thumb);
-    strip.append(run);
+    const name = it.name || `Slot ${it.slot + 1}`;
+    for (let at = s, left = n, first = true; left > 0; first = false) {
+      const k = Math.min(left, cols - (at % cols));
+      const run = el("button", { class: first ? "run" : "run cont", style: `grid-column: span ${k}`, "data-slot": it.slot,
+        title: `${name}: ${kb(it.size)}, ${n} ${n === 1 ? "slot" : "slots"}. Click to play it.`,
+        onclick: () => play(it), onmouseenter: () => linkHover(it.slot, true), onmouseleave: () => linkHover(it.slot, false) });
+      if (first) {
+        const cv = el("canvas", { width: 32, height: 32 });
+        run.append(el("span", { class: "screen" }, cv));
+        if (k > (nSlots > 20 ? 3 : 1)) run.append(el("span", { class: "label" }, name));
+        previewInto(cv, it.crc, it.thumb);
+      }
+      strip.append(run);
+      at += k; left -= k;
+    }
     s += n;
   }
 
   // the summary
   if (!panel.chWrite) { $("#stFree").textContent = ""; $("#stFreeOf").textContent = "Connect the panel to see what's stored on it."; return; }
   if (!ready()) { $("#stFree").textContent = ""; $("#stFreeOf").textContent = "Storing animations needs newer firmware on the panel. Install it above."; return; }
+  if (libraryPreparing()) { $("#stFree").textContent = "…"; $("#stFreeOf").textContent = "Getting the extra memory chip ready (the first start after the update). Up to a minute."; return; }
   if (!st) { $("#stFree").textContent = "…"; $("#stFreeOf").textContent = "Reading what's stored…"; return; }
   $("#stFree").textContent = `${kb(total - usedBytes)} free`;
   $("#stFreeOf").textContent = st.items.length
@@ -90,15 +115,10 @@ function play(it) {
   });
 }
 
-/* ---- the whole flash ---- */
-function renderMemory() {
-  const st = libraryState(), bar = $("#stMem"), legend = $("#stMemList");
-  const known = {
-    anim: st && ready() ? st.items.reduce((a, it) => a + Math.ceil(it.size / (st.slotKb * K)) * st.slotKb * K, 0) : null,
-    fw: latest && panel.custom && panel.version === latest.version ? latest.size : null,
-  };
+/* ---- the memory ---- */
+function renderBar(bar, legend, areas, known, label, st) {
   bar.replaceChildren(); legend.replaceChildren();
-  for (const a of AREAS) {
+  for (const a of areas) {
     const used = known[a.id] ?? null;
     const part = el("span", { class: `part m-${a.id}${used != null ? " split" : ""}`, style: `flex:${a.size} 1 0px`,
       title: `${a.name}: ${kb(a.size)}${used != null ? `, ${kb(used)} used` : ""}` });
@@ -111,10 +131,20 @@ function renderMemory() {
     legend.append(el("li", {}, el("span", { class: `key m-${a.id}` }), el("span", { class: "nm" }, a.name),
       el("span", { class: "sz" }, kb(a.size)), el("span", { class: "dt" }, detail)));
   }
-  bar.setAttribute("aria-label", "The panel's 2 MB of flash: " + AREAS.map((a) => `${a.name} ${kb(a.size)}`).join(", "));
+  bar.setAttribute("aria-label", `${label}: ` + areas.map((a) => `${a.name} ${kb(a.size)}`).join(", "));
   requestAnimationFrame(() => {                       // an amount only where it fits inside its part
     for (const p of bar.children) { const t = p.querySelector(".amount"); t.hidden = false; t.hidden = t.scrollWidth + 14 > p.clientWidth; }
   });
+}
+function renderMemory() {
+  const st = libraryState(), ext = !!(st && st.ext && ready());
+  const animUsed = st && ready() ? st.items.reduce((a, it) => a + Math.ceil(it.size / (st.slotKb * K)) * st.slotKb * K, 0) : null;
+  const fw = latest && panel.custom && panel.version === latest.version ? latest.size : null;
+  $("#stMemTitle").textContent = ext ? "The panel's own memory: 2 MB" : "The whole memory: 2 MB";
+  renderBar($("#stMem"), $("#stMemList"), ext ? AREAS.map((a) => (a.id === "anim" ? MOVED : a)) : AREAS,
+    { anim: ext ? null : animUsed, fw }, "The panel's 2 MB of flash", st);
+  $("#stXBox").hidden = !ext;
+  if (ext) renderBar($("#stXMem"), $("#stXMemList"), xareas(st.slots * st.slotKb * K), { anim: animUsed }, "The extra 4 MB memory chip", st);
 }
 
 export function initStorage() {
@@ -122,6 +152,6 @@ export function initStorage() {
   $("#stRefresh").addEventListener("click", refreshLibrary);
   const both = () => { renderAnimations(); renderMemory(); };
   for (const ev of ["library", "connected", "disconnected", "release"]) on(ev, both);
-  window.addEventListener("resize", () => renderMemory());
+  window.addEventListener("resize", both);
   both();
 }

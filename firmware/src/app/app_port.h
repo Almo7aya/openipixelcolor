@@ -12,3 +12,11 @@ const void *app_flash_ptr(uint32_t addr);
 int app_flash_write_sector(uint32_t addr, const void *src, uint32_t len);   /* erase 4 KiB, then program */
 int app_flash_program(uint32_t addr, const void *src, uint32_t len);        /* program erased bytes only */
 void app_flash_forget(void);    /* drop cached flash reads: call before reading back what was rewritten */
+
+/* external flash (anim.c): addresses from 0; size 0 = the panel has none */
+uint32_t app_xflash_size(void);
+int app_xflash_read(uint32_t addr, void *dst, uint32_t len);
+int app_xflash_program(uint32_t addr, const void *src, uint32_t len);       /* erased bytes only */
+int app_xflash_write_sector(uint32_t addr, const void *src, uint32_t len);  /* erase 4 KiB, then program */
+int app_xflash_erase_all(void);  /* start erasing the whole chip; app_xflash_busy() says when it's done */
+int app_xflash_busy(void);       /* 1 busy, 0 ready, -1 no answer */

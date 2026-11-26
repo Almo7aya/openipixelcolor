@@ -4,13 +4,17 @@
 #include <stdint.h>
 #include "board.h"
 
-/* 20 slots of 32 KiB at the top of the update staging area, below the settings sectors (0x1FB000+).
- * An animation larger than one slot uses the following slots too. A firmware update only reaches this
- * area with an image larger than 0x48000 bytes (openipixelcolor ~45 KiB, the vendor's ~255 KiB); the boot
- * scan then finds the damaged animations by their CRC and leaves them out. */
-#define ANIM_BASE       0x00150000u
+/* Slots of 32 KiB; an animation larger than one slot uses the following slots too.
+ * With the external flash (anim.c, docs/HARDWARE.md): 127 slots from ANIM_XBASE, the chip marked as ours at
+ * ANIM_XMARK, sector 0 left erased. Without it: 20 slots at the top of the internal update staging area,
+ * below the settings sectors (0x1FB000+); a firmware update only reaches them with an image larger than
+ * 0x48000 bytes, and the boot scan then leaves the damaged ones out by their CRC. */
+#define ANIM_BASE       0x00150000u    /* internal flash */
 #define ANIM_SLOT_SIZE  0x8000u
-#define ANIM_SLOTS      20u
+#define ANIM_SLOTS_INT  20u
+#define ANIM_XMARK      0x00001000u    /* external flash: "ours" + layout */
+#define ANIM_XBASE      0x00008000u    /* external flash: slot 0 */
+#define ANIM_SLOTS_MAX  127u           /* external flash: up to 4 MiB */
 #define ANIM_ALL        0xFFu          /* "slot" meaning: every stored animation in turn */
 #define ANIM_KEEP       0xFEu          /* 0xF111: change the speed only */
 #define ANIM_W          ((unsigned)BOARD_W)   /* a file must be made for this panel's size (header w, h) */
@@ -27,10 +31,10 @@
 
 #define ANIM_PLAY_REQ   0x100          /* anim_cmd result flag: replied, and the slot in the low byte should play */
 
-void     anim_init(void);                                   /* at boot: scan the store (plain memory reads) */
+void     anim_init(void);                                   /* at boot: find the store and scan it */
 int      anim_cmd(uint16_t cmd, const uint8_t *p, unsigned len, uint32_t now);   /* -1 = not ours, else replied */
 void     anim_abort_upload(void);                           /* a firmware update starts */
-void     anim_tick(uint32_t now);                           /* upload timeout */
+void     anim_tick(uint32_t now);                           /* upload timeout; preparing the external flash */
 int      anim_uploading(void);
 int      anim_draw_saving(uint32_t now, int playing);       /* saving screen during an upload, then "saved"; 1 = drew */
 

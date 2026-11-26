@@ -3,6 +3,7 @@
 #include "../drv/display.h"
 #include "../drv/link.h"
 #include "../drv/iflash.h"
+#include "../drv/xflash.h"
 #include "../hal/timer.h"
 
 void app_set_brightness_pct(unsigned pct)
@@ -58,3 +59,17 @@ void app_flash_forget(void)
     for (uint32_t i = 0; i < 0x40000u / 4u; i++) sum += p[i];
     (void)sum;
 }
+
+/* the external flash (drv/xflash.c), found the first time it's asked about. Writing it doesn't stop the CPU
+ * (the code runs from the internal flash), so there's nothing to blank or catch up. */
+uint32_t app_xflash_size(void)
+{
+    static uint8_t tried;
+    if (!tried) { tried = 1; xflash_init(); }
+    return xflash_size();
+}
+int app_xflash_read(uint32_t addr, void *dst, uint32_t len)                { return xflash_read(addr, dst, len); }
+int app_xflash_program(uint32_t addr, const void *src, uint32_t len)       { return xflash_program(addr, src, len); }
+int app_xflash_write_sector(uint32_t addr, const void *src, uint32_t len)  { return xflash_write_sector(addr, src, len); }
+int app_xflash_erase_all(void)                                             { return xflash_erase_all_start(); }
+int app_xflash_busy(void)                                                  { return xflash_busy(); }

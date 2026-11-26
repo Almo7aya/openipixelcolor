@@ -67,6 +67,32 @@ int app_flash_write_sector(uint32_t a, const void *src, uint32_t n)
 }
 void app_flash_forget(void) { }
 
+/* the external flash: 4 MiB of RAM, erased in no time (anim.c then sets it up at once) */
+static uint8_t xmem[4u << 20];
+uint32_t app_xflash_size(void) { return sizeof xmem; }
+int app_xflash_busy(void)      { return 0; }
+int app_xflash_read(uint32_t a, void *d, uint32_t n)
+{
+    if (a + n > sizeof xmem) return -1;
+    uint8_t *p = d;
+    for (uint32_t i = 0; i < n; i++) p[i] = xmem[a + i];
+    return 0;
+}
+int app_xflash_program(uint32_t a, const void *src, uint32_t n)
+{
+    if (a + n > sizeof xmem) return -1;
+    const uint8_t *b = src;
+    for (uint32_t i = 0; i < n; i++) xmem[a + i] &= b[i];
+    return 0;
+}
+int app_xflash_write_sector(uint32_t a, const void *src, uint32_t n)
+{
+    if ((a & 0xFFFu) || n > 4096u || a + 4096u > sizeof xmem) return -1;
+    for (uint32_t i = 0; i < 4096u; i++) xmem[a + i] = 0xFF;
+    return app_xflash_program(a, src, n);
+}
+int app_xflash_erase_all(void) { for (uint32_t i = 0; i < sizeof xmem; i++) xmem[i] = 0xFF; return 0; }
+
 /* ---- exports ---- */
 static fb_t fb;
 static uint8_t in[VP_IN_MAX] __attribute__((aligned(4)));

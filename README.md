@@ -68,8 +68,9 @@ controls the panel straight from Chrome or Edge over Web Bluetooth.
   shadow, outline and glow, animated backgrounds and live `{time}` `{date}` values. Any language: the web app
   draws the text with your computer's fonts, Arabic and right-to-left included.
 - **Your own animations, stored on the panel:** from a GIF, an animated WebP or PNG, a video or a few
-  pictures, drawn frame by frame, or generated (animated emoji, or a formula for every LED). Up to 20 of
-  them (640 KB), played by the panel itself, also after it was switched off.
+  pictures, drawn frame by frame, or generated (animated emoji, or a formula for every LED). Up to 127 of
+  them (4 MB) on the panel's extra memory chip, played by the panel itself, also after it was switched off.
+  (A panel without that chip keeps 20, 640 KB, in its own flash.)
 - **Pictures and drawing**, with live painting straight onto the panel.
 - **Scoreboard, stopwatch, equalizer bars and test patterns.**
 - **Its own screens:** the logo draws itself at start-up, a welcome screen on the very first start, and

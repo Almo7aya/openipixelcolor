@@ -13,20 +13,33 @@ import { thumbOf } from "./create/import.js";
 import OPA from "./create/anim-codec.js";
 
 const FW_MIN = 18, ALL = 0xFF, KEEP = 0xFE;
+const PREPARING = "The panel is getting its animation storage ready (the first start after the update erases its extra memory chip). This takes up to a minute.";
 const REASONS = {
-  3: "The panel refused the request.", 4: "The panel isn't ready for animations (is it in rescue mode?).",
+  3: "The panel refused the request.", 4: "The panel isn't ready for animations (is it in rescue mode, or still getting its storage ready?).",
   5: "The upload stopped: the panel waited too long for data.", 6: "A piece arrived out of order.",
   7: "A piece had the wrong size.", 8: "The panel refused the file's header.",
   9: "The panel couldn't write its flash memory.", 10: "The copy in the panel's memory didn't check out.",
 };
 const cache = store.get("animlib", {});            // crc -> { name, thumb, t }
-const lib = { items: [], store: null, showing: -1, busy: false };
+const lib = { items: [], store: null, showing: -1, busy: false, preparing: false };
 export const ready = () => panel.chWrite && panel.custom && panel.level >= FW_MIN;
 
+/* the slots, 32 to a page of the reply (openipixelcolor 104 with the extra memory chip has 127; older ones
+   20 and no pages). Flags: bit 1 the extra chip, bit 2 still preparing it, bits 4-7 the page. */
 async function list() {
-  const r = await send(CMD.ANIM_LIST, [], 4000);
-  if (r[4] !== 1) throw new Error(REASONS[4]);
-  return { slots: r[5], slotKb: r[6], valid: rd32(r, 7), used: rd32(r, 11) };
+  const page = (p) => send(CMD.ANIM_LIST, [p], 4000, (v) => (v[15] >> 4) === p);
+  const r = await page(0);
+  if (r[4] !== 1) { const e = new Error(r[15] & 4 ? PREPARING : REASONS[4]); e.preparing = !!(r[15] & 4); throw e; }
+  const l = { slots: r[5], slotKb: r[6], valid: [], used: [], ext: !!(r[15] & 2) };
+  const take = (v, first) => {
+    for (let i = 0; i < 32 && first + i < l.slots; i++) {
+      l.valid[first + i] = ((rd32(v, 7) >>> i) & 1) === 1;
+      l.used[first + i] = ((rd32(v, 11) >>> i) & 1) === 1;
+    }
+  };
+  take(r, 0);
+  for (let p = 1; p * 32 < l.slots; p++) take(await page(p), p * 32);
+  return l;
 }
 async function info(slot) {
   const r = await send(CMD.ANIM_INFO, [slot, 0], 4000, (v) => v[5] === slot && v[6] === 0);
@@ -55,8 +68,9 @@ export async function refreshLibrary() {
   lib.busy = true;
   try {
     const l = await list(), items = [];
+    lib.preparing = false;
     for (let s = 0; s < l.slots; s++) {
-      if (!((l.valid >>> s) & 1)) continue;
+      if (!l.valid[s]) continue;
       const it = await info(s);
       if (!it) continue;
       const c = cache[it.crc];
@@ -66,10 +80,14 @@ export async function refreshLibrary() {
     }
     lib.store = l; lib.items = items;
     emit("library", items);
-  } catch (e) { toastError(e.message); }
+  } catch (e) {
+    if (e.preparing) { lib.preparing = true; setTimeout(() => { if (ready()) refreshLibrary(); }, 5000); }   /* look again soon */
+    else toastError(e.message);
+  }
   finally { lib.busy = false; render(); }
-  fetchMissingPreviews();
+  if (!lib.preparing) fetchMissingPreviews();
 }
+export const libraryPreparing = () => lib.preparing;
 
 /* animations without a picture here (sent from elsewhere): read one back from the panel, one at a time */
 let reading = false;
@@ -90,8 +108,8 @@ async function fetchMissingPreviews() {
     }
   } finally { reading = false; }
 }
-/* for the storage overview: { slots, slotKb, items: [{ slot, frames, size, crc, name, thumb }] } or null */
-export const libraryState = () => (lib.store ? { slots: lib.store.slots, slotKb: lib.store.slotKb, items: lib.items } : null);
+/* for the storage overview: { slots, slotKb, ext, items: [{ slot, frames, size, crc, name, thumb }] } or null */
+export const libraryState = () => (lib.store ? { slots: lib.store.slots, slotKb: lib.store.slotKb, ext: lib.store.ext, items: lib.items } : null);
 
 export async function deleteAnimation(slot, name) {
   const r = await send(CMD.ANIM_DELETE, [slot], 8000);
@@ -106,6 +124,7 @@ function render() {
   $("#libActions").hidden = !ready() || !lib.items.length;
   if (!panel.chWrite) { empty.textContent = "Connect the panel to see the animations stored on it."; empty.hidden = false; $("#libSpace").textContent = ""; return; }
   if (!ready()) { empty.textContent = "Animations need newer firmware on the panel. Install it under Device."; empty.hidden = false; return; }
+  if (lib.preparing) { empty.textContent = PREPARING; empty.hidden = false; $("#libSpace").textContent = ""; return; }
   empty.textContent = "No animations on the panel yet. Make one under Create.";
   empty.hidden = lib.items.length > 0;
   for (const it of lib.items) {
@@ -133,7 +152,7 @@ function render() {
     box.append(tile);
   }
   const l = lib.store;
-  if (l) { let n = 0; for (let s = 0; s < l.slots; s++) n += (l.used >>> s) & 1; $("#libSpace").textContent = n ? `${Math.round(n * 100 / l.slots)}% of the space used` : ""; }
+  if (l) { const n = l.used.filter(Boolean).length; $("#libSpace").textContent = n ? `${Math.round(n * 100 / l.slots)}% of the space used` : ""; }
 }
 
 /* ---- upload (Create) ---- */
@@ -155,7 +174,7 @@ export async function uploadAnimation(bytes, name, thumb, onProgress) {
   let slot = -1;
   for (let s = 0; s + need <= l.slots && slot < 0; s++) {
     let free = true;
-    for (let k = s; k < s + need; k++) if ((l.used >>> k) & 1) free = false;
+    for (let k = s; k < s + need; k++) if (l.used[k]) free = false;
     if (free) slot = s;
   }
   if (slot < 0) throw new Error("Not enough free space on the panel for this one. Delete an animation, or use fewer frames or colours.");

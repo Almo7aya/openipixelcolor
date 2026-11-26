@@ -59,6 +59,7 @@ Example: version query `04 00 05 80` → reply `08 00 05 80 65 00 xx yy` (openip
 | `0xF108` | `A5` | Factory settings (the `A5` key avoids accidents) |
 | `0xF109` | – | Saved-settings status, see below |
 | `0xF113` | – | Panel info (101+): reply `width(2) height(2) board device_type` |
+| `0xF114` | `sub [addr(3)]` | Extra memory chip, read only (104+). sub 0: `id(3) status_as_found status_now ok kib(2) ms(2)` (JEDEC id; a read-speed test); sub 2: `addr_hi` and the 10 bytes at `addr`. Status 0 = no chip |
 | `0xF10A` | `r g b speed flags h w_lo w_hi columns…` | One text strip (older single-message form) |
 | `0xF10B` | see below | Text playlist with effects |
 | `0xF10C` | `slot length(4) flags` | Animation upload: begin. flags bit 0 = play it when stored. See [Animations](#animations) |
@@ -149,26 +150,32 @@ the panel shows.
 Animations are files made by the app (the web UI makes them from GIFs, videos, pictures, its frame editor
 or its generators: `webui/js/create/anim-codec.js`). The panel stores them in flash and plays them by itself.
 
-**Storage.** 20 slots of 32 KiB. A bigger file uses the following slots as well (up to 640 KiB in all).
-The app picks free slots from the `0xF10E` reply. An upload into slots that an older animation uses
-deletes that animation.
+**Storage.** Slots of 32 KiB; a bigger file uses the following slots as well. From openipixelcolor 104 on,
+a panel with the extra memory chip (docs/HARDWARE.md) has 127 slots (4064 KiB) there; otherwise, and
+before 104, 20 slots (640 KiB) in the main flash. On the first start of 104 the chip is erased (10–40 s,
+in the background: the store answers "not ready" with flags bit 2 meanwhile), and animations from the
+main flash are copied to the same slots, checked, and then removed there. The app picks free slots from the
+`0xF10E` reply. An upload into slots that an older animation uses deletes that animation.
 
 **Upload.**
 
 1. `0xF10C slot length(4) flags`: reply status 1, or 0 and a reason byte.
 2. `0xF10D offset(4) data`, the file in 4096-byte pieces, in order (the last one shorter). The panel
-   writes each piece at once (the picture goes dark for about half a second per piece; a progress bar shows
-   in between). Reply `status offset(4) reason`: status 1 = more expected, 2 = stored, 0 = refused. The
+   writes each piece at once (in the main flash the picture goes dark for about half a second per piece;
+   on the extra chip there is no pause; a progress bar shows in between). Reply `status offset(4) reason`: status 1 = more expected, 2 = stored, 0 = refused. The
    offset echo tells replies apart.
 3. After the last piece the panel reads the file back from flash and checks its CRC. Only then does it
    mark it complete. A file that was not completely sent or did not check out is never used. If no piece
    arrives for 15 s, the upload is dropped.
 
-Reasons: 3 bad request, 4 not ready (rescue mode), 5 no upload running, 6 wrong offset, 7 wrong piece
+Reasons: 3 bad request, 4 not ready (rescue mode, or the extra memory chip still being prepared), 5 no upload running, 6 wrong offset, 7 wrong piece
 length, 8 bad header, 9 flash write failed, 10 read-back check failed.
 
-**`0xF10E` reply:** `slots slot_kb valid(4) used(4) flags`. `valid` has a bit for each slot where an
-animation starts, `used` for each slot in use. flags bit 0 = an upload is running.
+**`0xF10E [page]` reply:** `slots slot_kb valid(4) used(4) flags`. `valid` has a bit for each slot where an
+animation starts, `used` for each slot in use, for slots `32 × page` to `32 × page + 31` (page 0 without
+the byte; ask for pages 1, 2, 3 when there are more than 32 slots). flags bit 0 = an upload is running,
+bit 1 = the store is on the extra memory chip, bit 2 = the chip is still being prepared (status 0 until it's
+done), bits 4–7 = the page (so a late duplicate of another page's reply can be told apart).
 
 **`0xF10F slot part` reply:** `slot part` and then, for part 0, `frames(2) length(3) crc(4)`; for parts 1–3,
 nine bytes of the name each. Status 0 = no animation starts there.

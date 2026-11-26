@@ -11,7 +11,7 @@ behaves. Facts marked *(guess)* are not confirmed. Corrections are welcome.
 | Bluetooth | A separate BLE module. It talks to the main chip over SPI (module → chip) and UART (chip → module) and does all the Bluetooth work |
 | Display | 32 × 32 RGB LED matrix, driven directly by the chip's LED controller |
 | Button | One key on P2.6, active low, external pull-up |
-| Extra flash | An 8-pin 25Q32 SPI NOR (4 MiB) next to the chip. The vendor firmware keeps content there; openipixelcolor does not use it |
+| Extra flash | An 8-pin SPI NOR next to the chip, 4 MiB (seen: Winbond W25Q32, JEDEC id `EF 40 16`). The vendor firmware keeps its pictures there; openipixelcolor 104 and later keep the animations there (below) |
 
 Panels with this board advertise as `LED_BLE_…` and offer the Bluetooth service `0xFA00`.
 
@@ -22,7 +22,7 @@ Panels with this board advertise as `LED_BLE_…` and offer the Bluetooth servic
 | `0x000000–0x00FFFF` | Bootloader. Never written by openipixelcolor |
 | `0x010000–…` | Application (openipixelcolor or the vendor firmware). Runs in place |
 | `0x108000–0x1FEFFF` | Update staging area: a new image is received here, the bootloader copies it to `0x10000` |
-| `0x150000–0x1EFFFF` | openipixelcolor: stored animations (20 slots of 32 KiB) |
+| `0x150000–0x1EFFFF` | openipixelcolor: stored animations (20 slots of 32 KiB) when the panel has no extra flash, and before 104 |
 | `0x1FB000` | openipixelcolor: saved text playlist (one 4 KiB sector) |
 | `0x1FC000` | openipixelcolor: saved picture |
 | `0x1FD000` | openipixelcolor: settings log (16 × 256-byte records) |
@@ -52,6 +52,26 @@ Flash reads go through a cache, and erasing or programming does not update it. D
 a write can come back unchanged afterwards. This was seen when an animation that had been playing was
 overwritten: the read-back check failed. Reading 256 KiB of other flash first pushes the old lines out
 (`app_flash_forget()`). Settings avoid the problem by never reading back in the same boot.
+
+## Extra flash (4 MiB, SPI)
+
+On the chip's SPI master at `0x40003000`: SCK/MOSI/MISO on P2.0–P2.2 (pin-mux `0x400100F0` bit 3), chip
+select P2.3. A micro-SD socket shares the bus with its select on P2.7 (kept high). Registers, as the vendor
+firmware uses them: `+0x00` received byte, `+0x04` byte to send, `+0x08` write 1 to start, `+0x0C` control
+(16 bit: [3:0] clock divider, 0 used; [5:4] SPI mode, 0; [10] master; [12] receive; [13] DMA; [15] enable),
+`+0x10` write 1 / 4 to clear the received / done flags, `+0x14` status ([3] done, [4] busy). No clock enable
+is needed. `firmware/src/drv/xflash.c` moves one byte at a time (the vendor firmware uses DMA channels 6 and
+7): reads run at about 680 KB/s; a 4 KiB sector erases in about 26 ms and programs in about 17 ms. The CPU
+keeps running meanwhile (it runs from the internal flash), so the picture doesn't stop.
+
+| Range | Contents (openipixelcolor 104 and later) |
+|---|---|
+| `0x000000` | Left erased. The vendor firmware keeps its list of pictures here: erased reads as "no pictures", so going back to the vendor firmware is safe |
+| `0x001000` | Marker: `"OPXS"` and the layout. Without it, the first start erases the whole chip, then moves the animations from the internal flash over |
+| `0x008000–0x3FFFFF` | Stored animations: 127 slots of 32 KiB |
+
+The vendor firmware's layout, for reference: its picture list in sector 0, the pictures in 12 KiB blocks
+from `0x1000` (up to 341).
 
 ## Application image
 
@@ -105,6 +125,8 @@ arrives twice. Only one Bluetooth connection at a time is possible. The protocol
 | Pin | Use |
 |---|---|
 | P2.6 | Key (active low) |
+| P2.0–P2.3 | Extra flash: SPI SCK, MOSI, MISO, chip select |
+| P2.7 / P2.5 | Micro-SD socket: chip select (kept high), card detect *(no card seen in any panel)* |
 | P0.30 | "Busy" output *(guess: tells the module the chip is working)* |
 | P2.11 | Output, driven high after start-up *(guess: power enable)* |
 | P1.30 / P1.31 | Only pull-ups configured; use unknown |
@@ -115,6 +137,6 @@ arrives twice. Only one Bluetooth connection at a time is possible. The protocol
 See `firmware/src/hal/regs.h`. Main blocks: system/power `0x40020000`, clock control
 `0x40021000`, reset `0x40022000`, PLL `0x40026000`, timers `0x4002A000` (8 × 0x800), UART0/1
 `0x40005000` / `0x40006000`, UART2 `0x40007000`, GPIO and pin mux `0x40010000`, internal flash
-controller `0x40011000`.
+controller `0x40011000`, SPI master (extra flash) `0x40003000`.
 
 No watchdog is fed; it is switched off at boot.

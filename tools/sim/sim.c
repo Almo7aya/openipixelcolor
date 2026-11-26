@@ -66,6 +66,40 @@ static fb_t fb;
 static FILE *out;
 static uint32_t now = 1000;
 
+/* ---- emulated external flash for anim.c: 4 MiB, NOR rules, a chip erase that takes 6 s; on or off ---- */
+static int xf_on, xf_bad;
+static uint8_t xmem[4u << 20];
+static uint32_t xbusy_until;
+
+uint32_t app_xflash_size(void) { return xf_on ? (uint32_t)sizeof xmem : 0u; }
+int app_xflash_busy(void)      { return now < xbusy_until; }
+int app_xflash_read(uint32_t a, void *d, uint32_t n)
+{
+    if (!xf_on || a + n > sizeof xmem || app_xflash_busy()) return -1;
+    memcpy(d, xmem + a, n);
+    return 0;
+}
+int app_xflash_program(uint32_t a, const void *src, uint32_t n)
+{
+    if (!xf_on || a + n > sizeof xmem || app_xflash_busy()) return -1;
+    const uint8_t *b = src;
+    for (uint32_t i = 0; i < n; i++) { if ((xmem[a + i] & b[i]) != b[i]) xf_bad++; xmem[a + i] &= b[i]; }
+    return 0;
+}
+int app_xflash_write_sector(uint32_t a, const void *src, uint32_t n)
+{
+    if (!xf_on || (a & 0xFFFu) || n > 4096u || a + 4096u > sizeof xmem || app_xflash_busy()) return -1;
+    memset(xmem + a, 0xFF, 4096);
+    return app_xflash_program(a, src, n);
+}
+int app_xflash_erase_all(void)
+{
+    if (!xf_on) return -1;
+    memset(xmem, 0xFF, sizeof xmem);
+    xbusy_until = now + 6000u;
+    return 0;
+}
+
 static int cmd(uint16_t c, const uint8_t *payload, unsigned n)
 {
     static uint8_t p[4 + 8 + 4096] __attribute__((aligned(4)));
@@ -594,6 +628,60 @@ static int anim_test(const char *dir)
     for (unsigned i = 0; i < sizeof fb; i++) lit += ((uint8_t *)fb)[i] != 0;
     CHECK(lit > 0, "nothing stored: a placeholder instead of a black panel");
     CHECK(fl_bad == 0, "never programmed over unerased bytes");
+
+    printf("10. a panel with the external flash: erased on the first start, the old animations moved over\n");
+    CHECK(upload(0, A.opa, A.len, 0, -1) == 0 && upload(3, B.opa, B.len, 0, -1) == 0, "two in the internal flash (slots 0 and 3)");
+    play(3, 10);
+    idle(4000);                                             /* the settings save it */
+    xf_on = 1;
+    for (unsigned i = 0; i < sizeof xmem; i++) xmem[i] = (uint8_t)(i * 13u + 5u);   /* the vendor's pictures */
+    reboot(1);
+    anim_list(&valid, &used);
+    CHECK(last_reply[2] == 0 && (last_reply[13] & 6) == 6, "erasing the chip: not ready yet, and says so");
+    idle(SCREENS_BOOT_MS + 300);
+    status(st);
+    anim_list(&valid, &used);
+    CHECK(st[0] == MODE_ANIM && last_reply[2] == 0, "after the boot screen: animation mode (waiting), chip still erasing");
+    idle(3000);
+    anim_list(&valid, &used);
+    CHECK(last_reply[2] == 1 && last_reply[3] == 127 && last_reply[4] == 32 && (last_reply[13] & 6) == 2 &&
+          valid == ((1u << 0) | (1u << 3)), "ready: 127 slots of 32 KiB, both animations moved over");
+    {
+        int blank = 1;
+        for (unsigned i = 0; i < 4096; i++) if (xmem[i] != 0xFF) blank = 0;
+        CHECK(blank, "sector 0 left erased: the vendor firmware would find no pictures");
+    }
+    CHECK(flash_mem[ANIM_BASE - FL_BASE] == 0xFF && flash_mem[ANIM_BASE - FL_BASE + 3 * ANIM_SLOT_SIZE] == 0xFF,
+          "the old copies are gone from the internal flash");
+    status(st);
+    CHECK(st[0] == MODE_ANIM && st[1] == 3, "back to playing slot 3, as before the update");
+    play(3, 10);
+    CHECK(play_matches(&B, "") == 0, "every frame pixel-exact from the external flash");
+    r = upload(100, B.opa, B.len, 0, -1);
+    CHECK(r == 0, "uploaded into slot 100");
+    {
+        uint8_t pg = 3;
+        cmd(ANIM_CMD_LIST, &pg, 1);
+        uint32_t v3 = last_reply[5] | (last_reply[6] << 8) | ((uint32_t)last_reply[7] << 16) | ((uint32_t)last_reply[8] << 24);
+        uint32_t u3 = last_reply[9] | (last_reply[10] << 8) | ((uint32_t)last_reply[11] << 16) | ((uint32_t)last_reply[12] << 24);
+        CHECK(v3 == (1u << 4) && u3 == (7u << 4), "page 3 of the list: slot 100 starts, 100-102 in use");
+    }
+    play(100, 10);
+    CHECK(play_matches(&B, "") == 0, "slot 100 plays pixel-exact");
+    reboot(1);
+    anim_list(&valid, &used);
+    CHECK(last_reply[2] == 1 && (last_reply[13] & 4) == 0 && valid == ((1u << 0) | (1u << 3)), "after a power cycle: ready at once, not erased again");
+    {
+        uint8_t pg = 3;
+        cmd(ANIM_CMD_LIST, &pg, 1);
+        CHECK(last_reply[5] == (1u << 4), "slot 100 still there");
+    }
+    d = ANIM_ALL;
+    cmd(ANIM_CMD_DELETE, &d, 1);
+    anim_list(&valid, &used);
+    CHECK(last_reply[2] == 1 && valid == 0, "delete all");
+    CHECK(xf_bad == 0, "never programmed over unerased bytes in the external flash either");
+    xf_on = 0;
 
     fclose(out);
     printf("%s: %d failed\n", nfail ? "ANIM TEST FAILED" : "anim test passed", nfail);

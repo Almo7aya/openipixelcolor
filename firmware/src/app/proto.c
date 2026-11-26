@@ -6,6 +6,7 @@
 #include "../drv/link.h"
 #include "../drv/iflash.h"
 #include "../drv/display.h"
+#include "../drv/xflash.h"
 #include "modes.h"
 #include "settings.h"
 #include "anim.h"
@@ -36,6 +37,30 @@ static void arm_ota_timer(void) { ota_deadline = millis() + 10000u; if (!ota_dea
 
 static uint32_t rd32(const uint8_t *p) { return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24); }
 static void wr32(uint8_t *p, uint32_t v) { p[0] = (uint8_t)v; p[1] = (uint8_t)(v >> 8); p[2] = (uint8_t)(v >> 16); p[3] = (uint8_t)(v >> 24); }
+
+/* 0xF114 external flash, read only (docs/PROTOCOL.md). sub 0: id(3) status-as-found status-now ok
+ * kib_read(2) ms(2) (a read-speed test: 16 KiB); sub 2 addr(3): the 10 bytes there. */
+static unsigned xflash_probe(unsigned sub, const uint8_t *p, unsigned len, uint8_t *x)
+{
+    uint8_t buf[256];
+    if (!app_xflash_size()) return 0;
+    if (sub == 0) {
+        uint32_t i = xflash_id(), t0 = millis(), kib = 0;
+        x[0] = (uint8_t)(i >> 16); x[1] = (uint8_t)(i >> 8); x[2] = (uint8_t)i;
+        x[3] = xflash_status_at_init(); x[4] = xflash_status(); x[5] = (uint8_t)xflash_ok();
+        for (uint32_t a = 0; xflash_ok() && a < 16384u; a += sizeof buf, kib++) if (xflash_read(a, buf, sizeof buf) != 0) break;
+        uint32_t ms = millis() - t0;
+        kib /= 4u;
+        x[6] = (uint8_t)kib; x[7] = (uint8_t)(kib >> 8); x[8] = (uint8_t)ms; x[9] = (uint8_t)(ms >> 8);
+        return xflash_ok();
+    }
+    if (sub == 2) {
+        uint32_t a = len >= 8 ? ((uint32_t)p[5] << 16) | ((uint32_t)p[6] << 8) | p[7] : 0;
+        x[0] = (uint8_t)(a >> 16);
+        return xflash_read(a, x + 1, 10) == 0;
+    }
+    return 0;
+}
 
 /* The companion module doesn't say when an app connects, but every app sends 0x8001 (time sync) first, and
  * a connected app keeps talking (the web UI polls every 4 s). So 0x8001 after 8 s of silence = connected. */
@@ -105,6 +130,11 @@ void proto_handle(const uint8_t *pkt, unsigned len)
         uint8_t x[6] = { (uint8_t)BOARD_W, (uint8_t)(BOARD_W >> 8), (uint8_t)BOARD_H, (uint8_t)(BOARD_H >> 8),
                          (uint8_t)BOARD_ID, (uint8_t)BOARD_DEVICE_TYPE };
         link_reply(FW_CMD_PANEL_INFO, 1, x, sizeof x);
+        break; }
+    case FW_CMD_XFLASH: {                              /* openipixelcolor: external flash probe */
+        uint8_t x[11] = { 0 };
+        unsigned r = fw_mode() == FW_MODE_NORMAL && !ota_active() ? xflash_probe(len >= 5 ? pkt[4] : 0, pkt, len, x) : 0;
+        link_reply(FW_CMD_XFLASH, (uint8_t)r, x, sizeof x);
         break; }
     case 0xF109: {                                     /* openipixelcolor: saved-settings status (see settings.c) */
         uint8_t x[8];
