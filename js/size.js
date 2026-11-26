@@ -2,7 +2,7 @@
 // in the reply to the time command (0x8001, byte 4: the device type); openipixelcolor 101 and later also
 // reports its exact width and height (0xF113). Everything that makes pixels (drawing, pictures, animations,
 // the panel preview) works at this size. Until a panel connects, and for a type not in the table: 32 x 32.
-import { emit } from "./core.js?v=c02e0ab";
+import { emit } from "./core.js?v=7f0cc15";
 
 /* device type byte -> [width, height], from the iPixel Color app's own table as open-source clients read it
    (pypixelcolor lib/device_info.py, and others agree up to 0x93; 0x94-0xA0 from apps 3.7-3.8). Seen on

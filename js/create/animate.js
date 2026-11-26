@@ -1,18 +1,18 @@
 // The animation maker: frames from files, the frame editor or a generator -> colours reduced and packed
 // (anim-codec.js) -> a preview decoded exactly like the panel plays it -> saved on the panel (library.js).
-import { $, $$, el, on, emit, store, segmented, fillSelect, kb } from "../core.js?v=c02e0ab";
-import { pix, drawMirror, claimMirror, mirrorNote } from "../mirror.js?v=c02e0ab";
-import { panel } from "../ble.js?v=c02e0ab";
-import { size } from "../size.js?v=c02e0ab";
-import { toast, toastError } from "../toast.js?v=c02e0ab";
-import { uploadAnimation, ready as libReady, goToLibrary, libraryState } from "../library.js?v=c02e0ab";
-import OPA from "./anim-codec.js?v=c02e0ab";
-import { readFiles, fitFrames, thumbOf, MAX_SOURCE_FRAMES } from "./import.js?v=c02e0ab";
-import { PixelCanvas, PALETTE } from "./pixelcanvas.js?v=c02e0ab";
-import { FORMULAS, MOTIONS, formulaFrames, emojiFrames } from "./generators.js?v=c02e0ab";
-import { SCENE_LIST, BACKDROPS, sceneFrames, sceneColor } from "./scenes3d.js?v=c02e0ab";
-import { ILLUSIONS, illusionFrames, illusionNote } from "./illusions.js?v=c02e0ab";
-import { PIC_EFFECTS, pictureFrames } from "./picfx.js?v=c02e0ab";
+import { $, $$, el, on, emit, store, segmented, fillSelect, kb } from "../core.js?v=7f0cc15";
+import { pix, drawMirror, claimMirror, mirrorNote } from "../mirror.js?v=7f0cc15";
+import { panel } from "../ble.js?v=7f0cc15";
+import { size } from "../size.js?v=7f0cc15";
+import { toast, toastError } from "../toast.js?v=7f0cc15";
+import { uploadAnimation, ready as libReady, goToLibrary, libraryState } from "../library.js?v=7f0cc15";
+import OPA from "./anim-codec.js?v=7f0cc15";
+import { readFiles, fitFrames, thumbOf, MAX_SOURCE_FRAMES } from "./import.js?v=7f0cc15";
+import { PixelCanvas, PALETTE } from "./pixelcanvas.js?v=7f0cc15";
+import { FORMULAS, MOTIONS, formulaFrames, emojiFrames } from "./generators.js?v=7f0cc15";
+import { SCENE_LIST, BACKDROPS, sceneFrames, sceneColor } from "./scenes3d.js?v=7f0cc15";
+import { ILLUSIONS, illusionFrames, illusionNote } from "./illusions.js?v=7f0cc15";
+import { PIC_EFFECTS, pictureFrames } from "./picfx.js?v=7f0cc15";
 
 const A = { src: "file", fileSrc: null, lastFiles: null, enc: null, encFrames: null, nameAuto: true, uploading: false, pic: null };
 

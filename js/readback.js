@@ -2,10 +2,10 @@
 // back, 10 bytes a request (0xF112, firmware 101 and later). Small files are read whole, so they move and the
 // panel preview can play them; for bigger ones only the colours and the first frame (decoded like the
 // player). Runs in the background, one request at a time between everything else.
-import { CMD, u32 } from "./protocol.js?v=c02e0ab";
-import { panel, send } from "./ble.js?v=c02e0ab";
-import { putAnim } from "./idb.js?v=c02e0ab";
-import OPA from "./create/anim-codec.js?v=c02e0ab";
+import { CMD, u32 } from "./protocol.js?v=7f0cc15";
+import { panel, send } from "./ble.js?v=7f0cc15";
+import { putAnim } from "./idb.js?v=7f0cc15";
+import OPA from "./create/anim-codec.js?v=7f0cc15";
 
 export const READBACK_LEVEL = 101;
 const WHOLE_MAX = 2048;                                  // read files up to this size completely (~200 requests)
