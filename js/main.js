@@ -10,21 +10,21 @@
 //   create/*.js                Create: animation maker, picture, drawing
 //   firmware.js, views/*.js    Device: firmware install and update notice, storage, rotation, details, reset
 //   pwa.js (+sw.js)            the installed app: offline use, "new version ready", install button
-import { $, on } from "./core.js?v=d872f6f";
-import { initNav, registerSub, startNav } from "./nav.js?v=d872f6f";
-import { mirrorOwner } from "./mirror.js?v=d872f6f";
-import { initVirtual, showLive } from "./virtual.js?v=d872f6f";
-import { initDevice } from "./device.js?v=d872f6f";
-import { initPlay } from "./play.js?v=d872f6f";
-import { initLibrary } from "./library.js?v=d872f6f";
-import { initText } from "./views/text.js?v=d872f6f";
-import { initAnimate } from "./create/animate.js?v=d872f6f";
-import { initPicture } from "./create/picture.js?v=d872f6f";
-import { initDraw } from "./create/draw.js?v=d872f6f";
-import { initFirmware } from "./firmware.js?v=d872f6f";
-import { initDeviceView } from "./views/device.js?v=d872f6f";
-import { initStorage } from "./views/storage.js?v=d872f6f";
-import { initPwa } from "./pwa.js?v=d872f6f";
+import { $, on } from "./core.js?v=06a6a24";
+import { initNav, registerSub, startNav } from "./nav.js?v=06a6a24";
+import { mirrorOwner } from "./mirror.js?v=06a6a24";
+import { initVirtual, showLive } from "./virtual.js?v=06a6a24";
+import { initDevice } from "./device.js?v=06a6a24";
+import { initPlay } from "./play.js?v=06a6a24";
+import { initLibrary } from "./library.js?v=06a6a24";
+import { initText } from "./views/text.js?v=06a6a24";
+import { initAnimate } from "./create/animate.js?v=06a6a24";
+import { initPicture } from "./create/picture.js?v=06a6a24";
+import { initDraw } from "./create/draw.js?v=06a6a24";
+import { initFirmware } from "./firmware.js?v=06a6a24";
+import { initDeviceView } from "./views/device.js?v=06a6a24";
+import { initStorage } from "./views/storage.js?v=06a6a24";
+import { initPwa } from "./pwa.js?v=06a6a24";
 
 initNav();
 initDevice();

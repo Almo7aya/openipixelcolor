@@ -1,9 +1,9 @@
 // Web Bluetooth link to the panel: connect, send packets, match replies, poll the status, reconnect after a
 // restart. Other modules read `panel` and listen for: connected, disconnected, state, status, saved.
-import { emit, sleep } from "./core.js?v=d872f6f";
-import { CMD, packet, fwVersionOf, healthText, savedText } from "./protocol.js?v=d872f6f";
-import { toastError } from "./toast.js?v=d872f6f";
-import { setSize, typeSize } from "./size.js?v=d872f6f";
+import { emit, sleep } from "./core.js?v=06a6a24";
+import { CMD, packet, fwVersionOf, healthText, savedText } from "./protocol.js?v=06a6a24";
+import { toastError } from "./toast.js?v=06a6a24";
+import { setSize, typeSize } from "./size.js?v=06a6a24";
 
 const SVC = 0x00fa, WR = 0xfa02, NT = 0xfa03;
 export const supported = !!navigator.bluetooth;
@@ -76,6 +76,7 @@ export function releaseDevice() {
 function onDisconnected() {
   panel.chWrite = null; waiter = null; panel.custom = false; panel.level = 0; panel.version = ""; panel.status = null;
   clearInterval(pollTimer);
+  if (linking) return;                                 /* openLink() tries again with the same panel */
   if (panel.holdDevice) { setState("connecting"); emit("disconnected", { expected: true }); return; }
   const wasBusy = panel.busy;
   releaseDevice();
@@ -85,15 +86,34 @@ function onDisconnected() {
 }
 window.addEventListener("pagehide", releaseDevice);
 
+/* The GATT link, retried: on Windows especially, the link often drops right after it opens ("GATT Server
+   is disconnected. Cannot retrieve services."), more so just after another page or app let the panel go.
+   A second try a moment later usually works. While this runs, a disconnect doesn't forget the panel. */
+let linking = false;
+async function openLink() {
+  for (let i = 0; ; i++) {
+    try {
+      const server = await panel.device.gatt.connect();
+      const svc = await server.getPrimaryService(SVC);
+      const wr = await svc.getCharacteristic(WR), nt = await svc.getCharacteristic(NT);
+      await nt.startNotifications();
+      return { wr, nt };
+    } catch (e) {
+      if (i >= 3 || e.name === "NotFoundError" || e.name === "SecurityError") throw e;   /* not a dropped link */
+      try { panel.device.gatt.disconnect(); } catch (x) { /* not connected */ }
+      await sleep(600 + i * 700);
+    }
+  }
+}
+
 /* GATT connection to panel.device, then time, versions and health. Uses rawSend: also works during a
    firmware step (panel.busy). */
 export async function attach() {
-  const server = await panel.device.gatt.connect();
-  const svc = await server.getPrimaryService(SVC);
-  panel.chWrite = await svc.getCharacteristic(WR);
-  const chNotify = await svc.getCharacteristic(NT);
-  await chNotify.startNotifications();
-  chNotify.addEventListener("characteristicvaluechanged", onNotify);
+  linking = true;
+  let link;
+  try { link = await openLink(); } finally { linking = false; }
+  panel.chWrite = link.wr;
+  link.nt.addEventListener("characteristicvaluechanged", onNotify);
   const now = new Date();
   const tr = await rawSend(packet(CMD.TIME, [now.getHours(), now.getMinutes(), now.getSeconds(), 0]), 4000);
   const v = await rawSend(packet(CMD.VERSION), 4000);
@@ -139,7 +159,9 @@ export async function connect() {
     } else {
       if (panel.device) { releaseDevice(); onDisconnected(); }
       setState("idle");
-      toastError(e.message);
+      const dropped = /GATT|disconnect|NetworkError|connection/i.test(`${e.name} ${e.message}`);
+      toastError(dropped ? "The panel dropped the connection. Close anything else connected to it (the phone app, another tab), " +
+        "then try again. If it keeps happening, switch the panel off and on." : e.message, { label: "Try again", fn: connect });
     }
   }
 }

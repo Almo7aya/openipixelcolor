@@ -1,12 +1,12 @@
 // A still picture: any image file, cut or fitted to the panel's size, shown on the panel preview, sent with 0xF103.
 // (Moving pictures go to the animation maker: they need the panel's animation store.)
-import { $, on, emit, segmented } from "../core.js?v=d872f6f";
-import { CMD } from "../protocol.js?v=d872f6f";
-import { send, act } from "../ble.js?v=d872f6f";
-import { pix, drawMirror, claimMirror, mirrorNote, mirrorOwner } from "../mirror.js?v=d872f6f";
-import { toast } from "../toast.js?v=d872f6f";
-import { readFiles, fitFrames } from "./import.js?v=d872f6f";
-import { size, sizeText } from "../size.js?v=d872f6f";
+import { $, on, emit, segmented } from "../core.js?v=06a6a24";
+import { CMD } from "../protocol.js?v=06a6a24";
+import { send, act } from "../ble.js?v=06a6a24";
+import { pix, drawMirror, claimMirror, mirrorNote, mirrorOwner } from "../mirror.js?v=06a6a24";
+import { toast } from "../toast.js?v=06a6a24";
+import { readFiles, fitFrames } from "./import.js?v=06a6a24";
+import { size, sizeText } from "../size.js?v=06a6a24";
 
 const P = { src: null, name: "", frames: 0, fit: "cover", rgb: null };
 

@@ -1,9 +1,9 @@
 // Moving previews of the animations stored on the panel, decoded from this browser's copy (idb.js) exactly
 // as the panel plays them. Animations sent from another device have no copy here: their saved picture, if
 // any, stands in. One animation frame loop drives every preview on the page.
-import { reducedMotion } from "./core.js?v=d872f6f";
-import { getAnim } from "./idb.js?v=d872f6f";
-import OPA from "./create/anim-codec.js?v=d872f6f";
+import { reducedMotion } from "./core.js?v=06a6a24";
+import { getAnim } from "./idb.js?v=06a6a24";
+import OPA from "./create/anim-codec.js?v=06a6a24";
 
 const decoded = new Map();                              // crc -> Promise<frames | null>
 const playing = new Set();                              // { cv, frames, i, due }
