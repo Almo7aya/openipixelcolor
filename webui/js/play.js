@@ -1,11 +1,10 @@
-// Play: effects and clock faces as animated preview tiles (drawn by the firmware's own code in the
-// simulator, tools/sim/make_previews.py), shuffle, clock options, the animations stored on the panel, tools.
+// Play, one page of sections: effects and clock faces as animated preview tiles (drawn by the firmware's
+// own code in the simulator, tools/sim/make_previews.py) with shuffle and clock options, the animations
+// stored on the panel (library.js), and the tools.
 import { $, $$, el, on, store, reducedMotion } from "./core.js";
 import { CMD, MODE } from "./protocol.js";
 import { send, act } from "./ble.js";
 import { EFFECTS, CLOCKS, TESTS, previewOf } from "./catalog.js";
-import { registerSub } from "./nav.js";
-import { refreshLibrary, ready as libReady } from "./library.js";
 
 function tile(name, img, onclick) {
   const still = reducedMotion();
@@ -79,11 +78,7 @@ export function initPlay() {
   initEffects();
   initClocks();
   initTools();
-  registerSub("play", $("#playChips"), "effects", (sub) => {
-    $$(".bar-opts").forEach((o) => { o.hidden = o.dataset.for !== sub; });     /* the options beside the tabs */
-    if (sub === "panel" && libReady()) refreshLibrary();
-  });
-  $("#nEffects").textContent = EFFECTS.length;           /* how many of each, beside the tab names */
+  $("#nEffects").textContent = EFFECTS.length;           /* how many of each, beside the section names */
   $("#nClocks").textContent = CLOCKS.length;
   on("library", (items) => { $("#nAnims").textContent = items.length || ""; });
   on("status", (r) => {

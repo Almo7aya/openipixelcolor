@@ -44,50 +44,53 @@
   <main class="content" id="main">
 
     <!-- ---------- Play ---------- -->
+    <!-- one page: effects, clocks, the panel's own animations and the tools, one after another -->
     <section class="view" id="view-play" aria-labelledby="h-play" hidden>
       <h2 class="visually-hidden" id="h-play">Play</h2>
-      <div class="view-tabs">
-        <div class="tabs" id="playChips" role="tablist" aria-label="What to play">
-          <button class="tab" role="tab" data-sub="effects" data-panel="play-effects">Effects<span class="count" id="nEffects"></span></button>
-          <button class="tab" role="tab" data-sub="clocks" data-panel="play-clocks">Clocks<span class="count" id="nClocks"></span></button>
-          <button class="tab" role="tab" data-sub="panel" data-panel="play-panel">My animations<span class="count" id="nAnims"></span></button>
-          <button class="tab" role="tab" data-sub="tools" data-panel="play-tools">Tools</button>
-        </div>
-        <div class="bar-opts" data-for="effects">
-          <label class="switch"><input type="checkbox" id="shuffle"> Shuffle</label>
-          <select id="shuffleSecs" aria-label="Time per effect when shuffling">
-            <option value="10">every 10 s</option><option value="15" selected>every 15 s</option><option value="30">every 30 s</option>
-            <option value="60">every minute</option><option value="120">every 2 min</option><option value="240">every 4 min</option>
-          </select>
-        </div>
-        <div class="bar-opts" data-for="clocks" hidden>
-          <label class="switch"><input type="checkbox" id="h24"> 24-hour</label>
-          <label class="switch"><input type="checkbox" id="showDate"> Date</label>
-        </div>
-      </div>
 
-      <div class="subview" id="play-effects">
+      <section class="shelf" id="play-effects" aria-labelledby="h-effects">
+        <div class="shelf-head">
+          <h3 id="h-effects">Effects<span class="count" id="nEffects"></span></h3>
+          <div class="shelf-opts">
+            <label class="switch"><input type="checkbox" id="shuffle"> Shuffle</label>
+            <select id="shuffleSecs" aria-label="Time per effect when shuffling">
+              <option value="10">every 10 s</option><option value="15" selected>every 15 s</option><option value="30">every 30 s</option>
+              <option value="60">every minute</option><option value="120">every 2 min</option><option value="240">every 4 min</option>
+            </select>
+          </div>
+        </div>
         <div class="tiles" id="effectTiles"></div>
-      </div>
+      </section>
 
-      <div class="subview" id="play-clocks" hidden>
+      <section class="shelf" id="play-clocks" aria-labelledby="h-clocks">
+        <div class="shelf-head">
+          <h3 id="h-clocks">Clocks<span class="count" id="nClocks"></span></h3>
+          <div class="shelf-opts">
+            <label class="switch"><input type="checkbox" id="h24"> 24-hour</label>
+            <label class="switch"><input type="checkbox" id="showDate"> Date</label>
+          </div>
+        </div>
         <div class="tiles" id="clockTiles"></div>
         <p class="note">Picking a face also sets the panel's clock to this computer's time.</p>
-      </div>
+      </section>
 
-      <div class="subview" id="play-panel" hidden>
-        <div class="row" id="libActions" hidden>
-          <button class="btn" id="libPlayAll">Play all in turn</button>
-          <label class="slider" style="flex:1;min-width:240px"><span class="label">Speed</span>
-            <input type="range" id="libSpeed" min="2" max="40" step="1" value="10"><output id="libSpeedOut">1×</output></label>
-          <button class="btn ghost small" id="libRefresh">Refresh</button>
+      <section class="shelf" id="play-panel" aria-labelledby="h-anims">
+        <div class="shelf-head">
+          <h3 id="h-anims">My animations<span class="count" id="nAnims"></span></h3>
+          <div class="shelf-opts" id="libActions" hidden>
+            <button class="btn small" id="libPlayAll">Play all in turn</button>
+            <label class="slider"><span class="label">Speed</span>
+              <input type="range" id="libSpeed" min="2" max="40" step="1" value="10"><output id="libSpeedOut">1×</output></label>
+            <button class="btn ghost small" id="libRefresh">Refresh</button>
+          </div>
         </div>
         <p class="note" id="libSpace"></p>
         <p class="empty" id="libEmpty">Connect the panel to see the animations stored on it.</p>
         <div class="tiles" id="libTiles"></div>
-      </div>
+      </section>
 
-      <div class="subview" id="play-tools" hidden>
+      <section class="shelf" id="play-tools" aria-labelledby="h-tools">
+        <div class="shelf-head"><h3 id="h-tools">Tools</h3></div>
         <div class="toolgrid">
           <article class="card">
             <header><h3>Equalizer</h3></header>
@@ -119,7 +122,7 @@
             <div class="row" id="testRow"></div>
           </article>
         </div>
-      </div>
+      </section>
     </section>
 
     <!-- ---------- Text ---------- -->
