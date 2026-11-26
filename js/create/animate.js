@@ -1,17 +1,38 @@
 // The animation maker: frames from files, the frame editor or a generator -> colours reduced and packed
 // (anim-codec.js) -> a preview decoded exactly like the panel plays it -> saved on the panel (library.js).
-import { $, $$, el, on, emit, store, segmented, fillSelect, kb } from "../core.js?v=1a4f799";
-import { pix, drawMirror, claimMirror, mirrorNote } from "../mirror.js?v=1a4f799";
-import { panel } from "../ble.js?v=1a4f799";
-import { size } from "../size.js?v=1a4f799";
-import { toast, toastError } from "../toast.js?v=1a4f799";
-import { uploadAnimation, ready as libReady, goToLibrary } from "../library.js?v=1a4f799";
-import OPA from "./anim-codec.js?v=1a4f799";
-import { readFiles, fitFrames, thumbOf, MAX_SOURCE_FRAMES } from "./import.js?v=1a4f799";
-import { PixelCanvas, PALETTE } from "./pixelcanvas.js?v=1a4f799";
-import { FORMULAS, MOTIONS, formulaFrames, emojiFrames } from "./generators.js?v=1a4f799";
+import { $, $$, el, on, emit, store, segmented, fillSelect, kb } from "../core.js?v=5e9bd5e";
+import { pix, drawMirror, claimMirror, mirrorNote } from "../mirror.js?v=5e9bd5e";
+import { panel } from "../ble.js?v=5e9bd5e";
+import { size } from "../size.js?v=5e9bd5e";
+import { toast, toastError } from "../toast.js?v=5e9bd5e";
+import { uploadAnimation, ready as libReady, goToLibrary, libraryState } from "../library.js?v=5e9bd5e";
+import OPA from "./anim-codec.js?v=5e9bd5e";
+import { readFiles, fitFrames, thumbOf, MAX_SOURCE_FRAMES } from "./import.js?v=5e9bd5e";
+import { PixelCanvas, PALETTE } from "./pixelcanvas.js?v=5e9bd5e";
+import { FORMULAS, MOTIONS, formulaFrames, emojiFrames } from "./generators.js?v=5e9bd5e";
+import { SCENE_LIST, BACKDROPS, sceneFrames, sceneColor } from "./scenes3d.js?v=5e9bd5e";
+import { ILLUSIONS, illusionFrames, illusionNote } from "./illusions.js?v=5e9bd5e";
 
 const A = { src: "file", fileSrc: null, lastFiles: null, enc: null, encFrames: null, nameAuto: true, uploading: false };
+
+/* 3D scenes and illusions take a moment to draw: drawn in the background (with progress), kept for as long
+   as nothing that changes the picture changes */
+const R3 = { key: "", frames: null, drawing: "" };
+const slowKind = () => ["3d", "illusion"].includes($("#gKind").value);
+const keyGen = () => JSON.stringify($("#gKind").value === "3d"
+  ? ["3d", $("#g3Scene").value, $("#g3Color").value, $("#g3Bg").value, $("#gSecs").value, $("#gFps").value, size.w, size.h]
+  : ["illusion", $("#gIllusion").value, $("#gSecs").value, $("#gFps").value, size.w, size.h]);
+function drawGen(key) {
+  if (R3.drawing === key) return;
+  R3.drawing = key;
+  const is3d = $("#gKind").value === "3d", what = is3d ? "3D scene" : "illusion";
+  const common = { secs: Number($("#gSecs").value), fps: Number($("#gFps").value), w: size.w, h: size.h,
+    onFrame: (i, n) => { if (R3.drawing === key) facts(`Drawing the ${what}… ${Math.round(i * 100 / n)}%`); } };
+  (is3d ? sceneFrames({ ...common, scene: $("#g3Scene").value, color: $("#g3Color").value, bg: $("#g3Bg").value, ss: 3 })
+        : illusionFrames({ ...common, kind: $("#gIllusion").value }))
+    .then((frames) => { if (R3.drawing !== key) return; Object.assign(R3, { key, frames, drawing: "" }); encodeNow(true); })
+    .catch((e) => { if (R3.drawing === key) { R3.drawing = ""; facts(e.message, true); } });
+}
 
 /* ---- preview on the panel preview, with the file's own frame times ---- */
 const pv = { frames: null, i: 0, timer: 0, on: false };
@@ -141,8 +162,9 @@ async function importFiles(list) {
 }
 const fileFrames = () => (A.fileSrc ? fitFrames(A.fileSrc.frames, { step: Number($("#aStep").value), fit: $("#aFit").value, smooth: $("#aSmooth").value === "1", bg: $("#aBg").value, w: size.w, h: size.h }) : null);
 function genFrames() {
-  const secs = Number($("#gSecs").value), fps = Number($("#gFps").value);
-  return $("#gKind").value === "emoji"
+  const secs = Number($("#gSecs").value), fps = Number($("#gFps").value), kind = $("#gKind").value;
+  if (slowKind()) return R3.key === keyGen() ? R3.frames : null;       /* encodeNow() starts the drawing */
+  return kind === "emoji"
     ? emojiFrames({ text: $("#gText").value, motion: $("#gMotion").value, ink: $("#gInk").value, bg: $("#gBg").value, secs, fps, w: size.w, h: size.h })
     : formulaFrames($("#gFormula").value, secs, fps, size.w, size.h);
 }
@@ -154,8 +176,11 @@ function currentFrames() {
 function defaultName() {
   if (A.src === "file") return A.fileSrc ? A.fileSrc.name : "";
   if (A.src === "draw") return "Drawing";
-  return $("#gKind").value === "emoji" ? `${$("#gText").value.trim()} ${$("#gMotion").selectedOptions[0].textContent.toLowerCase()}`
-                                       : $("#gPreset").selectedOptions[0].textContent;
+  const kind = $("#gKind").value;
+  return kind === "3d" ? $("#g3Scene").selectedOptions[0].textContent
+       : kind === "illusion" ? $("#gIllusion").selectedOptions[0].textContent
+       : kind === "emoji" ? `${$("#gText").value.trim()} ${$("#gMotion").selectedOptions[0].textContent.toLowerCase()}`
+       : $("#gPreset").selectedOptions[0].textContent;
 }
 
 /* ---- encode, facts, save ---- */
@@ -163,14 +188,21 @@ let encTimer = 0;
 const schedule = (play) => { clearTimeout(encTimer); encTimer = setTimeout(() => encodeNow(play), 220); };
 function facts(msg, err) { const f = $("#aFacts"); f.textContent = msg; f.classList.toggle("err", !!err); }
 function buttons() { $("#aSave").disabled = !A.enc || !A.enc.fits || A.uploading; $("#aPreview").disabled = !A.encFrames; }
+/* what the panel can hold: 4 MB with the extra memory chip (openipixelcolor 104), else 640 KB */
+const capacity = () => { const st = libraryState(); return st ? st.slots * st.slotKb * 1024 : OPA.MAX_BYTES; };
 function encodeNow(play) {
   if (A.nameAuto) $("#aName").value = defaultName().slice(0, 40);
+  if (A.src === "gen" && slowKind() && R3.key !== keyGen()) {         /* not drawn yet: draw, then come back */
+    A.enc = A.encFrames = null; buttons();
+    drawGen(keyGen());
+    return;
+  }
   let frames;
   try { frames = currentFrames(); } catch (e) { A.enc = A.encFrames = null; facts(e.message, true); buttons(); return; }
   if (!frames || !frames.length) { A.enc = A.encFrames = null; facts("Nothing made yet."); buttons(); return; }
   const tempo = Number($("#aTempo").value);
   try {
-    A.enc = OPA.encode(frames.map((f) => ({ rgb: f.rgb, delay: f.delay / tempo })), { name: $("#aName").value, maxColors: Number($("#aColors").value), w: size.w, h: size.h });
+    A.enc = OPA.encode(frames.map((f) => ({ rgb: f.rgb, delay: f.delay / tempo })), { name: $("#aName").value, maxColors: Number($("#aColors").value), w: size.w, h: size.h, maxBytes: capacity() });
     A.encFrames = OPA.decode(A.enc.bytes);
   } catch (e) { A.enc = A.encFrames = null; facts(e.message, true); buttons(); return; }
   const secs = A.encFrames.reduce((a, f) => a + f.delay, 0) / 1000;
@@ -228,6 +260,14 @@ export function initAnimate() {
   fillSelect($("#gPreset"), FORMULAS.map(([n], i) => [i, n]));
   fillSelect($("#gMotion"), MOTIONS);
   $("#gFormula").value = FORMULAS[0][1];
+  fillSelect($("#g3Scene"), SCENE_LIST);
+  fillSelect($("#g3Bg"), BACKDROPS);
+  $("#g3Color").value = sceneColor($("#g3Scene").value);
+  $("#g3Scene").addEventListener("change", (e) => { $("#g3Color").value = sceneColor(e.target.value); A.nameAuto = true; schedule(true); });
+  for (const id of ["#g3Color", "#g3Bg"]) $(id).addEventListener("change", () => schedule(true));
+  fillSelect($("#gIllusion"), ILLUSIONS.map(([k, n]) => [k, n]));
+  $("#gIllusionNote").textContent = illusionNote($("#gIllusion").value);
+  $("#gIllusion").addEventListener("change", (e) => { $("#gIllusionNote").textContent = illusionNote(e.target.value); A.nameAuto = true; schedule(true); });
   const genKind = () => { const k = $("#gKind").value; $$("[data-gen]").forEach((e) => { e.hidden = e.dataset.gen !== k; }); };
   $("#gKind").addEventListener("change", () => { genKind(); A.nameAuto = true; schedule(true); });
   $("#gPreset").addEventListener("change", (e) => { $("#gFormula").value = FORMULAS[Number(e.target.value)][1]; A.nameAuto = true; schedule(true); });

@@ -3,11 +3,11 @@
 // different file (the build on this computer, any .bin) can be chosen instead. Each install: 12 KB blocks
 // that must each be confirmed, the restart, connect again, check the version. Also the flash self-test and
 // the update notice.
-import { $, $$, el, on, emit, store, kb } from "./core.js?v=1a4f799";
+import { $, $$, el, on, emit, store, kb } from "./core.js?v=5e9bd5e";
 import { CMD, packet, u32, crc32, sameBytes, fwVersionOf, healthText, versionLevel, newerVersion,
-         fwEncode, fwDecode, hasImageHeader, OTA_CHUNK } from "./protocol.js?v=1a4f799";
-import { panel, rawSend, send, idle, reconnect, disconnect, refreshStatus, connect, supported } from "./ble.js?v=1a4f799";
-import { toast, toastError } from "./toast.js?v=1a4f799";
+         fwEncode, fwDecode, hasImageHeader, OTA_CHUNK } from "./protocol.js?v=5e9bd5e";
+import { panel, rawSend, send, idle, reconnect, disconnect, refreshStatus, connect, supported } from "./ble.js?v=5e9bd5e";
+import { toast, toastError } from "./toast.js?v=5e9bd5e";
 
 /* Releases: the CI puts the latest one next to the hosted page (firmware/latest.json + the update file).
    Served by webui/serve.py on this computer, the page reads the hosted copy instead (GitHub Pages allows

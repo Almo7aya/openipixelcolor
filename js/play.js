@@ -1,21 +1,22 @@
 // Play, one page of sections: effects and clock faces as animated preview tiles (drawn by the firmware's
 // own code in the simulator, tools/sim/make_previews.py) with shuffle and clock options, the animations
 // stored on the panel (library.js), and the tools.
-import { $, $$, el, on, store, reducedMotion } from "./core.js?v=1a4f799";
-import { CMD, MODE } from "./protocol.js?v=1a4f799";
-import { panel, send, act } from "./ble.js?v=1a4f799";
-import { EFFECTS, CLOCKS, TESTS, previewOf } from "./catalog.js?v=1a4f799";
-import { toastError } from "./toast.js?v=1a4f799";
-import { go } from "./nav.js?v=1a4f799";
+import { $, $$, el, on, store, reducedMotion } from "./core.js?v=5e9bd5e";
+import { CMD, MODE } from "./protocol.js?v=5e9bd5e";
+import { panel, send, act } from "./ble.js?v=5e9bd5e";
+import { EFFECTS, CLOCKS, TESTS, previewOf } from "./catalog.js?v=5e9bd5e";
+import { toastError } from "./toast.js?v=5e9bd5e";
+import { go } from "./nav.js?v=5e9bd5e";
 
 const pic = (name) => name + (reducedMotion() ? ".png" : ".gif");
 
-/* effects from 20 and clock faces from 10 came with openipixelcolor 103: an older panel would show
-   another one, so it gets a notice instead */
-const SINCE = 103, FIRST_NEW = { effect: 20, clock: 10 };
+/* what came with which version (an older panel would show another one, so it gets a notice instead):
+   effects from 20 and clock faces from 10 with openipixelcolor 103, effects from 47 with 104 */
+const SINCE = { effect: [[47, 104], [20, 103]], clock: [[10, 103]] };
 function tooOld(kind, i) {
-  if (!panel.custom || panel.level >= SINCE || i < FIRST_NEW[kind]) return false;
-  toastError(`This one needs openipixelcolor ${SINCE} or newer on the panel.`, { label: "Update", fn: () => go("device") });
+  const need = (SINCE[kind].find(([first]) => i >= first) || [0, 0])[1];
+  if (!panel.custom || !need || panel.level >= need) return false;
+  toastError(`This one needs openipixelcolor ${need} or newer on the panel.`, { label: "Update", fn: () => go("device") });
   return true;
 }
 function tile(name, img, onclick) {
