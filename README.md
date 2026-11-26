@@ -31,7 +31,14 @@ controls the panel straight from Chrome or Edge over Web Bluetooth.
 > way in on a closed panel. Read [Safety](#safety) before installing anything. This software comes with
 > **no warranty** (see [LICENSE](LICENSE)).
 
-<p align="center"><img src="docs/images/screens.png" width="880" alt="Four panel screens: starting up (the colour ring logo around a pixel i), the first start (the small logo, the name scrolling below), installing firmware (the ring two thirds filled with colour, 61 in the middle) and saving an animation (the small ring filling, an arrow dropping in, 45%)"></p>
+<table align="center">
+  <tr>
+    <td align="center"><img src="docs/images/boot.gif" width="200" alt="Starting up: the colour ring draws itself, the letter i rises, a pixel escapes through the gap; the logo moves up and open, ipixel, color and the version step in below"><br><sub>Starting up</sub></td>
+    <td align="center"><img src="docs/images/first-start.gif" width="200" alt="First start: the small logo with its colours turning, open ipixel color scrolling below, the i turning into the Bluetooth sign now and then"><br><sub>First start</sub></td>
+    <td align="center"><img src="docs/images/update.gif" width="200" alt="Installing firmware: the ring fills with colour as the firmware arrives, pixels stream in through the gap, the percentage in the middle, then a tick"><br><sub>Installing firmware</sub></td>
+    <td align="center"><img src="docs/images/saving.gif" width="200" alt="Saving an animation: the small ring fills, an arrow drops into it, the percentage below, then a tick and saved"><br><sub>Saving an animation</sub></td>
+  </tr>
+</table>
 
 ## Contents
 
@@ -66,8 +73,6 @@ controls the panel straight from Chrome or Edge over Web Bluetooth.
 - **Remembers everything** across power cycles, in a wear-friendly log in flash.
 - **Updates itself** from the web app, with an update notice when a new release is out.
 - **Compatible with the stock app's basic commands** and with [pypixelcolor](https://github.com/lucagoc/pypixelcolor).
-
-<p align="center"><img src="docs/images/boot.gif" width="220" alt="The boot animation: the colour ring draws itself, the letter i rises, a pixel escapes through the gap; the logo moves up and open, ipixel, color and the version step in below"></p>
 
 ## Supported devices
 
@@ -178,7 +183,7 @@ node tools/sim/anim_vectors.js vec  # test animations made by the web app's enco
 |---|---|
 | `webui/panel.wasm` (the live preview) | `python tools/wasm/build.py` (clang and wasm-ld from LLVM) |
 | `webui/previews/` (effect and clock tiles) | `python tools/sim/make_previews.py previews.bin webui/previews` |
-| `docs/images/screens.png`, `boot.gif` | `python tools/sim/make_readme_images.py screens.bin docs/images` |
+| `docs/images/*.gif` (the screens above) | `python tools/sim/make_readme_images.py screens.bin docs/images` |
 | `docs/images/banner.png`, `webui/icons/`, `webui/favicon.ico` | `python tools/make_brand.py screens.bin logo` |
 
 ## Safety

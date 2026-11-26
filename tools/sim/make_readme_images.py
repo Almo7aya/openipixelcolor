@@ -4,8 +4,8 @@
     python tools/sim/make_readme_images.py screens.bin docs/images
     python tools/make_brand.py screens.bin logo     # the banner, the web UI's logo and the favicons
 
-screens.png  starting up, first start, installing firmware and saving side by side, with captions
-boot.gif     the boot animation
+boot.gif, first-start.gif, update.gif, saving.gif   the panel's own screens, animated (under the README's
+             warning, side by side)
 Needs Pillow (pip install pillow).
 """
 import os
@@ -73,26 +73,18 @@ def main():
     os.makedirs(out, exist_ok=True)
     f = read_frames(src)
 
-    # frames are 40 ms apart: the logo complete, the name scrolling, 62 % of an update, 45 % of a save
-    shots = [(f["boot"][33], "Starting up"), (f["welcome"][38], "First start"), (f["update"][77], "Installing firmware"),
-             (f["saving"][36], "Saving an animation")]
-    tiles = [led_panel(px, 9, 16) for px, _ in shots]
-    w, gap, cap = tiles[0].width, 40, 56
-    sheet = Image.new("RGBA", (len(tiles) * w + (len(tiles) - 1) * gap, w + cap), (0, 0, 0, 0))
-    dr = ImageDraw.Draw(sheet)
-    fnt = font(26, bold=True)
-    for k, (tile, (_, label)) in enumerate(zip(tiles, shots)):
-        x = k * (w + gap)
-        sheet.alpha_composite(tile, (x, 0))
-        tw = dr.textlength(label, font=fnt)
-        dr.text((x + (w - tw) / 2, w + 14), label, font=fnt, fill=(142, 150, 163, 255))
-    sheet.save(os.path.join(out, "screens.png"), optimize=True)
-
-    bg = (13, 15, 18, 255)                             # GIFs have no soft transparency: a dark page
-    frames = [led_panel(px, 7, 12, bg, glow=False).convert("RGB") for px in f["boot"]]   # no glow: a small GIF
-    durations = [40] * (len(frames) - 1) + [1600]
-    frames[0].save(os.path.join(out, "boot.gif"), save_all=True, append_images=frames[1:],
-                   duration=durations, loop=0, optimize=True)
+    # each screen as a GIF, frames 40 ms apart as the simulator drew them; the last frame of the ones that
+    # end (boot, update, saving) stays a moment before it loops. No glow, on a dark page: small files.
+    bg = (13, 15, 18, 255)
+    for label, name, step, hold in (("boot", "boot.gif", 1, 1600), ("welcome", "first-start.gif", 1, 40),
+                                    ("update", "update.gif", 2, 1800), ("saving", "saving.gif", 1, 1200)):
+        src = f[label][::step]
+        if src[-1] is not f[label][-1]:
+            src.append(f[label][-1])                    # always end on the last frame (the tick, "saved")
+        frames = [led_panel(px, 6, 10, bg, glow=False).convert("RGB") for px in src]   # 212 px: shown at 200
+        durations = [40 * step] * (len(frames) - 1) + [hold]
+        frames[0].save(os.path.join(out, name), save_all=True, append_images=frames[1:],
+                       duration=durations, loop=0, optimize=True)
     print("wrote", ", ".join(sorted(os.listdir(out))))
 
 
