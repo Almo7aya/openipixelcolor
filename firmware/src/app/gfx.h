@@ -33,8 +33,10 @@ int      gfx_text_width(const char *s);
 int      gfx_tiny_char(int x, int y, char ch, rgb_t c);     /* returns advance */
 int      gfx_tiny_text(int x, int y, const char *s, rgb_t c);
 int      gfx_tiny_width(const char *s);
+uint16_t gfx_tiny_glyph(char ch);   /* 15 bits: row 0 (top) in bits 14..12, left pixel = highest bit of the row */
 /* 7-segment digit (0..9, 10 = blank, 11 = '-') in a w x h box, segment thickness th */
 void     gfx_7seg(int x, int y, int w, int h, int th, int digit, rgb_t c);
+int      gfx_7seg_hit(int px, int py, int w, int h, int th, int digit);   /* 1 if (px, py) in the box is lit */
 /* drawing (gfx_px / gfx_px_add and everything built on them) limited to [x0,x1) x [y0,y1) */
 void     gfx_clip(int x0, int y0, int x1, int y1);
 void     gfx_noclip(void);

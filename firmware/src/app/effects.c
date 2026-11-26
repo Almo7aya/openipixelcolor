@@ -2,6 +2,8 @@
  * lives in a shared union (RAM is tight on this chip). */
 #include "effects.h"
 #include "fx_more.h"
+#include "fx_demo.h"
+#include "fx_sim.h"
 #include "gfx.h"
 #include "tables.h"
 
@@ -496,5 +498,34 @@ const effect_t effects[] = {
     { "dna",       fx_nop_init,  dna_frame     },
     { "warp",      warp_init,    warp_frame    },
     { "radar",     radar_init,   radar_frame   },
+    /* fx_demo.c (20..33) */
+    { "rotozoom",  fx_nop_init,  rotozoom_frame },
+    { "twister",   fx_nop_init,  twister_frame  },
+    { "copper",    fx_nop_init,  copper_frame   },
+    { "shadebobs", bobs_init,    bobs_frame     },
+    { "kaleido",   fx_nop_init,  kaleido_frame  },
+    { "julia",     fx_nop_init,  julia_frame    },
+    { "moire",     fx_nop_init,  moire_frame    },
+    { "sunburst",  fx_nop_init,  sunburst_frame },
+    { "spiro",     spiro_init,   spiro_frame    },
+    { "cube",      cube_init,    cube_frame     },
+    { "synthwave", fx_nop_init,  synth_frame    },
+    { "terrain",   terrain_init, terrain_frame  },
+    { "globe",     globe_init,   globe_frame    },
+    { "tartan",    fx_nop_init,  tartan_frame   },
+    /* fx_sim.c (34..46) */
+    { "ocean",     fx_nop_init,  ocean_frame    },
+    { "sand",      sand_init,    sand_frame     },
+    { "ants",      ants_init,    ants_frame     },
+    { "flock",     flock_init,   flock_frame    },
+    { "galaxy",    fx_nop_init,  galaxy_frame   },
+    { "snow",      snow_init,    snow_frame     },
+    { "aquarium",  aqua_init,    aqua_frame     },
+    { "fireflies", ffly_init,    ffly_frame     },
+    { "maze",      maze_init,    maze_frame     },
+    { "sorting",   sort_init,    sort_frame     },
+    { "pendulums", pend_init,    pend_frame     },
+    { "bricks",    brk_init,     brk_frame      },
+    { "meadow",    fx_nop_init,  meadow_frame   },
 };
 const unsigned effect_count = sizeof effects / sizeof effects[0];

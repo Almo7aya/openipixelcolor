@@ -4,8 +4,11 @@
 typedef struct { uint8_t h, m, s; uint16_t year; uint8_t mon, day, dow; uint8_t synced; } clock_tm_t;
 
 /* 0 digital+date, 1 analog, 2 binary, 3 big stacked, 4 digits over plasma,
-   5 flip cards, 6 nixie tubes, 7 rings, 8 day/night sky, 9 pong clock */
-#define CLOCK_STYLES 10
+   5 flip cards, 6 nixie tubes, 7 rings, 8 day/night sky, 9 pong clock;
+   clockface2.c: 10 words, 11 Berlin clock, 12 Fibonacci, 13 morphing digits, 14 hourglass, 15 falling bricks,
+   16 matrix digits, 17 fire digits, 18 LCD watch, 19 neon sign, 20 dice, 21 moon phase, 22 orbit,
+   23 progress, 24 colour code, 25 Roman numerals */
+#define CLOCK_STYLES 26
 
 void clock_set_time(uint8_t h, uint8_t m, uint8_t s, uint32_t now_ms);
 void clock_set_date(uint8_t yy, uint8_t mon, uint8_t day, uint8_t dow);   /* yy = 0..99, dow 1=Mon..7 */

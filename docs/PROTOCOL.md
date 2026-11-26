@@ -37,7 +37,7 @@ Example: version query `04 00 05 80` → reply `08 00 05 80 65 00 xx yy` (openip
 | `0x800A` | `p1 x p2` | Scoreboard |
 | `0x0104` | `on` | Drawing mode on (clears the canvas) / off |
 | `0x0105` | `0 r g b x y` | Set one pixel |
-| `0x0106` | `style 24h show_date [yy mm dd weekday]` | Clock face `style` (0–9), optional date |
+| `0x0106` | `style 24h show_date [yy mm dd weekday]` | Clock face `style` (0–25), optional date |
 | `0x0107` | `on` | Power (display on/off) |
 | `0x0200` | `t style` | Rhythm bars, animated |
 | `0x0201` | `style l1 … l11` | Rhythm bars, levels 0–15 |
@@ -206,10 +206,17 @@ and again whenever the animation starts over. The shortest frame time the panel 
 
 Effects (`0x8008`, `0xF101 0 n`): 0 plasma, 1 fire, 2 matrix, 3 starfield, 4 game of life,
 5 fireworks, 6 ripples, 7 sparkles, 8 rainbow swirl, 9 tunnel, 10 snake, 11 pong, 12 bouncing balls,
-13 equalizer, 14 aurora, 15 lava lamp, 16 rainstorm, 17 DNA helix, 18 warp speed, 19 radar.
+13 equalizer, 14 aurora, 15 lava lamp, 16 rainstorm, 17 DNA helix, 18 warp speed, 19 radar,
+20 rotozoom, 21 twister, 22 copper bars, 23 shadebobs, 24 kaleidoscope, 25 Julia fractal, 26 moiré,
+27 sunburst, 28 spirograph, 29 3D cube, 30 synthwave, 31 terrain flyover, 32 plasma globe, 33 tartan,
+34 ocean, 35 falling sand, 36 Langton's ants, 37 flock, 38 galaxy, 39 snowfall, 40 aquarium, 41 fireflies,
+42 maze, 43 sorting, 44 pendulum wave, 45 brick breaker, 46 meadow (20 on: openipixelcolor 103 and later).
 
 Clock faces (`0x0106`): 0 digital, 1 analog, 2 binary, 3 big digits, 4 plasma, 5 flip, 6 nixie,
-7 rings, 8 sky (sun and moon follow the time), 9 pong.
+7 rings, 8 sky (sun and moon follow the time), 9 pong, 10 words, 11 Berlin clock, 12 Fibonacci,
+13 morphing digits, 14 hourglass, 15 falling bricks, 16 matrix digits, 17 fire digits, 18 LCD watch,
+19 neon sign, 20 dice, 21 moon phase, 22 orbit, 23 progress, 24 colour code, 25 Roman numerals
+(10 on: openipixelcolor 103 and later; older versions show face `style % 10`).
 
 ## Firmware update
 

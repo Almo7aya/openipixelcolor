@@ -1,8 +1,11 @@
 /* Time keeping (synced over BLE, runs on the 1 ms tick) and clock faces. */
 #include "clockface.h"
+#include "clockface2.h"
 #include "gfx.h"
 #include "tables.h"
 #include "effects.h"
+
+_Static_assert(CLOCK_STYLES == 10 + CLOCK2_STYLES, "clockface.h and clockface2.h disagree on the number of faces");
 
 static uint32_t base_sec = 12u * 3600u, base_ms;   /* unsynced clocks start at 12:00:00 */
 static uint8_t  synced;
@@ -296,7 +299,8 @@ void clock_draw(unsigned style, uint32_t now, int fmt24, int show_date)
     clock_now(now, &tm);
     int hh = tm.h;
     if (!fmt24) { hh %= 12; if (!hh) hh = 12; }
-    int colon = ((now - base_ms) % 1000u) < 500u;
+    unsigned ms = (now - base_ms) % 1000u;
+    int colon = ms < 500u;
 
     switch (style % CLOCK_STYLES) {
     case 0: {                                                     /* digital + date */
@@ -351,6 +355,7 @@ void clock_draw(unsigned style, uint32_t now, int fmt24, int show_date)
     case 6:  draw_nixie(hh, &tm, now, colon); break;
     case 7:  draw_rings(hh, &tm, now); break;
     case 8:  draw_sky(hh, &tm, now); break;
-    default: draw_pong(hh, &tm); break;
+    case 9:  draw_pong(hh, &tm); break;
+    default: clock2_draw(style % CLOCK_STYLES - 10u, &tm, hh, fmt24, show_date, now, ms); break;   /* clockface2.c */
     }
 }

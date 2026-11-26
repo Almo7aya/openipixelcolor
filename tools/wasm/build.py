@@ -12,7 +12,8 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 APP = ROOT / "firmware" / "src" / "app"
 # the same files the PC simulator runs (tools/sim), nothing hardware specific
-SOURCES = ["gfx", "effects", "fx_more", "modes", "clockface", "tables", "font5x7", "settings", "textfx", "anim", "screens"]
+SOURCES = ["gfx", "effects", "fx_more", "fx_demo", "fx_sim", "modes", "clockface", "clockface2", "tables", "font5x7",
+           "settings", "textfx", "anim", "screens"]
 
 
 def main():

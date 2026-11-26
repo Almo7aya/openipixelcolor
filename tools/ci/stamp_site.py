@@ -8,7 +8,8 @@ script breaks. Also fills in the service worker's file list (webui/sw.js).
   (the page registers the service worker only when this isn't "dev")
 - every module: its imports of other modules (from "./x.js", "../x.js") get ?v=<version>, so the whole
   module graph is new; fetch("panel.wasm") too
-- sw.js: VERSION and FILES (everything the app needs offline; not firmware/, which is always fetched fresh)
+- sw.js: VERSION and FILES (everything the app needs offline; not firmware/, which is always fetched fresh,
+  nor previews/, which the service worker caches as they're shown)
 """
 import json
 import os
@@ -47,10 +48,11 @@ def main():
             n_imports += n + m
             open(p, "w", encoding="utf-8").write(src)
 
-    # the service worker's list: every file of the app, by the URL the page asks for
-    files = ["./"]
+    # the service worker's list: every file of the app, by the URL the page asks for (not previews/: the
+    # service worker keeps those in a cache of their own, across versions)
+    files = ["./", "previews/clocks.json"]
     for root, dirs, names in os.walk(site):
-        dirs[:] = [d for d in dirs if d not in ("firmware", ".git")]
+        dirs[:] = [d for d in dirs if d not in ("firmware", ".git", "previews")]
         for name in names:
             rel = os.path.relpath(os.path.join(root, name), site).replace(os.sep, "/")
             if rel in ("sw.js", ".nojekyll") or rel.startswith("firmware/"):

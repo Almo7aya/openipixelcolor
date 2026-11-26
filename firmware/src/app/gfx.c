@@ -173,6 +173,8 @@ static uint16_t tiny_glyph(char ch)
 }
 #undef G
 
+uint16_t gfx_tiny_glyph(char ch) { return tiny_glyph(ch); }
+
 static int tiny_cols(uint16_t g, int *first)      /* used columns of a glyph (0..2) */
 {
     int lo = 3, hi = -1;
@@ -222,6 +224,21 @@ void gfx_7seg(int x, int y, int w, int h, int th, int digit, rgb_t c)
     if (s & 0x02) gfx_rect(x + w - th, y, th, mid - y + th, c, 1);
     if (s & 0x10) gfx_rect(x, mid, th, y + h - mid, c, 1);
     if (s & 0x04) gfx_rect(x + w - th, mid, th, y + h - mid, c, 1);
+}
+
+int gfx_7seg_hit(int px, int py, int w, int h, int th, int digit)
+{
+    if (digit < 0 || digit > 11 || px < 0 || py < 0 || px >= w || py >= h) return 0;
+    uint8_t s = SEG[digit];
+    int mid = (h - th) / 2;
+    if ((s & 0x01) && py < th) return 1;
+    if ((s & 0x40) && py >= mid && py < mid + th) return 1;
+    if ((s & 0x08) && py >= h - th) return 1;
+    if ((s & 0x20) && px < th && py < mid + th) return 1;
+    if ((s & 0x02) && px >= w - th && py < mid + th) return 1;
+    if ((s & 0x10) && px < th && py >= mid) return 1;
+    if ((s & 0x04) && px >= w - th && py >= mid) return 1;
+    return 0;
 }
 
 void gfx_seed(uint32_t s) { rng = s ? s : 0x12345678u; }
