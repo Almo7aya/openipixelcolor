@@ -17,13 +17,13 @@ then **Install firmware** twice. Nothing to install on the computer.
 > Bluetooth is the only way in on a closed panel. Read [Safety](#safety) before installing anything.
 > This software comes with no warranty (see [LICENSE](LICENSE)).
 
-<p align="center"><img src="docs/images/screens.png" width="720" alt="Three panel screens: starting up (the logo and the version), the first start (HELLO, a Bluetooth sign, CONNECT) and installing firmware (an arrow, a progress bar at 62 %)"></p>
+<p align="center"><img src="docs/images/screens.png" width="720" alt="Three panel screens: starting up (the logo and the version), the first start (HELLO, a Bluetooth sign, CONNECT) and installing firmware (the logo's ring two thirds filled with colour, 62 in the middle)"></p>
 
 ## What it does
 
 - **Its own screens:** the logo draws itself when the panel starts (below), a welcome screen asks you
-  to connect on the very first start, and an update screen with a progress bar shows while new
-  firmware arrives, instead of a dark panel.
+  to connect on the very first start, and while new firmware arrives the logo's ring fills with colour
+  as pixels stream in through its gap (dark only for the moments each block is written).
 
   <img src="docs/images/boot.gif" width="200" alt="The boot animation: the colour ring draws itself around the letter i, a pixel flies out of the gap, the version appears">
 

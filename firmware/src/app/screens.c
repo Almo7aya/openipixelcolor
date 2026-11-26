@@ -4,12 +4,13 @@
  *   boot     the ring draws itself, the "i" appears, the pixel flies out, then the version.
  *   welcome  first start (nothing saved yet): the logo, then "HELLO / CONNECT" with a Bluetooth sign,
  *            until something is chosen in the app or with the button.
- *   update   while a firmware update arrives: an arrow, a progress bar and the percentage
- *            (the panel goes dark while each block is written to flash).
+ *   update   while a firmware update arrives: the ring fills with colour, pixels stream in through the
+ *            gap, the percentage in the middle (the panel goes dark while each block is written).
  */
 #include "screens.h"
 #include "tables.h"
 #include "fwinfo.h"
+#include "ota.h"
 
 #define RING_OUT2  740u      /* (2 x 13.6)^2 - doubled coordinates: pixel centres are odd numbers */
 #define RING_EDGE2 600u      /* outer rim: a little dimmer, rounder on the LEDs */
@@ -114,36 +115,61 @@ void screens_welcome(uint32_t now)
     tiny_centered(26, "CONNECT", RGB(120, 170, 255));
 }
 
-static void percent_text(char *s, uint32_t pct)
-{
-    unsigned n = 0;
-    if (pct >= 100u) s[n++] = '1';
-    if (pct >= 10u) s[n++] = (char)('0' + (pct / 10u) % 10u);
-    s[n++] = (char)('0' + pct % 10u);
-    s[n++] = '%';
-    s[n] = 0;
-}
-
+/* The update screen is the logo filling up: the ring starts dim and takes on its colours clockwise from
+ * the gap as the firmware arrives, the part of the block on its way pulses, pixels stream in through the
+ * gap (the opposite of the boot screen, where one flies out) and the percentage sits in the middle.
+ * The panel goes dark while each block is written to flash and comes back with the ring further on. */
 void screens_update(fb_t *fb, uint32_t now, uint32_t done, uint32_t total)
 {
-    static const uint8_t BOUNCE[4] = { 0, 1, 2, 1 };
     gfx_target(fb);
     gfx_fill(0);
-    tiny_centered(1, "UPDATE", RGB(255, 170, 40));
+    if (done > total) done = total;
+    uint32_t next = done + OTA_CHUNK > total ? total : done + OTA_CHUNK;
+    const unsigned arc = 256u - (GAP_B - GAP_A) - 1u;
+    unsigned filled = total ? (unsigned)(done * arc / total) : 0u;      /* images are < 1 MiB: no overflow */
+    unsigned coming = total ? (unsigned)(next * arc / total) : 0u;
+    unsigned spin = now / 16u;
+    unsigned pulse = 70u + (unsigned)sin8[(uint8_t)(now / 3u)] * 150u / 255u;
 
-    int o = BOUNCE[(now / 120u) % 4u];
-    rgb_t arrow = RGB(200, 230, 255), tray = RGB(70, 90, 120);
-    gfx_rect(14, 7 + o, 4, 5, arrow, 1);                      /* the arrow comes down into the tray */
-    for (int r = 0; r < 5; r++) gfx_rect(11 + r, 12 + o + r, 10 - 2 * r, 1, arrow, 1);
-    gfx_rect(7, 15, 1, 5, tray, 1);
-    gfx_rect(24, 15, 1, 5, tray, 1);
-    gfx_rect(7, 19, 18, 1, tray, 1);
+    for (int y = 0; y < 32; y++)                              /* the ring */
+        for (int x = 0; x < 32; x++) {
+            int X = 2 * x + 1 - 32, Y = 2 * y + 1 - 32;
+            unsigned d2 = (unsigned)(X * X + Y * Y);
+            if (d2 <= RING_IN2 || d2 > RING_OUT2) continue;
+            unsigned a = angle8(X, Y);
+            if (a >= GAP_A && a <= GAP_B) continue;
+            unsigned from = (a - GAP_B - 1u) & 255u;
+            unsigned v = from < filled ? 255u : from < coming ? pulse : 26u;
+            rgb_t c = gfx_hsv((uint8_t)(a + spin), 255, (uint8_t)(d2 > RING_EDGE2 ? v * 3u / 4u : v));
+            if (from < filled && from + 2u >= filled)           /* the leading edge shines a little */
+                c = RGB(((c >> 16) + 255u) / 2u, (((c >> 8) & 255u) + 255u) / 2u, ((c & 255u) + 255u) / 2u);
+            gfx_px(x, y, c);
+        }
 
-    uint32_t pct = total ? done * 100u / total : 0u;          /* images are < 1 MiB: no overflow */
-    if (pct > 100u) pct = 100u;
-    gfx_rect(2, 21, 28, 4, RGB(60, 66, 78), 0);
-    if (pct) gfx_rect(3, 22, (int)(pct * 26u / 100u) ? (int)(pct * 26u / 100u) : 1, 2, RGB(60, 220, 120), 1);
-    char s[5];
-    percent_text(s, pct);
-    tiny_centered(26, s, RGB(200, 200, 210));
+    for (unsigned k = 0; k < 4u; k++) {                       /* pixels streaming in through the gap */
+        static const int8_t SIDE[4] = { -20, 6, 22, -6 };   /* across the stream, 1/16 px */
+        uint32_t t = (now + k * 290u) % 1160u;              /* 0 .. 1 of the way, 1.16 s */
+        int d16 = 352 - (int)(t * 208u / 1160u);            /* distance from the centre: 22 .. 9 px */
+        for (int trail = 0; trail < 2; trail++) {
+            int dd = d16 + trail * 28;
+            if (dd > 352) continue;
+            int along = dd * 181 / 256, side = SIDE[k] * 181 / 256;     /* / sqrt 2 */
+            int px = 16 + (along + side + 8) / 16 - 1, py = 16 - (along - side + 8) / 16;
+            rgb_t c = gfx_hsv((uint8_t)(GAP_MID + spin + k * 20u), trail ? 200 : 80, 255);
+            gfx_px(px, py, trail ? dim(c, 90) : c);
+        }
+    }
+
+    uint32_t pct = total ? done * 100u / total : 0u;
+    if (pct >= 100u) {                                        /* done: a tick */
+        static const int8_t TICK[7][2] = { { 11, 16 }, { 12, 17 }, { 13, 18 }, { 14, 17 }, { 15, 16 }, { 16, 15 }, { 17, 14 } };
+        for (int i = 0; i < 7; i++) gfx_rect(TICK[i][0] + 1, TICK[i][1] - 1, 2, 2, RGB(90, 255, 140), 1);
+        return;
+    }
+    char s[3];                                                /* the percentage (the ring says it's a share) */
+    unsigned n = 0;
+    if (pct >= 10u) s[n++] = (char)('0' + pct / 10u);
+    s[n++] = (char)('0' + pct % 10u);
+    s[n] = 0;
+    gfx_text((32 - gfx_text_width(s)) / 2, 12, s, RGB(255, 255, 255));
 }
