@@ -1,15 +1,15 @@
-// Notices in one live region. Errors stay until closed and can carry an action (Connect, Retry...);
-// confirmations go away by themselves. toast() returns { update(text), close() }.
+// Notices in one live region. Errors stay until closed and can carry an action (Connect, Retry...), shown on
+// the same line; confirmations go away by themselves. toast() returns { update(text), close(), node }.
 import { $, el } from "./core.js";
 
 export function toast(text, { kind = "info", title = "", action = null, timeout } = {}) {
   const box = $("#toasts");
-  const msg = el("div", { class: "msg" }, title ? el("strong", {}, title) : null, el("span", {}, text));
+  const msg = el("div", { class: "toast-msg" }, title ? el("strong", {}, title) : null, el("span", {}, text));
   const close = () => { clearTimeout(timer); node.remove(); };
+  const act = action ? el("button", { class: "btn small", onclick: () => { close(); action.fn(); } }, action.label) : null;
   const node = el("div", { class: `toast ${kind}`, role: kind === "err" ? "alert" : "status" },
-    el("div", { class: "head" }, el("span", { class: "dot", "aria-hidden": "true" }), msg,
+    el("div", { class: "toast-head" }, el("span", { class: "dot", "aria-hidden": "true" }), msg, act,
       el("button", { class: "x", "aria-label": "Close", onclick: close }, "×")));
-  if (action) node.append(el("div", { class: "row" }, el("button", { class: "btn small", onclick: () => { close(); action.fn(); } }, action.label)));
   box.append(node);
   const ms = timeout ?? (kind === "err" ? 0 : 3500);
   const timer = ms ? setTimeout(close, ms) : 0;

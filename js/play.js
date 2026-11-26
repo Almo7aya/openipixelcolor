@@ -1,11 +1,10 @@
-// Play: effects and clock faces as animated preview tiles (drawn by the firmware's own code in the
-// simulator, tools/sim/make_previews.py), shuffle, clock options, the animations stored on the panel, tools.
+// Play, one page of sections: effects and clock faces as animated preview tiles (drawn by the firmware's
+// own code in the simulator, tools/sim/make_previews.py) with shuffle and clock options, the animations
+// stored on the panel (library.js), and the tools.
 import { $, $$, el, on, store, reducedMotion } from "./core.js";
 import { CMD, MODE } from "./protocol.js";
 import { send, act } from "./ble.js";
 import { EFFECTS, CLOCKS, TESTS, previewOf } from "./catalog.js";
-import { registerSub } from "./nav.js";
-import { refreshLibrary, ready as libReady } from "./library.js";
 
 function tile(name, img, onclick) {
   const still = reducedMotion();
@@ -79,7 +78,9 @@ export function initPlay() {
   initEffects();
   initClocks();
   initTools();
-  registerSub("play", $("#playChips"), "effects", (sub) => { if (sub === "panel" && libReady()) refreshLibrary(); });
+  $("#nEffects").textContent = EFFECTS.length;           /* how many of each, beside the section names */
+  $("#nClocks").textContent = CLOCKS.length;
+  on("library", (items) => { $("#nAnims").textContent = items.length || ""; });
   on("status", (r) => {
     const mode = r[5], flags = r[12];
     $$("#effectTiles .tile").forEach((t, i) => t.setAttribute("aria-pressed", String(mode === MODE.EFFECT && i === r[6])));
@@ -87,7 +88,7 @@ export function initPlay() {
     if (document.activeElement !== $("#shuffle")) $("#shuffle").checked = !!(flags & 2);
     if (r.length >= 16 && document.activeElement !== $("#shuffleSecs")) {
       const v = String(r[15]), sel = $("#shuffleSecs");
-      if (![...sel.options].some((o) => o.value === v)) sel.append(el("option", { value: v }, `${v} seconds`));
+      if (![...sel.options].some((o) => o.value === v)) sel.append(el("option", { value: v }, `every ${v} s`));
       sel.value = v;
     }
   });

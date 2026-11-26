@@ -1,6 +1,6 @@
 // Destinations (Play, Text, Create, Device) and their sub-views, kept in the address: #play/clocks.
 // Older addresses (#effects, #clock, #animations, #pictures, #extras, #settings) still lead somewhere.
-import { $, $$, on, store, emit } from "./core.js";
+import { $, $$, on, store, emit, reducedMotion } from "./core.js";
 
 const OLD = { effects: "play", clock: "play/clocks", animations: "create/animation", pictures: "create/picture",
               extras: "play/tools", settings: "device" };
@@ -14,7 +14,7 @@ export function registerSub(dest, root, def, onshow) {
     if (!buttons.some((b) => b.dataset.sub === sub)) sub = def;
     buttons.forEach((b) => {
       const on = b.dataset.sub === sub;
-      b.setAttribute(b.classList.contains("chip") ? "aria-selected" : "aria-pressed", String(on));
+      b.setAttribute(b.getAttribute("role") === "tab" ? "aria-selected" : "aria-pressed", String(on));
       const panel = $("#" + b.dataset.panel);
       if (panel) panel.hidden = !on;
     });
@@ -37,6 +37,11 @@ export function go(target, replace) {
   store.set("dest", dest);
   const sv = subviews[dest];
   if (sv) sub = sv.set(sub || store.get("sub." + dest, sv.def));
+  else if (sub) {                                      /* a page of sections (Play): scroll to that one */
+    const part = document.getElementById(`${dest}-${sub}`);
+    if (part) requestAnimationFrame(() => part.scrollIntoView({ behavior: reducedMotion() ? "auto" : "smooth", block: "start" }));
+    else sub = undefined;
+  }
   const hash = "#" + dest + (sub ? "/" + sub : "");
   if (location.hash !== hash) history[replace ? "replaceState" : "pushState"](null, "", hash);
   emit("view", { dest, sub });

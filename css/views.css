@@ -68,7 +68,37 @@ code { font-family: var(--mono); font-size: .9em; padding: 1px 5px; border-radiu
 .score .side { display: grid; justify-items: center; gap: 8px; }
 .score .num { font: 600 46px/1 var(--mono); }
 .score .colon { font-size: 34px; color: var(--muted); padding-bottom: 46px; }
-.toolgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+/* the tools: the equalizer and the scoreboard full height, the stopwatch and the test patterns stacked beside
+   them; cards keep their own height (no stretching to the tallest one) */
+.toolgrid {
+  display: grid; gap: 14px; align-items: start;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas: "eq score stop" "eq score tests";
+}
+.tool-eq { grid-area: eq; } .tool-score { grid-area: score; } .tool-stop { grid-area: stop; } .tool-tests { grid-area: tests; }
+.toolgrid .card { align-content: start; }
+@container content (max-width: 820px) {
+  .toolgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "eq score" "stop tests"; }
+}
+@container content (max-width: 520px) {
+  .toolgrid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "eq" "score" "stop" "tests"; }
+}
+
+/* ---- Device: firmware ---- */
+.fw-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.fw-title { flex: 1; min-width: 220px; display: grid; gap: 2px; }
+.fw-status { color: var(--muted); }
+.fw-status.ok::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%;
+  background: var(--ok); vertical-align: 1px; }
+.fw-versions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.fw-ver { display: grid; gap: 2px; padding: 12px 14px; border-radius: var(--r-m); background: var(--sunken); border: 1px solid var(--line); }
+.fw-ver strong { font-weight: 600; }
+.fw-ver .note a { color: var(--link); }
+.fw-run { display: grid; gap: 10px; }
+.steps.across { display: flex; flex-wrap: wrap; gap: 8px 22px; }
+.drop.slim { min-height: 64px; padding: 14px; }
+#fwConfirm:empty { display: none; }
+@media (max-width: 520px) { .fw-versions { grid-template-columns: minmax(0, 1fr); } }
 
 /* ---- Device: firmware steps ---- */
 .steps { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
