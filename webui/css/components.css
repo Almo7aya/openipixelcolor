@@ -15,6 +15,11 @@
 .btn.ghost { background: transparent; border-color: transparent; color: var(--muted); }
 .btn.ghost:hover { color: var(--ink); }
 .btn.small { min-height: 32px; padding: 5px 11px; font-size: 13.5px; }
+.btn.icon-btn { gap: 6px; padding-left: 9px; }            /* a line icon before the words */
+.icon-btn svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.btn.icon-only { width: 32px; padding: 0; color: var(--muted); }   /* just an icon (it has an aria-label) */
+.btn.icon-only:hover { color: var(--ink); }
+.icon-only svg { width: 17px; height: 17px; fill: currentColor; }
 .btn[disabled] { opacity: .45; cursor: not-allowed; transform: none; }
 .row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .row.end { justify-content: flex-end; }

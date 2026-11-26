@@ -42,7 +42,10 @@ export function initDevice() {
   initMirror();
   /* the name as on the banner: "openipixel" white, "color" in five colours from the logo's ring */
   const RING = ["#ff2222", "#e3ff22", "#22ff59", "#22acff", "#9122ff"];   /* tools/make_brand.py ring_hue() */
-  drawDotText($("#wordmark"), "openipixelcolor", 16, (i) => (i < 10 ? "#f0f4ff" : RING[i - 10]));
+  const phone = matchMedia("(max-width: 860px)");                  /* layout.css: the strip at the top */
+  const wordmark = () => drawDotText($("#wordmark"), "openipixelcolor", phone.matches ? 12 : 16, (i) => (i < 10 ? "#f0f4ff" : RING[i - 10]));
+  wordmark();
+  phone.addEventListener("change", wordmark);
   if (!supported) $("#noBt").hidden = false;
   $("#btnConnect").disabled = !supported;
   $("#btnConnect").addEventListener("click", () => connect());

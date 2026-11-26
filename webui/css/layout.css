@@ -43,9 +43,8 @@
 .dev-brand { display: flex; align-items: center; gap: 10px; }
 .dev-brand img { display: block; flex: none; }
 .dev-brand .btn { margin-left: auto; }
+.dev-brand .gh-mini { display: none; }                  /* phones only (the footer has it here) */
 .wordmark { display: block; min-width: 0; image-rendering: pixelated; }
-.icon-btn { gap: 6px; padding-left: 9px; }
-.icon-btn svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
 /* the panel card: who's connected and the button; once connected, the controls as rows */
 .dev-card { display: grid; padding: 14px; border-radius: var(--r-l); background: var(--bg); border: 1px solid var(--line); }
@@ -108,12 +107,19 @@
   }
   .rail .mark { display: none; }
   .navbtn { width: auto; flex: 1; padding: 8px 4px; }
+  /* the strip stays at the top while the page scrolls; its first row (logo, GitHub, Install app) scrolls
+     away: top = -(padding 12 + row 32) */
   .device {
-    order: -1; position: sticky; top: 0; height: auto; overflow: visible; z-index: 9;
+    order: -1; position: sticky; top: -44px; height: auto; overflow: visible; z-index: 9;
     display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 10px 14px; align-items: center;
     padding: 12px 16px; border-left: 0; border-bottom: 1px solid var(--line);
   }
-  .device > .dev-brand, .device > .dev-log, .device > .dev-foot, .device .preview .note { display: none; }
+  .device > .dev-brand { grid-column: 1 / -1; height: 32px; gap: 8px; }
+  .dev-brand img { width: 26px; height: 26px; }
+  .dev-brand .gh-mini { display: inline-flex; margin-left: auto; }
+  .dev-brand .gh-mini ~ .btn { margin-left: 0; }
+  .device > .dev-log, .device > .dev-foot, .device .preview .note { display: none; }
+  @media (max-width: 359px) { .dev-brand .wordmark { display: none; } }   /* room for GitHub and Install app */
   .device > .preview { grid-row: span 2; }
   .device > .banner { grid-column: 1 / -1; }
   .dev-card { padding: 0; border: 0; background: none; }
