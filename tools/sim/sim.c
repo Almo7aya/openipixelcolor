@@ -12,6 +12,7 @@
 #include "app_port.h"
 #include "settings.h"
 #include "anim.h"
+#include "screens.h"
 
 static int quiet;
 static uint8_t last_reply[16];
@@ -146,7 +147,7 @@ static int settings_test(void)
     reboot(1);
     idle(2500);
     status(st);
-    CHECK(st[0] == MODE_EFFECT && st[2] == 80 && st[8] == 2, "factory settings: effect, 80 %, orientation 2");
+    CHECK(st[0] == MODE_WELCOME && st[2] == 80 && st[8] == 2, "first start: welcome screen, 80 %, orientation 2");
     sinfo(si);
     CHECK(si[4] == 16 && fl_programs == 0, "no valid record, nothing written, next save erases first");
 
@@ -567,8 +568,34 @@ static int anim_test(const char *dir)
     return nfail ? 1 : 0;
 }
 
+/* ---- "sim screens": the logo, boot, welcome and update screens -> screens.bin (make_readme_images.py) ---- */
+static void snap(FILE *f, const char *label)
+{
+    char name[32] = { 0 };
+    snprintf(name, sizeof name, "%s", label);
+    fwrite(name, 1, 32, f);
+    fwrite(fb, 1, sizeof fb, f);
+}
+
+static int screens_out(void)
+{
+    FILE *f = fopen("screens.bin", "wb");
+    if (!f) return 1;
+    gfx_target(&fb);
+    gfx_fill(0);
+    screens_logo(32, 256, 0, 256, 255);
+    snap(f, "logo");
+    for (uint32_t t = 0; t <= SCREENS_BOOT_MS; t += 40) { screens_boot(t); snap(f, "boot"); }
+    for (uint32_t t = 0; t < 8000; t += 40) { screens_welcome(t); snap(f, "welcome"); }
+    for (uint32_t p = 0; p <= 100; p += 2) { screens_update(&fb, p * 40u, p * 1000u, 100000u); snap(f, "update"); }
+    fclose(f);
+    printf("screens written\n");
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
+    if (argc > 1 && strcmp(argv[1], "screens") == 0) return screens_out();
     if (argc > 1 && strcmp(argv[1], "settings") == 0) return settings_test();
     if (argc > 2 && strcmp(argv[1], "anim") == 0) return anim_test(argv[2]);
     out = fopen("frames.bin", "wb");

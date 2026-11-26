@@ -67,7 +67,7 @@ jobs:
         working-directory: tools/sim
         run: |
           gcc -O2 -std=gnu11 -Wall -Wextra -Werror -I../../firmware/src/app sim.c \
-              ../../firmware/src/app/{gfx,effects,fx_more,modes,clockface,tables,font5x7,settings,textfx,anim}.c -o sim
+              ../../firmware/src/app/{gfx,effects,fx_more,modes,clockface,tables,font5x7,settings,textfx,anim,screens}.c -o sim
           ./sim settings
           node anim_vectors.js vec
           ./sim anim vec

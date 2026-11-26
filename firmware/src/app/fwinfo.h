@@ -5,8 +5,8 @@
 /* Reported by cmd 0x8005 as "MCU major.minor". The vendor firmware reports 3.x; this one reports 99.xx so
  * the two can never be confused (tools and the web UI rely on it). */
 #define FW_VER_MAJOR  99u
-#define FW_VER_MINOR  18u
-#define FW_VERSION_STR "99.18"   /* 99.02: flash status read order fixed (99.01 could not write flash)
+#define FW_VER_MINOR  19u
+#define FW_VERSION_STR "99.19"   /* 99.02: flash status read order fixed (99.01 could not write flash)
                                     99.03: minimum erase/program waits, display stopped during updates
                                     99.10: effects, clocks, text, canvas, rhythm/score/timer, BLE app cmds
                                     99.11: default orientation 2, richer status reply
@@ -17,7 +17,9 @@
                                            10 hold effects, 9 colour modes, decorations, animated
                                            backgrounds, live {time} tokens (0xF10B, textfx.c)
                                     99.18: animations uploaded over Bluetooth, stored in flash and played
-                                           by the panel (0xF10C-0xF111, anim.c), settings layout 3 */
+                                           by the panel (0xF10C-0xF111, anim.c), settings layout 3
+                                    99.19: logo boot screen, welcome screen on the first start (mode 10),
+                                           update screen instead of a dark panel during updates (screens.c) */
 
 /* Replies travel MCU -> UART2 -> BLE chip -> notify; the BLE chip forwards at most 16 bytes (seen on HW).
  * openipixelcolor diagnostics command; reply (16 B): 10 00 F1 F0 01 mode crash exc_type ipc(4) uptime_s(4) */

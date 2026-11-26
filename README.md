@@ -1,6 +1,8 @@
-# openipixelcolor
+<p align="center"><img src="docs/images/logo.png" width="240" alt="The openipixelcolor logo on a 32 × 32 LED panel: an open colour ring around a pixel letter i, one pixel escaping through the gap"></p>
 
-[![Firmware](https://github.com/Almo7aya/openipixelcolor/actions/workflows/firmware.yml/badge.svg)](https://github.com/Almo7aya/openipixelcolor/actions/workflows/firmware.yml)
+<h1 align="center">openipixelcolor</h1>
+
+<p align="center"><a href="https://github.com/Almo7aya/openipixelcolor/actions/workflows/firmware.yml"><img src="https://github.com/Almo7aya/openipixelcolor/actions/workflows/firmware.yml/badge.svg" alt="Firmware build"></a></p>
 
 Open-source firmware and a browser control page for 32 × 32 Bluetooth LED pixel panels: the cheap
 square RGB panels that advertise as `LED_BLE_…` and are normally driven by the iPixel Color phone app.
@@ -15,7 +17,15 @@ then **Install firmware** twice. Nothing to install on the computer.
 > Bluetooth is the only way in on a closed panel. Read [Safety](#safety) before installing anything.
 > This software comes with no warranty (see [LICENSE](LICENSE)).
 
+<p align="center"><img src="docs/images/screens.png" width="720" alt="Three panel screens: starting up (the logo and the version), the first start (HELLO, a Bluetooth sign, CONNECT) and installing firmware (an arrow, a progress bar at 62 %)"></p>
+
 ## What it does
+
+- **Its own screens:** the logo draws itself when the panel starts (below), a welcome screen asks you
+  to connect on the very first start, and an update screen with a progress bar shows while new
+  firmware arrives, instead of a dark panel.
+
+  <img src="docs/images/boot.gif" width="200" alt="The boot animation: the colour ring draws itself around the letter i, a pixel flies out of the gap, the version appears">
 
 - **20 animations:** plasma, fire, matrix rain, starfield, game of life, fireworks, ripples,
   sparkles, rainbow swirl, tunnel, snake, pong, bouncing balls, equalizer, aurora, lava lamp,
@@ -195,12 +205,14 @@ The app code (`firmware/src/app`) does not touch hardware, so it also runs on a 
 
 ```sh
 gcc -O2 -std=gnu11 -Ifirmware/src/app tools/sim/sim.c \
-    firmware/src/app/{gfx,effects,fx_more,modes,clockface,tables,font5x7,settings,textfx,anim}.c -o sim
+    firmware/src/app/{gfx,effects,fx_more,modes,clockface,tables,font5x7,settings,textfx,anim,screens}.c -o sim
 ./sim settings                      # power-cycle tests of the settings storage on emulated flash
 node tools/sim/anim_vectors.js vec  # test animations made by the web UI's encoder (needs Node.js)
 ./sim anim vec                      # upload, store, play (pixel-exact against the web UI's decoder), damage
 ./sim                               # renders every effect, clock face and text effect to frames.bin
 python tools/sim/make_sheet.py frames.bin sheet.png
+./sim screens                       # the logo, boot, welcome and update screens to screens.bin
+python tools/sim/make_readme_images.py screens.bin docs/images   # the pictures in this README
 ```
 
 ## Contributing

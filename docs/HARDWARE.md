@@ -96,8 +96,9 @@ arrives twice. Only one Bluetooth connection at a time is possible. The protocol
 - Brightness has 16 levels; the percentage from the apps maps to `level = min(percent / 6, 15)`.
 - The panel has 4 orientations (90° steps). On the tested panel orientation 2 shows the picture
   upright, so that is the default.
-- Before writing flash during an update, the display pipeline is stopped (the panel goes dark).
-  A restart brings it back.
+- During an update the display keeps running and shows the update screen; the picture is blanked while
+  each block is written to flash (the vendor firmware stops the display instead). In rescue mode the
+  display is not started at all.
 
 ## Other pins
 

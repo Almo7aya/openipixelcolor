@@ -5,7 +5,7 @@
 
 enum {
     MODE_EFFECT = 0, MODE_CLOCK, MODE_TEXT, MODE_CANVAS, MODE_RHYTHM, MODE_SCORE, MODE_TIMER, MODE_TEST,
-    MODE_SPLASH, MODE_ANIM, MODE_COUNT
+    MODE_SPLASH, MODE_ANIM, MODE_WELCOME, MODE_COUNT
 };
 
 enum { MKEY_SHORT = 1, MKEY_LONG = 2 };
@@ -16,6 +16,7 @@ void modes_key(int ev, uint32_t now);
 void modes_set(unsigned mode, unsigned arg, uint32_t now);
 void modes_set_time(uint8_t h, uint8_t m, uint8_t s, uint32_t now);
 void modes_set_text(const char *s, unsigned len, uint32_t rgb, unsigned speed, unsigned flags, uint32_t now);
+void modes_first_start(int yes);   /* nothing saved yet: the welcome screen follows the boot screen */
 /* BLE commands: returns -1 = not handled, 0/1 = status to acknowledge, 2 = handled and already replied */
 int  modes_handle_cmd(uint16_t cmd, const uint8_t *pkt, unsigned len, uint32_t now);
 

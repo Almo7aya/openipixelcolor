@@ -49,7 +49,7 @@ Example: version query `04 00 05 80` → reply `08 00 05 80 63 11 xx yy` (MCU 99
 |---|---|---|
 | `0xF000` | – | Ping |
 | `0xF0F1` | – | Diagnostics: reply `mode crashes exc_type exc_address(4) uptime_s(4)`; mode 0 normal, 1 rescue (key), 2 rescue (crash loop) |
-| `0xF101` | `mode arg` | Switch mode: 0 effect, 1 clock, 2 text, 3 canvas, 4 rhythm, 5 score, 6 timer, 7 test pattern, 8 splash, 9 animation (arg = slot, `FF` = all in turn) |
+| `0xF101` | `mode arg` | Switch mode: 0 effect, 1 clock, 2 text, 3 canvas, 4 rhythm, 5 score, 6 timer, 7 test pattern, 8 boot screen, 9 animation (arg = slot, `FF` = all in turn), 10 welcome screen (shown on the first start) |
 | `0xF102` | `r g b speed flags text…` | Scrolling text in the panel font (ASCII); flags bit 0 = rainbow |
 | `0xF103` | 3072 bytes | Whole picture, 32×32 RGB, row by row |
 | `0xF104` | `on secs_lo secs_hi` | Effect autoplay and its interval (minimum 3 s) |

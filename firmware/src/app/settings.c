@@ -147,6 +147,7 @@ void settings_load(uint32_t now, int apply)
         if (!best || r->seq > best->seq) best = r;
     }
     if (best) seq = best->seq;                            /* the next record continues the sequence */
+    modes_first_start(best == 0);                         /* never saved anything: show the welcome screen */
 
     for (int i = 0; i < NBLOB; i++) {                     /* picture and text strip first: the settings */
         const blob_rec_t *r = blob_flash(i);              /* below may refer to them */

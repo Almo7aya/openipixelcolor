@@ -7,6 +7,7 @@
 #include "app_port.h"
 #include "fwinfo.h"
 #include "anim.h"
+#include "screens.h"
 
 #define TEXT_MAX MODES_TEXT_MAX
 
@@ -28,6 +29,7 @@ static struct {
     uint32_t tstart, tacc;
     uint8_t  next_after_splash;
     uint8_t  anim_slot, anim_speed;
+    uint8_t  first_start;                             /* nothing saved yet (settings.c): welcome after the boot screen */
 } S;
 
 static fb_t canvas;
@@ -205,8 +207,11 @@ void modes_restore_canvas(const uint8_t *px)
     for (unsigned i = 0; i < sizeof canvas; i++) d[i] = px[i];
 }
 
+void modes_first_start(int yes) { S.first_start = (uint8_t)(yes ? 1 : 0); }
+
 static void enter_saved_mode(uint32_t now)
 {
+    if (S.first_start) { modes_set(MODE_WELCOME, 0, now); return; }
     unsigned arg = S.pmode == MODE_EFFECT ? S.effect : S.pmode == MODE_CLOCK ? S.clock_style :
                    S.pmode == MODE_ANIM ? S.anim_slot : 0;
     modes_set(S.pmode, arg, now);
@@ -296,15 +301,9 @@ static void draw_test(uint32_t t)
 
 static void draw_splash(uint32_t now)
 {
-    static const char *const NAME[3] = { "OPEN", "IPIXEL", "COLOR" };
     uint32_t t = now - S.mode_since;
-    gfx_fill(0);
-    for (int i = 0; i < 3; i++)                        /* the project name, one word per line */
-        gfx_tiny_text((32 - gfx_tiny_width(NAME[i])) / 2, 2 + i * 7, NAME[i], gfx_hsv((uint8_t)(t / 6 + (uint32_t)i * 40u), 200, 255));
-    gfx_tiny_text((32 - gfx_tiny_width(FW_VERSION_STR)) / 2, 23, FW_VERSION_STR, RGB(120, 120, 140));
-    int bar = (int)(t * 32u / 1800u);
-    gfx_rect(0, 30, bar > 32 ? 32 : bar, 1, gfx_hsv((uint8_t)(t / 5), 255, 160), 1);
-    if (t > 1800) enter_saved_mode(now);
+    screens_boot(t > SCREENS_BOOT_MS ? SCREENS_BOOT_MS : t);
+    if (t > SCREENS_BOOT_MS) enter_saved_mode(now);
 }
 
 void modes_render(fb_t *fb, uint32_t now)
@@ -339,6 +338,7 @@ void modes_render(fb_t *fb, uint32_t now)
     case MODE_TIMER:  draw_timer(now); break;
     case MODE_TEST:   draw_test(now); break;
     case MODE_ANIM:   anim_draw(now, S.anim_speed); break;
+    case MODE_WELCOME: screens_welcome(now); break;
     default:          draw_splash(now); break;
     }
 }

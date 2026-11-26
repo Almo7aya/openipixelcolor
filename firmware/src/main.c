@@ -30,6 +30,7 @@
 #include "app/fwinfo.h"
 #include "app/modes.h"
 #include "app/settings.h"
+#include "app/screens.h"
 #include "lib/printf.h"
 
 #define BOOT_MAGIC        0xB007C0DEu
@@ -106,13 +107,21 @@ int main(void)
         if (len) proto_handle(pkt, len);
         proto_tick();
 
-        if (g_mode == FW_MODE_NORMAL && !ota_active()) {
-            key_event_t ev = key_poll();
-            if (ev == KEY_SHORT) modes_key(MKEY_SHORT, now);
-            else if (ev == KEY_LONG) modes_key(MKEY_LONG, now);
+        if (g_mode == FW_MODE_NORMAL) {
+            if (!ota_active()) {
+                key_event_t ev = key_poll();
+                if (ev == KEY_SHORT) modes_key(MKEY_SHORT, now);
+                else if (ev == KEY_LONG) modes_key(MKEY_LONG, now);
+            }
             if ((int32_t)(now - next_frame) >= 0) {
                 next_frame = now + 25;              /* ~40 fps */
-                modes_render(&fb, now);
+                if (ota_active()) {                 /* a firmware update is arriving: show its progress */
+                    uint32_t done, total;
+                    ota_progress(&done, &total);
+                    screens_update(&fb, now, done, total);
+                } else {
+                    modes_render(&fb, now);
+                }
                 display_show(fb);                   /* non-blocking: skipped if previous frame pending */
             }
         }

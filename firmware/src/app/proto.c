@@ -9,6 +9,7 @@
 #include "modes.h"
 #include "settings.h"
 #include "anim.h"
+#include "app_port.h"
 #include "../hal/sys.h"
 #include "../hal/timer.h"
 #include "../lib/printf.h"
@@ -20,7 +21,13 @@ static uint32_t ota_deadline;          /* 0 = disarmed; 10 s inactivity reset af
 static uint32_t n_packets, n_unknown;
 
 /* ---- platform hooks for ota.c ------------------------------------------------------------- */
-int  ota_port_flash_write(uint32_t addr, const void *buf, uint32_t len) { return iflash_write(addr, buf, len); }
+/* Normal mode: the display keeps running during an update (main.c shows the update screen), so each block
+ * is written the way saved settings and animations are: picture blanked first, clock kept (app_port.c).
+ * Rescue mode: no display, plain writes - the recovery path stays exactly as it was. */
+int ota_port_flash_write(uint32_t addr, const void *buf, uint32_t len)
+{
+    return fw_mode() == FW_MODE_NORMAL ? app_flash_write_sector(addr, buf, len) : iflash_write(addr, buf, len);
+}
 const void *ota_port_flash_ptr(uint32_t addr) { return (const void *)(uintptr_t)addr; }   /* XIP: CPU addr == flash offset */
 void ota_port_final_ack(void) { link_reply(0xC001, OTA_OK, 0, 0); }
 void ota_port_reset(void)     { fw_prepare_reset(); sys_reset(); }
@@ -49,8 +56,7 @@ void proto_handle(const uint8_t *pkt, unsigned len)
         anim_abort_upload();                           /* one flash writer at a time */
         int ok = (len >= 13) ? ota_begin(pkt[4], rd32(pkt + 5), rd32(pkt + 9)) : (int)OTA_FAIL;
         kprintf("ota begin: count %u size %lu -> %d\n", pkt[4], len >= 13 ? rd32(pkt + 9) : 0, ok);
-        if (ok && fw_mode() == 0) display_suspend();   /* nothing else running during flash writes */
-        arm_ota_timer();
+        arm_ota_timer();                               /* (normal mode: main.c now shows the update screen) */
         link_reply(0xC000, (uint8_t)ok, 0, 0);
         break; }
     case 0xC001: {                                     /* OTA chunk (last one resets the chip) */
