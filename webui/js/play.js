@@ -6,10 +6,10 @@ import { CMD, MODE } from "./protocol.js";
 import { send, act } from "./ble.js";
 import { EFFECTS, CLOCKS, TESTS, previewOf } from "./catalog.js";
 
+const pic = (name) => name + (reducedMotion() ? ".png" : ".gif");
 function tile(name, img, onclick) {
-  const still = reducedMotion();
   const b = el("button", { class: "tile", "aria-pressed": "false" },
-    el("span", { class: "screen" }, el("img", { src: img + (still ? ".png" : ".gif"), alt: "", loading: "lazy", width: 32, height: 32 })),
+    el("span", { class: "screen" }, el("img", { src: pic(img), alt: "", loading: "lazy", width: 32, height: 32 })),
     el("span", { class: "name" }, name));
   b.addEventListener("click", onclick);
   return b;
@@ -17,10 +17,18 @@ function tile(name, img, onclick) {
 
 function initEffects() {
   const grid = $("#effectTiles");
-  EFFECTS.forEach((name, i) => grid.append(tile(name, previewOf("effect", i), () => act(async () => {
-    await send(CMD.MODE, [MODE.EFFECT, i]);
-    $("#shuffle").checked = false;
-  }))));
+  /* first: the screen a new panel greets you with (not an effect in the firmware: a mode of its own) */
+  const welcome = tile("Welcome", previewOf("welcome", 0), () => act(() => send(CMD.MODE, [MODE.WELCOME, 0])));
+  welcome.dataset.mode = MODE.WELCOME;
+  grid.append(welcome);
+  EFFECTS.forEach((name, i) => {
+    const t = tile(name, previewOf("effect", i), () => act(async () => {
+      await send(CMD.MODE, [MODE.EFFECT, i]);
+      $("#shuffle").checked = false;
+    }));
+    t.dataset.mode = MODE.EFFECT; t.dataset.arg = i;
+    grid.append(t);
+  });
   const sendShuffle = () => {
     const secs = Number($("#shuffleSecs").value);
     act(() => send(CMD.AUTOPLAY, [$("#shuffle").checked ? 1 : 0, secs & 255, secs >> 8]));
@@ -29,6 +37,17 @@ function initEffects() {
   $("#shuffleSecs").addEventListener("change", () => { if ($("#shuffle").checked) sendShuffle(); });
 }
 
+/* Clock faces: each preview shows the face the way the 24-hour and Date switches would. previews/clocks.json
+   (tools/sim/make_previews.py) names the file for each face and combination: [24 h + date, 12 h + date,
+   24 h, 12 h]; a face that ignores a switch uses the same file for both. */
+let clockFiles = null;
+function showClockPreviews() {
+  const v = ($("#h24").checked ? 0 : 1) + ($("#showDate").checked ? 0 : 2);
+  $$("#clockTiles .tile img").forEach((img, i) => {
+    const src = pic(clockFiles && clockFiles[i] ? `previews/${clockFiles[i][v]}` : previewOf("clock", i));
+    if (img.getAttribute("src") !== src) img.src = src;
+  });
+}
 function initClocks() {
   const grid = $("#clockTiles");
   $("#h24").checked = store.get("clock.h24", true);
@@ -39,8 +58,11 @@ function initClocks() {
     const dow = d.getDay() === 0 ? 7 : d.getDay();
     await send(CMD.CLOCK, [i, $("#h24").checked ? 1 : 0, $("#showDate").checked ? 1 : 0, d.getFullYear() % 100, d.getMonth() + 1, d.getDate(), dow]);
   }))));
-  $("#h24").addEventListener("change", (e) => store.set("clock.h24", e.target.checked));
-  $("#showDate").addEventListener("change", (e) => store.set("clock.date", e.target.checked));
+  $("#h24").addEventListener("change", (e) => { store.set("clock.h24", e.target.checked); showClockPreviews(); });
+  $("#showDate").addEventListener("change", (e) => { store.set("clock.date", e.target.checked); showClockPreviews(); });
+  fetch("previews/clocks.json").then((r) => (r.ok ? r.json() : null)).then((j) => {
+    if (Array.isArray(j) && j.length === CLOCKS.length) { clockFiles = j; showClockPreviews(); }
+  }).catch(() => { /* the 24-hour, with-date previews stay */ });
 }
 
 function initTools() {
@@ -78,12 +100,13 @@ export function initPlay() {
   initEffects();
   initClocks();
   initTools();
-  $("#nEffects").textContent = EFFECTS.length;           /* how many of each, beside the section names */
+  $("#nEffects").textContent = EFFECTS.length + 1;       /* how many of each, beside the section names (+ Welcome) */
   $("#nClocks").textContent = CLOCKS.length;
   on("library", (items) => { $("#nAnims").textContent = items.length || ""; });
   on("status", (r) => {
     const mode = r[5], flags = r[12];
-    $$("#effectTiles .tile").forEach((t, i) => t.setAttribute("aria-pressed", String(mode === MODE.EFFECT && i === r[6])));
+    $$("#effectTiles .tile").forEach((t) => t.setAttribute("aria-pressed",
+      String(Number(t.dataset.mode) === mode && (mode !== MODE.EFFECT || Number(t.dataset.arg) === r[6]))));
     $$("#clockTiles .tile").forEach((t, i) => t.setAttribute("aria-pressed", String(mode === MODE.CLOCK && i === r[14])));
     if (document.activeElement !== $("#shuffle")) $("#shuffle").checked = !!(flags & 2);
     if (r.length >= 16 && document.activeElement !== $("#shuffleSecs")) {

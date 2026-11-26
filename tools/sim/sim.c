@@ -647,17 +647,32 @@ static int previews_out(void)
             snap(f, label);
         }
     }
-    for (uint8_t st = 0; st < CLOCK_STYLES; st++) {
-        modes_set_time(10, 8, 30, now);
-        uint8_t c[7] = { st, 1, 1, 26, 11, 22, 7 };
-        cmd(0x0106, c, 7);
-        char label[32];
-        snprintf(label, sizeof label, "clock %02u", st);
-        for (int k = 0; k < 36; k++) {
-            for (int s = 0; s < 4; s++) { now += 25; modes_render(&fb, now); }
-            snap(f, label);
+    /* every face in the four ways the page offers (24-hour, date), at 18:42 so 12-hour reads differently
+       (06:42). Each one starts from the same moment, so a face that ignores a setting comes out byte for byte
+       the same and make_previews.py keeps one file for both. The first second settles (flip cards). */
+    static const char *const VARIANT[4] = { "", " 12h", " nodate", " 12h nodate" };
+    const uint32_t t0 = now + 2000;
+    for (uint8_t st = 0; st < CLOCK_STYLES; st++)
+        for (int v = 0; v < 4; v++) {
+            now = t0 - 1000;
+            modes_set_time(18, 42, 30, now);
+            uint8_t c[7] = { st, !(v & 1), !(v & 2), 26, 11, 22, 7 };
+            cmd(0x0106, c, 7);
+            while (now < t0) { now += 25; modes_render(&fb, now); }
+            char label[32];
+            snprintf(label, sizeof label, "clock %02u%s", st, VARIANT[v]);
+            for (int k = 0; k < 36; k++) {
+                for (int s = 0; s < 4; s++) { now += 25; modes_render(&fb, now); }
+                snap(f, label);
+            }
         }
-    }
+    /* the welcome screen (a new panel's first start; the page offers it first among the effects): one loop,
+       which is the name's scroll plus the Bluetooth flip (firmware/src/app/screens.c screens_welcome) */
+    uint8_t w[2] = { MODE_WELCOME, 0 };
+    cmd(0xF101, w, 2);
+    const uint32_t loop = (uint32_t)(gfx_text_width("open ipixel color") + 32) * 32u + 1400u;
+    now = (now / loop + 1) * loop;
+    for (uint32_t t = 0; t < loop; t += 64) { modes_render(&fb, now + t); snap(f, "welcome 00"); }   /* 2 px a frame */
     fclose(f);
     printf("previews written\n");
     return 0;

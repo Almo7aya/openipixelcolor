@@ -55,13 +55,16 @@ for (const id of new Set(ids.filter((id, i) => ids.indexOf(id) !== i))) fail(`in
 /* linked files */
 for (const m of html.matchAll(/\b(?:href|src)="([^"#:]+)"/g)) if (!fs.existsSync(path.join(dir, m[1]))) fail(`index.html: ${m[1]} is missing`);
 const catalog = fs.readFileSync(path.join(dir, "js", "catalog.js"), "utf8");
-for (const [kind, list] of [["effect", "EFFECTS"], ["clock", "CLOCKS"]]) {
-  const n = (catalog.match(new RegExp(`export const ${list} = \\[([\\s\\S]*?)\\];`))[1].match(/"[^"]*"/g) || []).length;
-  for (let i = 0; i < n; i++) for (const ext of ["gif", "png"]) {
-    const p = `previews/${kind}-${String(i).padStart(2, "0")}.${ext}`;
-    if (!fs.existsSync(path.join(dir, p))) fail(`${p} is missing (python tools/sim/make_previews.py)`);
-  }
-}
+const preview = (name) => { for (const ext of ["gif", "png"])
+  if (!fs.existsSync(path.join(dir, `previews/${name}.${ext}`))) fail(`previews/${name}.${ext} is missing (python tools/sim/make_previews.py)`); };
+const count = (list) => (catalog.match(new RegExp(`export const ${list} = \\[([\\s\\S]*?)\\];`))[1].match(/"[^"]*"/g) || []).length;
+for (let i = 0; i < count("EFFECTS"); i++) preview(`effect-${String(i).padStart(2, "0")}`);
+preview("welcome-00");
+/* clock faces: one file per way of showing them (24-hour, date), listed in clocks.json */
+let clocks = [];
+try { clocks = JSON.parse(fs.readFileSync(path.join(dir, "previews", "clocks.json"), "utf8")); } catch (e) { fail(`previews/clocks.json: ${e.message}`); }
+if (clocks.length !== count("CLOCKS") || clocks.some((r) => !Array.isArray(r) || r.length !== 4)) fail("previews/clocks.json doesn't match CLOCKS (4 versions a face)");
+for (const name of new Set(clocks.flat())) preview(name);
 
 if (bad) process.exit(1);
 console.log(`web UI: ${modules.length} modules compile and link, ${idSet.size} element ids, all lookups and files found`);
