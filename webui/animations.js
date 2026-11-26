@@ -32,13 +32,13 @@
   const ready = () => chWrite && custom && fwMinor >= FW_MIN;
   function needPanel() {
     if (!chWrite) { status("Connect the panel first.", true); $("#btnConnect").focus(); return false; }
-    if (!custom || fwMinor < FW_MIN) { status(`Animations need openpanel32 99.${FW_MIN} or newer. Install it in the Firmware section.`, true); return false; }
+    if (!custom || fwMinor < FW_MIN) { status("Animations need newer firmware on the panel. Install it under Settings.", true); return false; }
     return true;
   }
 
   const A = { src: "file", fileSrc: null, lastFiles: null, enc: null, encFrames: null, nameAuto: true,
               lib: [], store: null, showing: -1, all: false, uploading: false };
-  const libCache = store.get("op32.animlib", {});          // crc -> { name, thumb, t }
+  const libCache = store.get("oipc.animlib", {});          // crc -> { name, thumb, t }
 
   /* ================================================================================================
      Preview on the mirror: the decoded file, with its own frame times
@@ -62,7 +62,7 @@
     };
     step();
   }
-  window.addEventListener("op32:mirror", (e) => { if (e.detail !== "anim") previewStop(); });
+  window.addEventListener("oipc:mirror", (e) => { if (e.detail !== "anim") previewStop(); });
 
   /* ================================================================================================
      The animation being made: frames from the chosen source -> colours reduced, encoded, decoded again
@@ -98,10 +98,8 @@
       A.encFrames = OPA.decode(A.enc.bytes);
     } catch (e) { A.enc = A.encFrames = null; facts(e.message, true); buttons(); return; }
     const secs = A.encFrames.reduce((a, f) => a + f.delay, 0) / 1000;
-    const slots = Math.ceil(A.enc.size / OPA.SLOT_SIZE);
-    facts(`${A.enc.frames} ${A.enc.frames === 1 ? "frame" : "frames"}${A.enc.merged ? ` (${A.enc.merged} repeats joined)` : ""}, ` +
-          `${secs.toFixed(1)} s per round, ${A.enc.colors} colours, ${kb(A.enc.size)} = ${slots} of the panel's ${OPA.SLOTS} slots` +
-          (A.enc.fits ? "" : ". Too big: use fewer frames (Frames: every 2nd) or fewer colours."), !A.enc.fits);
+    facts(A.enc.fits ? `${A.enc.frames} ${A.enc.frames === 1 ? "frame" : "frames"}, ${secs.toFixed(1)} s, ${kb(A.enc.size)}`
+                     : "Too big for the panel. Use fewer frames (Frames: every 2nd) or fewer colours.", !A.enc.fits);
     buttons();
     if (play) previewPlay(A.encFrames);
   }
@@ -201,7 +199,7 @@
   const ed = { frames: [], delays: [], cur: 0, tool: "pen", last: null, painting: false };
   const edCv = $("#aEd"), edCtx = edCv.getContext("2d");
   (function edLoad() {
-    const s = store.get("op32.anim.editor", null);
+    const s = store.get("oipc.anim.editor", null);
     if (s && Array.isArray(s.frames) && s.frames.length) {
       ed.frames = s.frames.map(fromB64).filter((f) => f.length === NPX * 3);
       ed.delays = ed.frames.map((_, i) => Math.max(OPA.MIN_DELAY, Number(s.delays && s.delays[i]) || 150));
@@ -211,7 +209,7 @@
   let edSaveTimer = 0;
   function edChanged(structure) {
     clearTimeout(edSaveTimer);
-    edSaveTimer = setTimeout(() => store.set("op32.anim.editor", { frames: ed.frames.map(toB64), delays: ed.delays }), 400);
+    edSaveTimer = setTimeout(() => store.set("oipc.anim.editor", { frames: ed.frames.map(toB64), delays: ed.delays }), 400);
     if (structure) edStrip(); else edThumb(ed.cur);
     edDraw();
     if (A.src === "draw") scheduleEncode(false);
@@ -495,7 +493,7 @@
     libCache[crc] = { name, thumb, t: Date.now() };
     const keys = Object.keys(libCache);
     if (keys.length > 60) keys.sort((a, b) => libCache[a].t - libCache[b].t).slice(0, keys.length - 60).forEach((k) => delete libCache[k]);
-    store.set("op32.animlib", libCache);
+    store.set("oipc.animlib", libCache);
   }
   let libBusy = false;
   async function refreshLibrary() {
@@ -522,7 +520,7 @@
     const box = $("#aLib");
     box.innerHTML = "";
     if (!chWrite) { box.innerHTML = '<span class="empty-note">Connect the panel to see its animations.</span>'; $("#aStore").textContent = ""; return; }
-    if (!ready()) { box.innerHTML = `<span class="empty-note">Animations need openpanel32 99.${FW_MIN} or newer on the panel.</span>`; $("#aStore").textContent = ""; return; }
+    if (!ready()) { box.innerHTML = '<span class="empty-note">Animations need newer firmware on the panel. Install it under Settings.</span>'; $("#aStore").textContent = ""; return; }
     if (!A.lib.length) box.innerHTML = '<span class="empty-note">No animations on the panel yet. Make one below.</span>';
     for (const it of A.lib) {
       const t = document.createElement("div");
@@ -558,7 +556,7 @@
     if (l) {
       let n = 0;
       for (let s = 0; s < l.slots; s++) n += (l.used >>> s) & 1;
-      $("#aStore").textContent = `${n} of ${l.slots} slots used`;
+      $("#aStore").textContent = n ? `${Math.round(n * 100 / l.slots)}% of the space used` : "";
     }
   }
   function speedText() { $("#aSpeedOut").value = `${(Number($("#aSpeed").value) / 10).toFixed(1).replace(/\.0$/, "")}×`; }
@@ -604,7 +602,7 @@
         for (let k = s; k < s + need; k++) if ((l.used >>> k) & 1) free = false;
         if (free) slot = s;
       }
-      if (slot < 0) throw new Error(`Not enough room on the panel: this one needs ${need} free ${need === 1 ? "slot" : "slots in a row"}. Delete an animation first.`);
+      if (slot < 0) throw new Error("Not enough free space on the panel for this one. Delete an animation, or use fewer frames or colours.");
       const t0 = performance.now();
       try { await uploadOnce(bytes, slot); }
       catch (e) { if (e.reason !== 10) throw e; status("Checking failed once, sending again…"); await uploadOnce(bytes, slot); }
@@ -618,9 +616,9 @@
   });
 
   /* ---- panel events ---------------------------------------------------------------------------------- */
-  window.addEventListener("op32:connected", (e) => { A.lib = []; A.store = null; if (busy) return; if (e.detail.custom && !e.detail.rescue && e.detail.fwMinor >= FW_MIN) refreshLibrary(); else renderLib(); });
-  window.addEventListener("op32:disconnected", () => { A.lib = []; A.store = null; renderLib(); });
-  window.addEventListener("op32:status", (e) => {
+  window.addEventListener("oipc:connected", (e) => { A.lib = []; A.store = null; if (busy) return; if (e.detail.custom && !e.detail.rescue && e.detail.fwMinor >= FW_MIN) refreshLibrary(); else renderLib(); });
+  window.addEventListener("oipc:disconnected", () => { A.lib = []; A.store = null; renderLib(); });
+  window.addEventListener("oipc:status", (e) => {
     const r = e.detail, mode = r[5];
     A.showing = mode === 9 ? r[6] : -1;
     A.all = mode === 9 && !!(r[12] & 16);

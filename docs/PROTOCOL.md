@@ -1,6 +1,6 @@
 # Bluetooth protocol
 
-openpanel32 accepts the commands the vendor's phone app uses (so that app, and the open-source
+openipixelcolor accepts the commands the vendor's phone app uses (so that app, and the open-source
 pypixelcolor library, keep working for the basics), plus its own commands in the `0xF0xx` / `0xF1xx`
 range for everything else.
 
@@ -30,7 +30,7 @@ Example: version query `04 00 05 80` → reply `08 00 05 80 63 11 xx yy` (MCU 99
 | `0x8001` | `hh mm ss 00` | Sets the time; replies with the device type (`0x81` = 32×32) |
 | `0x8003` | – | Clear: back to effects with autoplay |
 | `0x8004` | `percent` | Brightness 0–100 |
-| `0x8005` | – | Versions: reply `mcu_major mcu_minor module_major module_minor`. openpanel32 reports **99.xx**, the vendor firmware 3.x |
+| `0x8005` | – | Versions: reply `mcu_major mcu_minor module_major module_minor`. openipixelcolor reports **99.xx**, the vendor firmware 3.x |
 | `0x8006` | `0–3` | Orientation |
 | `0x8008` | `x x n` | Show effect `n` (third byte) |
 | `0x8009` | `0 stop / 1 start / 2 pause` | Stopwatch |
@@ -43,7 +43,7 @@ Example: version query `04 00 05 80` → reply `08 00 05 80 63 11 xx yy` (MCU 99
 | `0x0201` | `style l1 … l11` | Rhythm bars, levels 0–15 |
 | `0xC000`–`0xC006` | | Firmware update and restart, see below |
 
-## openpanel32 commands
+## openipixelcolor commands
 
 | Cmd | Payload | Does |
 |---|---|---|
@@ -181,8 +181,8 @@ Clock faces (`0x0106`): 0 digital, 1 analog, 2 binary, 3 big digits, 4 plasma, 5
 
 ## Firmware update
 
-Byte-compatible with the vendor firmware's update path, so the same tools install openpanel32 over the
-vendor firmware, update openpanel32, or put a vendor image back.
+Byte-compatible with the vendor firmware's update path, so the same tools install openipixelcolor over the
+vendor firmware, update openipixelcolor, or put a vendor image back.
 
 1. **Encoding.** Update files are byte-substituted: `encoded = ((raw ^ 0x4A) + 0x8A) & 0xFF`.
    `tools/fwcodec.py` encodes and decodes; the build makes `firmware/build/fw.ota.bin`.
@@ -197,7 +197,7 @@ vendor firmware, update openpanel32, or put a vendor image back.
 `0xC006` restarts the panel. `0xC002`/`0xC003` are acknowledged (module update mode), `0xC004` replies
 as `0xC003` and restarts, `0xC005` is the module reporting its own version.
 
-openpanel32 is stricter than required: the chunk count must match the size, chunk indexes must
+openipixelcolor is stricter than required: the chunk count must match the size, chunk indexes must
 arrive in order, every chunk's CRC is checked before it is written, and before writing the update
 record the staged image is read back from flash and checked again. A firmware whose flash writes
 silently fail therefore never asks the bootloader to install a broken image.

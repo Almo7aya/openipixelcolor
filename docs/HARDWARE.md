@@ -1,6 +1,6 @@
 # Hardware notes
 
-What openpanel32 knows about the panel, learned by measuring the hardware and by watching how it
+What openipixelcolor knows about the panel, learned by measuring the hardware and by watching how it
 behaves. Facts marked *(guess)* are not confirmed. Corrections are welcome.
 
 ## The board
@@ -11,7 +11,7 @@ behaves. Facts marked *(guess)* are not confirmed. Corrections are welcome.
 | Bluetooth | A separate BLE module. It talks to the main chip over SPI (module → chip) and UART (chip → module) and does all the Bluetooth work |
 | Display | 32 × 32 RGB LED matrix, driven directly by the chip's LED controller |
 | Button | One key on P2.6, active low, external pull-up |
-| Extra flash | An 8-pin 25Q32 SPI NOR (4 MiB) next to the chip. The vendor firmware keeps content there; openpanel32 does not use it |
+| Extra flash | An 8-pin 25Q32 SPI NOR (4 MiB) next to the chip. The vendor firmware keeps content there; openipixelcolor does not use it |
 
 Panels with this board advertise as `LED_BLE_…` and offer the Bluetooth service `0xFA00`.
 
@@ -19,17 +19,17 @@ Panels with this board advertise as `LED_BLE_…` and offer the Bluetooth servic
 
 | Range | Contents |
 |---|---|
-| `0x000000–0x00FFFF` | Bootloader. Never written by openpanel32 |
-| `0x010000–…` | Application (openpanel32 or the vendor firmware). Runs in place |
+| `0x000000–0x00FFFF` | Bootloader. Never written by openipixelcolor |
+| `0x010000–…` | Application (openipixelcolor or the vendor firmware). Runs in place |
 | `0x108000–0x1FEFFF` | Update staging area: a new image is received here, the bootloader copies it to `0x10000` |
-| `0x150000–0x1EFFFF` | openpanel32: stored animations (20 slots of 32 KiB) |
-| `0x1FB000` | openpanel32: saved text playlist (one 4 KiB sector) |
-| `0x1FC000` | openpanel32: saved picture |
-| `0x1FD000` | openpanel32: settings log (16 × 256-byte records) |
+| `0x150000–0x1EFFFF` | openipixelcolor: stored animations (20 slots of 32 KiB) |
+| `0x1FB000` | openipixelcolor: saved text playlist (one 4 KiB sector) |
+| `0x1FC000` | openipixelcolor: saved picture |
+| `0x1FD000` | openipixelcolor: settings log (16 × 256-byte records) |
 | `0x1FF000` | Update record: tells the bootloader that a complete, checked image waits in the staging area |
 
-The openpanel32 data sits at the top of the staging area. An update reaches the animations only with an
-image larger than 0x48000 bytes, and the settings only beyond about 0xF3000 bytes (openpanel32 is about
+The openipixelcolor data sits at the top of the staging area. An update reaches the animations only with an
+image larger than 0x48000 bytes, and the settings only beyond about 0xF3000 bytes (openipixelcolor is about
 45 KiB, the vendor firmware about 255 KiB). If one ever does, the damaged records fail their checks:
 the panel leaves those animations out, or starts with factory settings.
 

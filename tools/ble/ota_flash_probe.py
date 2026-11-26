@@ -1,4 +1,4 @@
-"""SAFE check of the update path (never installs anything). Only runs against openpanel32.
+"""SAFE check of the update path (never installs anything). Only runs against openipixelcolor.
 
 Announces an update whose overall CRC is deliberately wrong, sends ONE chunk of N bytes with a correct
 chunk CRC. The receiver erases + programs the staging area (0x108000), then fails the final CRC check,
@@ -48,7 +48,7 @@ async def main():
         _, v = await asyncio.wait_for(q.get(), 5)
         print(f"version reply {v.hex(' ')}")
         if v[4] != 99:
-            raise SystemExit("not running openpanel32 - refusing")
+            raise SystemExit("not running openipixelcolor - refusing")
 
         await send(announce)
         _, r = await asyncio.wait_for(q.get(), 10)

@@ -1,4 +1,4 @@
-/* openpanel32 - firmware for the 32x32 Bluetooth LED panel (NDS32 V3 MCU).
+/* openipixelcolor - firmware for the 32x32 Bluetooth LED panel (NDS32 V3 MCU).
  * Flash: image runs from 0x10000 (the 64 KiB below belong to the bootloader).
  *        0x108000.. is the bootloader's update staging area, 0x1FF000 the update record.
  * RAM:   0x20000000; at least 0x20000000-0x2001921C is known to work. Real size not yet known,

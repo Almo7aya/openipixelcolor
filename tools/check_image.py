@@ -1,4 +1,4 @@
-"""Sanity-check a raw openpanel32 image (linked at 0x10000) before flashing.
+"""Sanity-check a raw openipixelcolor image (linked at 0x10000) before flashing.
 
 Checks: 41 NDS32 `j` vectors at +0x00, all targets inside the image and 2-byte aligned,
 the bootloader's "FHD" magic at +0xD4, the OTA size limit, and (with --listing) that the

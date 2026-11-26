@@ -5,7 +5,7 @@ exactly 05 00 00 C0 01 (announce) / 05 00 01 C0 01 (chunk), otherwise it stops. 
 connects and checks the version (dry run).
 
 usage: python ota_flash_guarded.py <addr> <encoded.bin> --expect <version shown by the panel> [--go]
-       e.g. --expect 99.17 when updating openpanel32, or the vendor version (3.x) for the first install
+       e.g. --expect 99.17 when updating openipixelcolor, or the vendor version (3.x) for the first install
 """
 import argparse
 import asyncio

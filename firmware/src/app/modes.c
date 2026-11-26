@@ -33,7 +33,7 @@ static struct {
 static fb_t canvas;
 /* text_kind 1: the message playlist of textfx.c (strips drawn by the app, panel-font text with tokens) */
 
-static const char *const DEFAULT_TEXT = "openpanel32 " FW_VERSION_STR " - hello!";
+static const char *const DEFAULT_TEXT = "openipixelcolor " FW_VERSION_STR " - hello!";
 
 /* ------------------------------------------------------------------------------------------------ */
 static void start_effect(unsigned e, uint32_t now)
@@ -296,11 +296,12 @@ static void draw_test(uint32_t t)
 
 static void draw_splash(uint32_t now)
 {
+    static const char *const NAME[3] = { "OPEN", "IPIXEL", "COLOR" };
     uint32_t t = now - S.mode_since;
     gfx_fill(0);
-    int w = gfx_text_width("op32");
-    gfx_text((32 - w) / 2, 6, "op32", gfx_hsv((uint8_t)(t / 6), 200, 255));
-    gfx_text((32 - gfx_text_width(FW_VERSION_STR)) / 2, 18, FW_VERSION_STR, RGB(120, 120, 140));
+    for (int i = 0; i < 3; i++)                        /* the project name, one word per line */
+        gfx_tiny_text((32 - gfx_tiny_width(NAME[i])) / 2, 2 + i * 7, NAME[i], gfx_hsv((uint8_t)(t / 6 + (uint32_t)i * 40u), 200, 255));
+    gfx_tiny_text((32 - gfx_tiny_width(FW_VERSION_STR)) / 2, 23, FW_VERSION_STR, RGB(120, 120, 140));
     int bar = (int)(t * 32u / 1800u);
     gfx_rect(0, 30, bar > 32 ? 32 : bar, 1, gfx_hsv((uint8_t)(t / 5), 255, 160), 1);
     if (t > 1800) enter_saved_mode(now);

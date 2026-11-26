@@ -1,7 +1,9 @@
-# openpanel32
+# openipixelcolor
+
+[![Firmware](https://github.com/Almo7aya/openipixelcolor/actions/workflows/firmware.yml/badge.svg)](https://github.com/Almo7aya/openipixelcolor/actions/workflows/firmware.yml)
 
 Open-source firmware and a browser control page for 32 × 32 Bluetooth LED pixel panels: the cheap
-square RGB panels that advertise as `LED_BLE_…` and are normally driven by the vendor's phone app.
+square RGB panels that advertise as `LED_BLE_…` and are normally driven by the iPixel Color phone app.
 The firmware is written from scratch in C for the panel's MVSilicon P2064AF2 chip (Andes NDS32 V3)
 and is installed over Bluetooth through the panel's own update path. No programmer, no soldering.
 
@@ -40,10 +42,12 @@ webui/           browser control page (Web Bluetooth; Chrome or Edge): controls,
 tools/
   ble/           Bluetooth tools: scan, probe, install, safe update check, command-line control
   sim/           PC simulator: runs the firmware's app code, renders frames, runs flash and animation tests
+  ci/            checks the CI runs (web UI scripts)
   fwcodec.py     encodes a built image into an update file (and back)
   check_image.py build-time checks of the image
   gen_*.py       generators for the font, gamma and lookup tables
 docs/            HARDWARE.md (the board), PROTOCOL.md (the Bluetooth commands)
+.github/         CI: builds the firmware and runs the tests on every push
 ```
 
 No vendor firmware, vendor code or vendor images are included, and none are needed to build.
@@ -53,8 +57,9 @@ No vendor firmware, vendor code or vendor images are included, and none are need
 - A panel with the P2064AF2 board (check with `tools/ble/ble_probe.py`, below).
 - A computer with Bluetooth. Python 3.11+ with `pip install -r tools/requirements.txt`.
 - For the web UI: Chrome or Edge (Web Bluetooth).
-- To build the firmware: an `nds32le-elf` GCC toolchain (tested with GCC 15.2 and binutils 2.45.1;
-  crosstool-NG can build one) and Python 3. On Windows the build runs inside WSL.
+- To build the firmware: an `nds32le-elf` GCC toolchain (tested with GCC 15.2 and binutils 2.45.1) and
+  Python 3. Arch Linux packages it: `pacman -S nds32le-elf-gcc nds32le-elf-binutils`; elsewhere
+  crosstool-NG can build one. On Windows the build runs inside WSL. Or skip building: see below.
 - To build the simulator: any host C compiler (gcc or clang).
 
 ## Getting started
@@ -66,28 +71,32 @@ python tools/ble/ble_scan_all.py          # look for LED_BLE_… with svc=fa00
 python tools/ble/ble_probe.py <ADDRESS>   # read-only: shows the firmware version
 ```
 
-The vendor firmware reports MCU version 3.x; openpanel32 reports 99.xx.
+The vendor firmware reports MCU version 3.x; openipixelcolor reports 99.xx.
 
 ### 2. Build
 
 ```sh
 cd firmware
 ./build.sh            # Linux / WSL; toolchain on PATH or in $NDS32_TOOLCHAIN
-.\build.ps1           # Windows: runs build.sh in WSL ($env:OP32_WSL_DISTRO, default "Arch")
+.\build.ps1           # Windows: runs build.sh in WSL ($env:OIPC_WSL_DISTRO, default "Arch")
 ```
 
 This produces `firmware/build/fw.bin` (the raw image) and `firmware/build/fw.ota.bin` (the update
 file to install). The build checks the image (`tools/check_image.py`) and fails if the flash driver
 leaves its cache window.
 
+No toolchain? Every push is built by [GitHub Actions](https://github.com/Almo7aya/openipixelcolor/actions/workflows/firmware.yml):
+open a run and download the `openipixelcolor-…-firmware` artifact. Tagged versions are also on the
+[Releases](https://github.com/Almo7aya/openipixelcolor/releases) page.
+
 ### 3. Install
 
-With the web UI (step 4 shows how to open it): connect the panel, then in **Firmware** click
-**Use the build on this computer** (or drop `firmware/build/fw.bin` or `fw.ota.bin` on it) and
+With the web UI (step 4 shows how to open it): connect the panel, open the **Settings** tab, click
+**Use the build on this computer** (or drop `fw.bin` or `fw.ota.bin` on the page) and
 **Install firmware** twice. The page sends the update, waits for the panel to restart, connects again by
-itself and checks that the panel reports the new version. With **Then install it once more** ticked it
-then installs the same build again, which proves the new firmware can install updates itself (see
-[Safety](#safety)).
+itself and checks that the panel reports the new version. Then it installs the same build once more,
+which proves the new firmware can install updates itself (see [Safety](#safety); you can turn this off
+under **More options**). This works the same on a panel that still runs the vendor firmware.
 
 From the command line instead (dry run first; it only checks the version):
 
@@ -98,8 +107,8 @@ python tools/ble/ble_probe.py <ADDRESS>   # should now say 99.xx
 ```
 
 `--expect` is the version the panel reports right now (for example `3.17` for the vendor firmware, or
-`99.17` when updating openpanel32). The tool stops if the panel reports anything else, and stops at
-the first unexpected reply. Or use the **Firmware** section of the web UI.
+`99.17` when updating openipixelcolor). The tool stops if the panel reports anything else, and stops at
+the first unexpected reply.
 
 After the last chunk the panel restarts and its bootloader installs the image.
 
@@ -110,8 +119,10 @@ python webui/serve.py                     # opens http://localhost:8321 in your 
 ```
 
 Click **Connect panel**. The panel accepts one Bluetooth connection at a time, so close other
-pages or tools that are connected. `serve.py` only serves the page (Web Bluetooth needs `localhost` or
-HTTPS) and offers the latest firmware build to it; everything else happens in the browser.
+pages or tools that are connected. The tabs are Effects, Clock, Text, Animations, Pictures (pictures and
+drawing), Extras (equalizer, scoreboard, stopwatch, test patterns) and Settings (firmware, factory
+settings). `serve.py` only serves the page (Web Bluetooth needs `localhost` or HTTPS) and offers the
+latest firmware build to it; everything else happens in the browser.
 
 Command line instead:
 
@@ -128,7 +139,7 @@ python tools/ble/panelctl.py <ADDRESS> status
 ## Safety
 
 The panel has no accessible programming port, so the firmware itself is the only way to install the
-next firmware. If a build cannot receive updates, the panel stays on that build. openpanel32 is
+next firmware. If a build cannot receive updates, the panel stays on that build. openipixelcolor is
 built so this is hard to get wrong:
 
 - The Bluetooth link and the update receiver start before anything else (display, effects, saved
@@ -145,7 +156,7 @@ built so this is hard to get wrong:
   crash loop.
 
 **Before installing a build you changed**, and again right after installing it, run the safe update
-check (**Check flash writing** in the web UI, or the tool below). It sends one chunk with a deliberately
+check (**Settings → More options → Check flash writing** in the web UI, or the tool below). It sends one chunk with a deliberately
 wrong overall CRC, so the panel erases and writes the staging area, then rejects the update and installs
 nothing (it answers with status `00`, which is expected, and restarts about 10 s later):
 
@@ -153,16 +164,17 @@ nothing (it answers with status `00`, which is expected, and restarts about 10 s
 python tools/ble/ota_flash_probe.py <ADDRESS> --bytes 12288
 ```
 
-Then prove the new build can update itself: install the same file once more (the web UI's
-**Then install it once more**, or `--expect <new version>` on the command line). This succeeds only if the staged copy reads back correctly, so a build that
-cannot write flash fails here, not later. If the check or the reinstall fails, install a known-good
+Then prove the new build can update itself: install the same file once more (the web UI does this by
+default, or `--expect <new version>` on the command line). This succeeds only if the staged copy reads
+back correctly, so a build that cannot write flash fails here, not later. If the check or the reinstall fails, install a known-good
 build at once, while the link still works.
 Changes to `firmware/src/drv/iflash.c`, `firmware/src/app/ota.c`, `firmware/src/start.S`,
 `firmware/link.ld` or the start-up order in `firmware/src/main.c` are the risky ones; test them most
 carefully.
 
-Going back to the vendor firmware works through the same update path, but needs a vendor update
-file, which this project does not provide.
+Going back to the vendor firmware works through the same update path (tested: openipixelcolor →
+vendor 3.17 → openipixelcolor, all from the web UI), but needs a vendor update file, which this
+project does not provide.
 
 ## Simulator
 
@@ -189,4 +201,7 @@ a change, and say whether you tested it on a panel.
 ## License
 
 MIT, see [LICENSE](LICENSE). The update protocol and the bootloader's image-header format are
-implemented only so that openpanel32 can be installed on, and removed from, panels people own.
+implemented only so that openipixelcolor can be installed on, and removed from, panels people own.
+
+openipixelcolor is an independent project. It is not affiliated with or endorsed by the makers of the
+iPixel Color app or of the panels.

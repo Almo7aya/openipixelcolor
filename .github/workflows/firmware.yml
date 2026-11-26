@@ -1,0 +1,72 @@
+# Builds the firmware on every push and pull request, runs the simulator tests and checks the web UI.
+# The update files are kept as an artifact of each run; pushing a tag like v99.18 also publishes them
+# as a release.
+name: Firmware
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write          # only used by the release step (tags)
+
+jobs:
+  build:
+    name: Build and test
+    runs-on: ubuntu-latest
+    # Arch Linux packages the same cross compiler the firmware is developed with (nds32le-elf-gcc 15.x)
+    container: archlinux:base-devel
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Install the toolchain
+        run: pacman -Syu --noconfirm --needed nds32le-elf-gcc nds32le-elf-binutils python nodejs git
+
+      - uses: actions/checkout@v4
+
+      - name: Toolchain versions
+        run: |
+          nds32le-elf-gcc --version | head -n 1
+          nds32le-elf-ld --version | head -n 1
+
+      - name: Build the firmware
+        run: make -C firmware EXTRA_CFLAGS=-Werror
+
+      - name: Simulator tests
+        working-directory: tools/sim
+        run: |
+          gcc -O2 -std=gnu11 -Wall -Wextra -Werror -I../../firmware/src/app sim.c \
+              ../../firmware/src/app/{gfx,effects,fx_more,modes,clockface,tables,font5x7,settings,textfx,anim}.c -o sim
+          ./sim settings
+          node anim_vectors.js vec
+          ./sim anim vec
+          ./sim > /dev/null
+
+      - name: Check the web UI
+        run: node tools/ci/check_webui.js
+
+      - name: Collect the firmware files
+        run: |
+          v=$(sed -n 's/^#define FW_VERSION_STR "\([0-9.]*\)".*/\1/p' firmware/src/app/fwinfo.h)
+          mkdir -p dist
+          cp firmware/build/fw.ota.bin "dist/openipixelcolor-$v.ota.bin"
+          cp firmware/build/fw.bin "dist/openipixelcolor-$v.bin"
+          echo "VERSION=$v" >> "$GITHUB_ENV"
+          ls -l dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: openipixelcolor-${{ env.VERSION }}-firmware
+          path: dist/
+          if-no-files-found: error
+
+      - name: Publish a release (tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true

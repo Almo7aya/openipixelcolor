@@ -1,4 +1,4 @@
-/* openpanel32 firmware (version in app/fwinfo.h) - recoverable build.
+/* openipixelcolor firmware (version in app/fwinfo.h) - recoverable build.
  *
  * Recovery design (the device has no programmer access, BLE OTA is the only way in):
  *   1. Clocks/flash/console/tick, then the companion link + OTA receiver come up BEFORE anything risky.
@@ -68,7 +68,7 @@ int main(void)
     uart_init(CONSOLE_UART, CONSOLE_BAUD);
     if (nv_magic != BOOT_MAGIC) { nv_magic = BOOT_MAGIC; nv_crash = 0; nv_exc_type = 0; nv_exc_ipc = 0; }
     nv_crash++;
-    kprintf("\nopenpanel32 " FW_VERSION_STR " (" __DATE__ " " __TIME__ ") boots=%lu exc=%lu@%08lx quad=%d\n",
+    kprintf("\nopenipixelcolor " FW_VERSION_STR " (" __DATE__ " " __TIME__ ") boots=%lu exc=%lu@%08lx quad=%d\n",
             nv_crash, nv_exc_type, nv_exc_ipc, quad);
     g_boot_stage = 3;
 

@@ -77,7 +77,7 @@ void proto_handle(const uint8_t *pkt, unsigned len)
     case 0xF000:                                       /* ping */
         link_reply(0xF000, 1, 0, 0);
         break;
-    case FW_CMD_DIAG: {                                /* openpanel32: 16-byte status (BLE bridge forwards <=16 B) */
+    case FW_CMD_DIAG: {                                /* openipixelcolor: 16-byte status (BLE bridge forwards <=16 B) */
         uint8_t x[11];
         x[0] = (uint8_t)fw_mode();
         x[1] = (uint8_t)fw_crash_count();
@@ -86,7 +86,7 @@ void proto_handle(const uint8_t *pkt, unsigned len)
         wr32(x + 7, millis() / 1000u);
         link_reply(FW_CMD_DIAG, 1, x, sizeof x);
         break; }
-    case 0xF109: {                                     /* openpanel32: saved-settings status (see settings.c) */
+    case 0xF109: {                                     /* openipixelcolor: saved-settings status (see settings.c) */
         uint8_t x[8];
         link_reply(0xF109, 1, x, settings_info(x));
         break; }

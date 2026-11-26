@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>openpanel32</title>
+<title>openipixelcolor</title>
 <style>
 :root {
   --alu: #111316;      /* page: dark anodised enclosure */
@@ -76,9 +76,34 @@ input[type=range] { accent-color: var(--ink); width: 100%; }
 .status-line.err { color: var(--red); }
 
 /* ---- right: controls ------------------------------------------------------------------------ */
-.controls { display: grid; gap: 40px; }
-.controls > section { border-top: 1px solid var(--hair); padding-top: 18px; display: grid; gap: 14px; }
-.controls > section > p { margin: 0; color: var(--muted); max-width: 62ch; }
+.controls { display: grid; gap: 24px; align-content: start; }
+.panel { display: grid; gap: 40px; }
+.panel > section { border-top: 1px solid var(--hair); padding-top: 18px; display: grid; gap: 14px; }
+.panel > section:first-child { border-top: 0; padding-top: 4px; }
+.panel > section > p { margin: 0; color: var(--muted); max-width: 62ch; }
+
+/* tabs: a row of keys, the selected one with its indicator lit */
+.tabs {
+  position: sticky; top: 0; z-index: 5; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none;
+  padding: 10px 0 0; background: var(--alu); border-bottom: 1px solid var(--hair);
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tabs button {
+  flex: none; display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px 10px; margin-bottom: -1px;
+  border: 1px solid transparent; border-bottom: 0; border-radius: 8px 8px 0 0; background: transparent;
+  color: var(--muted); cursor: pointer;
+}
+.tabs button::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #3a4049; flex: none; }
+.tabs button:hover { color: var(--ink); }
+.tabs button[aria-selected="true"] { color: var(--ink); background: var(--plate); border-color: var(--hair); }
+.tabs button[aria-selected="true"]::before { background: var(--green); box-shadow: 0 0 8px rgba(43,196,122,.9); }
+
+details.more { border: 1px solid var(--hair); border-radius: 10px; padding: 0 14px; }
+details.more summary { cursor: pointer; padding: 10px 0; color: var(--muted); }
+details.more summary:hover { color: var(--ink); }
+details.more[open] summary { color: var(--ink); }
+.more-body { display: grid; gap: 12px; padding: 2px 0 14px; }
+.more-body p { margin: 0; color: var(--muted); font-size: 13.5px; }
 .led { display: block; height: 28px; }
 
 .btn {
@@ -148,7 +173,6 @@ input[type=color] { width: 44px; height: 36px; border: 1px solid var(--hair); bo
 .score .p2 .num { color: #5b8cff; text-shadow: 0 0 18px rgba(91,140,255,.45); }
 .score .colon { font-size: 36px; color: var(--muted); padding-bottom: 44px; }
 
-.fw { border-top-color: var(--red) !important; }
 .fw-facts { display: grid; grid-template-columns: auto 1fr; gap: 2px 14px; font-size: 13.5px; margin: 0; }
 .fw-facts dt { color: var(--muted); }
 .fw-facts dd { margin: 0; font-variant-numeric: tabular-nums; }
@@ -191,7 +215,7 @@ textarea { width: 100%; min-height: 64px; border: 1px solid var(--hair); backgro
 code { font-size: .92em; background: var(--plate); border: 1px solid var(--hair); border-radius: 4px; padding: 0 4px; }
 ::selection { background: rgba(91,140,255,.35); }
 
-.rig, .controls, .controls > section, .device { min-width: 0; }
+.rig, .controls, .panel, .panel > section, .device { min-width: 0; }
 @media (max-width: 860px) {
   .app { grid-template-columns: minmax(0, 1fr); gap: 32px; padding: 20px 16px 48px; }
   .rig { position: static; }
@@ -207,15 +231,13 @@ code { font-size: .92em; background: var(--plate); border: 1px solid var(--hair)
 <div class="app">
   <aside class="rig">
     <header class="device">
-      <canvas class="led" data-text="openpanel32" data-scale="4"></canvas>
+      <canvas class="led" data-text="openipixelcolor" data-scale="3"></canvas>
       <div class="conn" id="conn"><span class="dot"></span><span id="connText">Not connected</span></div>
       <button class="btn primary" id="btnConnect">Connect panel</button>
       <dl class="facts">
         <dt>Firmware</dt><dd id="fwVer">–</dd>
         <dt>Panel clock</dt><dd id="panelTime">–</dd>
         <dt>Showing</dt><dd id="nowShowing">–</dd>
-        <dt>Saved</dt><dd id="savedState">–</dd>
-        <dt>Health</dt><dd id="health">–</dd>
       </dl>
     </header>
 
@@ -245,6 +267,17 @@ code { font-size: .92em; background: var(--plate); border: 1px solid var(--hair)
   <main class="controls">
     <div class="banner" id="noBt" hidden>This browser can't use Bluetooth. Open this page in Chrome or Edge.</div>
 
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button role="tab" id="tab-effects" aria-controls="panel-effects" data-tab="effects">Effects</button>
+      <button role="tab" id="tab-clock" aria-controls="panel-clock" data-tab="clock">Clock</button>
+      <button role="tab" id="tab-text" aria-controls="panel-text" data-tab="text">Text</button>
+      <button role="tab" id="tab-animations" aria-controls="panel-animations" data-tab="animations">Animations</button>
+      <button role="tab" id="tab-pictures" aria-controls="panel-pictures" data-tab="pictures">Pictures</button>
+      <button role="tab" id="tab-extras" aria-controls="panel-extras" data-tab="extras">Extras</button>
+      <button role="tab" id="tab-settings" aria-controls="panel-settings" data-tab="settings">Settings</button>
+    </nav>
+
+    <div class="panel" id="panel-effects" role="tabpanel" aria-labelledby="tab-effects">
     <section id="secEffects">
       <canvas class="led" data-text="Effects"></canvas>
       <div class="tiles" id="effectTiles"></div>
@@ -254,6 +287,9 @@ code { font-size: .92em; background: var(--plate); border: 1px solid var(--hair)
       </div>
     </section>
 
+    </div>
+
+    <div class="panel" id="panel-clock" role="tabpanel" aria-labelledby="tab-clock" hidden>
     <section id="secClock">
       <canvas class="led" data-text="Clock"></canvas>
       <p>Picking a face also sets the panel's clock to this computer's time and date.</p>
@@ -264,9 +300,12 @@ code { font-size: .92em; background: var(--plate); border: 1px solid var(--hair)
       </div>
     </section>
 
+    </div>
+
+    <div class="panel" id="panel-text" role="tabpanel" aria-labelledby="tab-text" hidden>
     <section id="secText">
       <canvas class="led" data-text="Text"></canvas>
-      <p>Up to 4 messages play one after another. Each one comes in with an effect, does something while it's shown, and leaves with another effect. Any language works; Arabic is joined and runs right to left. The panel font can show live values: <code>{time}</code> <code>{secs}</code> <code>{date}</code> <code>{day}</code> <code>{year}</code>. Needs firmware 99.17.</p>
+      <p>Up to 4 messages play one after another. Each one comes in with an effect, does something while it's shown, and leaves with another effect. Any language works; Arabic is joined and runs right to left. The panel font can show live values: <code>{time}</code> <code>{secs}</code> <code>{date}</code> <code>{day}</code> <code>{year}</code>.</p>
       <div class="row" id="msgTabs" role="tablist" aria-label="Messages"></div>
       <label class="field"><span>Message</span><input type="text" id="tMsg" maxlength="120" dir="auto"></label>
       <div class="tgrid">
@@ -299,9 +338,12 @@ code { font-size: .92em; background: var(--plate); border: 1px solid var(--hair)
       </div>
     </section>
 
+    </div>
+
+    <div class="panel" id="panel-animations" role="tabpanel" aria-labelledby="tab-animations" hidden>
     <section id="secAnim">
       <canvas class="led" data-text="Animations"></canvas>
-      <p>Bring a GIF, a video or a few pictures, draw one frame by frame, or generate one. It's saved on the panel, which plays it by itself, also after it's switched off and on. Needs firmware 99.18.</p>
+      <p>Bring a GIF, a video or a few pictures, draw one frame by frame, or generate one. It's saved on the panel, which plays it by itself, also after it's switched off and on.</p>
 
       <div class="sub">On the panel</div>
       <div class="alib" id="aLib"><span class="empty-note">Connect the panel to see its animations.</span></div>
@@ -375,6 +417,9 @@ code { font-size: .92em; background: var(--plate); border: 1px solid var(--hair)
       </div>
     </section>
 
+    </div>
+
+    <div class="panel" id="panel-pictures" role="tabpanel" aria-labelledby="tab-pictures" hidden>
     <section id="secPicture">
       <canvas class="led" data-text="Picture"></canvas>
       <label class="drop" id="drop"><input type="file" id="picFile" accept="image/*" hidden>Drop a picture here or choose one. It's cut to a square and shrunk to 32 × 32. For moving pictures (GIF, video) use Animations.</label>
@@ -400,6 +445,9 @@ code { font-size: .92em; background: var(--plate); border: 1px solid var(--hair)
       </div>
     </section>
 
+    </div>
+
+    <div class="panel" id="panel-extras" role="tabpanel" aria-labelledby="tab-extras" hidden>
     <section id="secEq">
       <canvas class="led" data-text="Equalizer"></canvas>
       <p>Move the bars to set each level, or let the panel animate them.</p>
@@ -435,15 +483,12 @@ code { font-size: .92em; background: var(--plate); border: 1px solid var(--hair)
       <div class="row" id="testRow"></div>
     </section>
 
-    <section id="secSettings">
-      <canvas class="led" data-text="Settings"></canvas>
-      <p>The panel remembers brightness, rotation, what it shows (effect, clock face, text, scoreboard, equalizer) and the last picture or drawing. It comes back to them after it's switched off. Changes are saved a few seconds after you make them; a new picture takes about 8 seconds, and the panel goes dark for a moment while it saves.</p>
-      <div class="row"><button class="btn" id="btnFactory">Reset to factory settings</button></div>
-    </section>
+    </div>
 
-    <section id="secFw" class="fw">
+    <div class="panel" id="panel-settings" role="tabpanel" aria-labelledby="tab-settings" hidden>
+    <section id="secFw">
       <canvas class="led" data-text="Firmware"></canvas>
-      <p>Installs firmware over Bluetooth: an openpanel32 build (<code>fw.bin</code> or <code>fw.ota.bin</code> from <code>firmware/build</code>) or a vendor update file. Keep the panel switched on and close to this computer. Afterwards this page connects again by itself and checks that the panel runs the new version.</p>
+      <p>Install new firmware over Bluetooth. Keep the panel switched on and close to this computer. It restarts by itself, and this page connects again and checks the new version.</p>
       <div class="row" id="fwLocalRow" hidden><button class="btn" id="btnFwLocal">Use the build on this computer</button><span class="tmem" id="fwLocalNote"></span></div>
       <label class="drop" id="fwDrop"><input type="file" id="fwFile" accept=".bin" hidden>Drop a firmware file (.bin) here, or click to choose one</label>
       <dl class="fw-facts" id="fwFacts" hidden>
@@ -451,15 +496,34 @@ code { font-size: .92em; background: var(--plate); border: 1px solid var(--hair)
         <dt>Size</dt><dd id="fwSize"></dd>
         <dt>Contains</dt><dd id="fwKind"></dd>
       </dl>
-      <label class="check"><input type="checkbox" id="fwTwice" checked> Then install it once more, to prove the new firmware can install updates itself (recommended for builds you changed)</label>
-      <div class="row">
-        <button class="btn" id="btnSelfTest">Check flash writing</button>
-        <button class="btn danger" id="btnInstall" disabled>Install firmware</button>
-      </div>
+      <div class="row"><button class="btn danger" id="btnInstall" disabled>Install firmware</button></div>
       <progress id="fwProgress" value="0" max="1" hidden></progress>
       <ul class="log" id="fwLog"></ul>
-      <p class="sub">Check flash writing writes a test block and installs nothing; the panel restarts about 10 seconds later. If the panel misbehaves after an update, hold its button while switching it on: it starts in rescue mode, where installing still works.</p>
+      <details class="more">
+        <summary>More options</summary>
+        <div class="more-body">
+          <label class="check"><input type="checkbox" id="fwTwice" checked> After installing, install it once more. This proves the new firmware can install updates itself; recommended for builds you changed.</label>
+          <div class="row"><button class="btn" id="btnSelfTest">Check flash writing</button><span class="tmem">Writes a test block and installs nothing. The panel restarts 10 seconds later.</span></div>
+          <p>If the panel misbehaves after an update, hold its button while switching it on. It starts in rescue mode, where installing still works.</p>
+        </div>
+      </details>
     </section>
+
+    <section id="secSettings">
+      <canvas class="led" data-text="Settings"></canvas>
+      <p>The panel remembers what it shows, its brightness and rotation, your picture and your text, also after it's switched off. Changes are saved a few seconds after you make them.</p>
+      <div class="row"><button class="btn" id="btnFactory">Reset to factory settings</button></div>
+      <details class="more">
+        <summary>Panel details</summary>
+        <dl class="fw-facts more-body">
+          <dt>Firmware</dt><dd id="fwVerFull">–</dd>
+          <dt>Bluetooth module</dt><dd id="btVer">–</dd>
+          <dt>State</dt><dd id="health">–</dd>
+          <dt>Settings</dt><dd id="savedState">–</dd>
+        </dl>
+      </details>
+    </section>
+    </div>
   </main>
 </div>
 
@@ -514,6 +578,35 @@ function drawLedTitle(cv) {
     }
 }
 $$("canvas.led").forEach(drawLedTitle);
+
+/* ================================================================================================
+   Tabs: one section group at a time; the address (#text, #settings, ...) and the last choice are kept
+   ================================================================================================ */
+const TABS = $$(".tabs [role=tab]").map((b) => b.dataset.tab);
+function showTab(name, focus) {
+  if (!TABS.includes(name)) name = TABS[0];
+  for (const t of TABS) {
+    const on = t === name, b = $("#tab-" + t);
+    b.setAttribute("aria-selected", on ? "true" : "false");
+    b.tabIndex = on ? 0 : -1;
+    $("#panel-" + t).hidden = !on;
+  }
+  if (focus) $("#tab-" + name).focus();
+  try { localStorage.setItem("oipc.tab", name); } catch (e) { /* private window */ }
+  if (location.hash !== "#" + name) history.replaceState(null, "", "#" + name);
+}
+$$(".tabs [role=tab]").forEach((b) => {
+  b.addEventListener("click", () => showTab(b.dataset.tab));
+  b.addEventListener("keydown", (e) => {
+    const i = TABS.indexOf(b.dataset.tab);
+    const j = e.key === "ArrowRight" ? i + 1 : e.key === "ArrowLeft" ? i - 1 : e.key === "Home" ? 0 : e.key === "End" ? TABS.length - 1 : null;
+    if (j === null) return;
+    e.preventDefault();
+    showTab(TABS[(j + TABS.length) % TABS.length], true);
+  });
+});
+window.addEventListener("hashchange", () => showTab(location.hash.slice(1)));
+showTab(location.hash.slice(1) || (() => { try { return localStorage.getItem("oipc.tab"); } catch (e) { return null; } })());
 
 /* ================================================================================================
    Mirror (on-screen panel)
@@ -611,7 +704,7 @@ function send(cmd, payload = [], timeout = 4000, match) {
   chain = job.catch(() => {});
   return job;
 }
-const announce = (name, detail) => window.dispatchEvent(new CustomEvent("op32:" + name, { detail }));
+const announce = (name, detail) => window.dispatchEvent(new CustomEvent("oipc:" + name, { detail }));
 async function act(label, fn) {
   if (!chWrite) { status("Connect the panel first.", true); $("#btnConnect").focus(); return; }
   try { await fn(); status(label); refreshSoon(); }
@@ -653,7 +746,7 @@ function setConnected(on, name) {
   $("#conn").classList.toggle("on", on);
   $("#connText").textContent = on ? `Connected to ${name}` : "Not connected";
   $("#btnConnect").textContent = on ? "Disconnect" : "Connect panel";
-  if (!on) for (const id of ["#fwVer", "#panelTime", "#nowShowing", "#savedState", "#health"]) $(id).textContent = "–";
+  if (!on) for (const id of ["#fwVer", "#fwVerFull", "#btVer", "#panelTime", "#nowShowing", "#savedState", "#health"]) $(id).textContent = "–";
 }
 /* Let go of the panel completely. On Windows, Chrome otherwise keeps the Bluetooth link open (and even
    reconnects after the panel restarts) while this page still holds the device: the panel then stops
@@ -702,15 +795,18 @@ async function attach() {
   const v = await rawSend(packet(0x8005), 4000);
   custom = v[4] === 99;
   fwMinor = custom ? v[5] : 0;
-  $("#fwVer").textContent = `${verText(v)}${custom ? " (openpanel32)" : " (vendor firmware)"} · Bluetooth ${v[6]}.${String(v[7]).padStart(2, "0")}`;
+  $("#fwVer").textContent = custom ? verText(v) : `Vendor firmware ${verText(v)}`;
+  $("#fwVerFull").textContent = `${verText(v)}${custom ? " (openipixelcolor)" : " (vendor firmware)"}`;
+  $("#btVer").textContent = `${v[6]}.${String(v[7]).padStart(2, "0")}`;
   let health = null;
   if (custom) {
     health = await rawSend(packet(0xF0F1), 4000).catch(() => null);
     $("#health").textContent = health ? healthText(health) : "–";
   }
   const rescue = health && health[5] !== 0;
-  status(!custom ? "This panel runs the vendor firmware. Install openpanel32 to use these controls." :
-         rescue ? "The panel is in rescue mode: only the Firmware section works until it starts normally." : "Ready.", !custom || rescue);
+  status(!custom ? "This panel runs the vendor firmware. Install openipixelcolor (Settings) to use these controls." :
+         rescue ? "The panel is in rescue mode: only installing firmware works until it starts normally." : "Ready.", !custom || rescue);
+  if ((!custom || rescue) && !busy) showTab("settings");
   clearInterval(pollTimer);
   pollTimer = setInterval(() => { if (!busy) refreshStatus(); }, 4000);
   announce("connected", { custom, fwMinor, rescue });
@@ -825,7 +921,7 @@ let resetArmed = null;
 function disarmReset() { clearTimeout(resetArmed); resetArmed = null; $("#btnFactory").textContent = "Reset to factory settings"; }
 $("#btnFactory").addEventListener("click", () => {
   if (!chWrite) { status("Connect the panel first.", true); $("#btnConnect").focus(); return; }
-  if (fwMinor < 12) { status("Resetting settings needs firmware 99.12 or newer.", true); return; }
+  if (fwMinor < 12) { status("Resetting needs newer firmware on the panel. Install it under Settings.", true); return; }
   if (!resetArmed) { $("#btnFactory").textContent = "Click again to reset"; resetArmed = setTimeout(disarmReset, 6000); return; }
   disarmReset();
   act("Back to factory settings. They're saved in a few seconds.", () => send(0xF108, [0xA5]));
@@ -855,8 +951,8 @@ function newMsg(text) {
            bg: 0, bgdim: 90, speed: 5, stay: 8, repeat: 1, shadow: false, outline: false, glow: false, rails: true };
 }
 let msgs = [newMsg("Hello!")], curMsg = 0;
-try { const s = JSON.parse(localStorage.getItem("op32.text") || "null"); if (Array.isArray(s) && s.length) msgs = s.slice(0, TEXT_MSGS).map((m) => Object.assign(newMsg(""), m)); } catch (e) { /* first visit */ }
-function saveMsgs() { try { localStorage.setItem("op32.text", JSON.stringify(msgs)); } catch (e) { /* private window */ } }
+try { const s = JSON.parse(localStorage.getItem("oipc.text") || "null"); if (Array.isArray(s) && s.length) msgs = s.slice(0, TEXT_MSGS).map((m) => Object.assign(newMsg(""), m)); } catch (e) { /* first visit */ }
+function saveMsgs() { try { localStorage.setItem("oipc.text", JSON.stringify(msgs)); } catch (e) { /* private window */ } }
 
 function fillSelect(sel, items) {
   sel.innerHTML = "";
@@ -997,7 +1093,7 @@ function compileMsg(m) {
 function updateMem() {
   const used = msgs.reduce((a, m) => { const c = compileMsg(m); return a + (c ? c.bytes : 0); }, 0);
   const el = $("#tMem");
-  el.textContent = `Panel memory: ${Math.round(used * 100 / TEXT_POOL)}%`;
+  el.textContent = used > TEXT_POOL ? "Too long for the panel: make the messages shorter or smaller." : "";
   el.classList.toggle("err", used > TEXT_POOL);
   return used;
 }
@@ -1306,7 +1402,7 @@ $("#btnText").addEventListener("click", () => {
   const list = msgs.map(compileMsg);
   if (list.some((c) => !c)) { status("Message " + (list.findIndex((c) => !c) + 1) + " has no letters to show.", true); return; }
   if (updateMem() > TEXT_POOL) { status("The messages don't fit in the panel's memory. Make them shorter or smaller.", true); return; }
-  if (chWrite && fwMinor < 17) { status("Text effects need firmware 99.17 or newer. Install it in the Firmware section.", true); return; }
+  if (chWrite && fwMinor < 17) { status("Text effects need newer firmware on the panel. Install it under Settings.", true); return; }
   act(list.length > 1 ? `Sent ${list.length} messages.` : "Message sent.", async () => {
     for (let i = 0; i < list.length; i++) {
       const c = list[i];
@@ -1509,7 +1605,7 @@ function fwLog(msg, err) {
 const fwEncode = (raw) => raw.map((b) => ((b ^ 0x4A) + 0x8A) & 255);
 const fwDecode = (enc) => enc.map((b) => ((b - 0x8A) & 255) ^ 0x4A);
 const hasImageHeader = (raw) => raw.length > 0x100 && raw[0] === 0x48 && raw[0xD4] === 0x46 && raw[0xD5] === 0x48 && raw[0xD6] === 0x44 && raw[0xD7] === 0x03;
-let fwVersion = null;              // "99.18" when the file is openpanel32, else null
+let fwVersion = null;              // "99.18" when the file is openipixelcolor, else null
 function loadFirmware(bytes, name) {
   let raw = null, enc = null, kind, ok = false;
   if (hasImageHeader(bytes)) { raw = bytes; enc = fwEncode(bytes); }
@@ -1518,16 +1614,14 @@ function loadFirmware(bytes, name) {
   if (!raw) kind = "Not a firmware file for this panel.";
   else if (raw.length > 0xF7800) kind = "Too big for this panel.";
   else {
-    const m = new TextDecoder("latin1").decode(raw).match(/openpanel32 (\d+\.\d\d)/);
+    const m = new TextDecoder("latin1").decode(raw).match(/openipixelcolor (\d+\.\d\d)/);
     fwVersion = m ? m[1] : null;
-    kind = m ? `openpanel32 ${m[1]}` : "Firmware for this panel that isn't openpanel32 (for example the vendor's)";
-    if (enc !== bytes) kind += ", encoded here for the update";
+    kind = m ? `openipixelcolor ${m[1]}` : "Other firmware for this panel (for example the vendor's)";
     ok = true;
   }
   $("#fwFacts").hidden = false;
   $("#fwName").textContent = name;
-  const nBlocks = Math.ceil(bytes.length / CHUNK);
-  $("#fwSize").textContent = `${bytes.length.toLocaleString()} bytes, ${nBlocks} ${nBlocks === 1 ? "block" : "blocks"}`;
+  $("#fwSize").textContent = `${Math.round(bytes.length / 1024)} KB`;
   $("#fwKind").textContent = kind;
   $("#fwKind").style.color = ok ? "" : "var(--red)";
   $("#fwTwice").disabled = !fwVersion;
@@ -1569,7 +1663,7 @@ async function frame(cmd, payload, expect, timeout = 20000) {
 }
 $("#btnSelfTest").addEventListener("click", async () => {
   if (!chWrite) { status("Connect the panel first.", true); return; }
-  if (!custom) { fwLog("The flash check needs openpanel32 on the panel.", true); return; }
+  if (!custom) { fwLog("The flash check needs openipixelcolor on the panel.", true); return; }
   busy = true;
   try {
     await chain;
@@ -1578,7 +1672,7 @@ $("#btnSelfTest").addEventListener("click", async () => {
     const t0 = performance.now();
     const r = await frame(0xC001, [0, ...u32(good), ...u32(data.length), ...data], null, 30000);
     const s = ((performance.now() - t0) / 1000).toFixed(1);
-    if (sameBytes([...r.slice(0, 5)], [5, 0, 1, 0xC0, 0])) fwLog(`Flash writing works (12 KB in ${s} s). The panel restarts in about 10 seconds.`);
+    if (sameBytes([...r.slice(0, 5)], [5, 0, 1, 0xC0, 0])) fwLog("Flash writing works. The panel restarts in about 10 seconds.");
     else fwLog(`Unexpected answer after ${s} s. Don't install firmware on this panel.`, true);
   } catch (e) { fwLog(e.message + " Don't install firmware until this check passes.", true); }
   busy = false;

@@ -1,4 +1,4 @@
-/* openpanel32 animation files ("OPA1"): colour reduction, encoder and a decoder that mirrors the firmware's
+/* openipixelcolor animation files ("OPA1"): colour reduction, encoder and a decoder that mirrors the firmware's
  * player (firmware/src/app/anim.c) step for step, so the preview shows exactly what the panel shows.
  * Works in the browser (window.OPA) and in Node (require), which the simulator tests use. */
 "use strict";
@@ -180,7 +180,7 @@
   /* the firmware's player, step for step -> [{ rgb, delay }] (throws on a damaged file) */
   function decode(b) {
     const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
-    if (b.length < HDR || dv.getUint32(0, true) !== MAGIC || b[4] !== W || b[5] !== H) throw new Error("Not an openpanel32 animation.");
+    if (b.length < HDR || dv.getUint32(0, true) !== MAGIC || b[4] !== W || b[5] !== H) throw new Error("Not an openipixelcolor animation.");
     const frames = dv.getUint16(6, true), ncol = dv.getUint16(8, true), len = dv.getUint32(12, true);
     if (!frames || !ncol || ncol > 256 || len > b.length || len < HDR + 3 * ncol + 4 * frames) throw new Error("Damaged animation.");
     const pal = b.subarray(HDR, HDR + 3 * ncol), idx = new Uint8Array(NPX), out = [];

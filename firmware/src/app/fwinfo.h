@@ -20,7 +20,7 @@
                                            by the panel (0xF10C-0xF111, anim.c), settings layout 3 */
 
 /* Replies travel MCU -> UART2 -> BLE chip -> notify; the BLE chip forwards at most 16 bytes (seen on HW).
- * openpanel32 diagnostics command; reply (16 B): 10 00 F1 F0 01 mode crash exc_type ipc(4) uptime_s(4) */
+ * openipixelcolor diagnostics command; reply (16 B): 10 00 F1 F0 01 mode crash exc_type ipc(4) uptime_s(4) */
 #define FW_CMD_DIAG   0xF0F1u
 
 enum { FW_MODE_NORMAL = 0, FW_MODE_RESCUE_KEY = 1, FW_MODE_RESCUE_CRASH = 2 };

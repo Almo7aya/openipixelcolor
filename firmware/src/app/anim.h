@@ -5,7 +5,7 @@
 
 /* 20 slots of 32 KiB at the top of the update staging area, below the settings sectors (0x1FB000+).
  * An animation larger than one slot uses the following slots too. A firmware update only reaches this
- * area with an image larger than 0x48000 bytes (openpanel32 ~45 KiB, the vendor's ~255 KiB); the boot
+ * area with an image larger than 0x48000 bytes (openipixelcolor ~45 KiB, the vendor's ~255 KiB); the boot
  * scan then finds the damaged animations by their CRC and leaves them out. */
 #define ANIM_BASE       0x00150000u
 #define ANIM_SLOT_SIZE  0x8000u

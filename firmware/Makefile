@@ -1,4 +1,4 @@
-# openpanel32 firmware build.  Usage:  make            (needs nds32le-elf-gcc on PATH, or CROSS=...)
+# openipixelcolor firmware build.  Usage:  make            (needs nds32le-elf-gcc on PATH, or CROSS=...)
 #                                  make CROSS=/path/to/nds32le-elf-
 CROSS   ?= nds32le-elf-
 CC      := $(CROSS)gcc
@@ -14,8 +14,9 @@ TARGET  := $(BUILD)/fw
 # gp-relative, rodata absolute (small would make flash rodata gp-relative = out of range).
 ARCH_FLAGS ?= -mlittle-endian -march=v3 -mcmodel=medium -mno-fp-as-gp
 # -MMD -MP: every object also depends on the headers it includes (a header change rebuilds its users)
+# EXTRA_CFLAGS: added at the end (the CI passes -Werror)
 CFLAGS  := $(ARCH_FLAGS) -Os -g -std=gnu11 -Wall -Wextra -ffreestanding -fno-builtin \
-           -ffunction-sections -fdata-sections -Isrc -MMD -MP
+           -ffunction-sections -fdata-sections -Isrc -MMD -MP $(EXTRA_CFLAGS)
 ASFLAGS := $(ARCH_FLAGS) -g
 LDFLAGS := $(ARCH_FLAGS) -T link.ld -nostartfiles -nostdlib -Wl,--gc-sections -Wl,--no-relax \
            -Wl,-Map=$(TARGET).map

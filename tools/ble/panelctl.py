@@ -1,4 +1,4 @@
-"""Control a panel running openpanel32 over Bluetooth.
+"""Control a panel running openipixelcolor over Bluetooth.
 
   python panelctl.py <MAC> status
   python panelctl.py <MAC> effect <n|name>         # 0 plasma 1 fire 2 matrix 3 starfield 4 life 5 fireworks 6 ripples
