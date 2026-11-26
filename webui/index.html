@@ -776,7 +776,17 @@ function onDisconnected() {
   busy = false;
 }
 window.addEventListener("pagehide", releaseDevice);
-const verText = (v) => `${v[4]}.${String(v[5]).padStart(2, "0")}`;
+/* 0x8005 reply -> version. openipixelcolor: one number (100, 101, ...) in the "major" byte (from 256 on:
+   255 + minor); builds before that: 99.xx; the vendor firmware: 3.x. level orders openipixelcolor builds
+   (99.xx -> xx, so 99.18 < 100) and is 0 for the vendor firmware. */
+function fwVersionOf(v) {
+  const maj = v[4], min = v[5], two = `${maj}.${String(min).padStart(2, "0")}`;
+  if (maj >= 100) { const n = maj === 255 ? 255 + min : maj; return { custom: true, text: String(n), level: n }; }
+  if (maj === 99) return { custom: true, text: two, level: min };
+  return { custom: false, text: two, level: 0 };
+}
+const verText = (v) => fwVersionOf(v).text;
+const versionLevel = (s) => (/^99\.\d+$/.test(s) ? Number(s.slice(3)) : /^\d+$/.test(s) && Number(s) >= 100 ? Number(s) : 0);
 /* 0xF0F1: mode crashes exc_type exc_address(4) uptime_s(4) - see firmware/src/main.c */
 function healthText(d) {
   const mode = d[5], exc = d[7], addr = (d[8] | (d[9] << 8) | (d[10] << 16) | (d[11] << 24)) >>> 0;
@@ -799,8 +809,7 @@ async function attach() {
   const now = new Date();
   await rawSend(packet(0x8001, [now.getHours(), now.getMinutes(), now.getSeconds(), 0]), 4000);
   const v = await rawSend(packet(0x8005), 4000);
-  custom = v[4] === 99;
-  fwMinor = custom ? v[5] : 0;
+  ({ custom, level: fwMinor } = fwVersionOf(v));
   $("#fwVer").textContent = custom ? verText(v) : `Vendor firmware ${verText(v)}`;
   $("#fwVerFull").textContent = `${verText(v)}${custom ? " (openipixelcolor)" : " (vendor firmware)"}`;
   $("#btVer").textContent = `${v[6]}.${String(v[7]).padStart(2, "0")}`;
@@ -857,7 +866,7 @@ async function refreshStatus() {
     $$("#effectTiles .tile").forEach((t, i) => t.classList.toggle("lit", mode === 0 && i === eff));
     $$("#clockTiles .tile").forEach((t, i) => t.classList.toggle("lit", mode === 1 && r.length >= 15 && i === r[14]));
     if (r.length >= 14) $$(".rotate .btn").forEach((b) => b.classList.toggle("lit", Number(b.dataset.orient) === r[13]));
-    if (fwMinor < 12) { $("#savedState").textContent = "Not kept (needs firmware 99.12)"; return; }
+    if (fwMinor < 12) { $("#savedState").textContent = "Not kept (needs newer firmware)"; return; }
     const s = await send(0xF109);
     if (s[2] === 0x09 && s[3] === 0xF1 && s.length >= 13) $("#savedState").textContent = savedText(s);
   } catch (e) { /* the next poll retries */ }
@@ -1612,7 +1621,7 @@ function fwLog(msg, err) {
 const fwEncode = (raw) => raw.map((b) => ((b ^ 0x4A) + 0x8A) & 255);
 const fwDecode = (enc) => enc.map((b) => ((b - 0x8A) & 255) ^ 0x4A);
 const hasImageHeader = (raw) => raw.length > 0x100 && raw[0] === 0x48 && raw[0xD4] === 0x46 && raw[0xD5] === 0x48 && raw[0xD6] === 0x44 && raw[0xD7] === 0x03;
-let fwVersion = null;              // "99.18" when the file is openipixelcolor, else null
+let fwVersion = null;              // "101" when the file is openipixelcolor (older builds: "99.18"), else null
 function loadFirmware(bytes, name) {
   let raw = null, enc = null, kind, ok = false;
   if (hasImageHeader(bytes)) { raw = bytes; enc = fwEncode(bytes); }
@@ -1621,7 +1630,7 @@ function loadFirmware(bytes, name) {
   if (!raw) kind = "Not a firmware file for this panel.";
   else if (raw.length > 0xF7800) kind = "Too big for this panel.";
   else {
-    const m = new TextDecoder("latin1").decode(raw).match(/openipixelcolor (\d+\.\d\d)/);
+    const m = new TextDecoder("latin1").decode(raw).match(/openipixelcolor (\d+(?:\.\d\d)?)\b/);
     fwVersion = m ? m[1] : null;
     kind = m ? `openipixelcolor ${m[1]}` : "Other firmware for this panel (for example the vendor's)";
     ok = true;
@@ -1653,12 +1662,12 @@ fwDrop.addEventListener("drop", async (e) => {
 const LOCAL_BUILD = "local-build/fw.ota.bin";
 const onThisComputer = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
 let latestRelease = null;             // { version, tag, file, size, date, release }
-const newerVersion = (a, b) => { const [x, y] = [a, b].map((s) => s.split(".").map(Number)); return x[0] > y[0] || (x[0] === y[0] && x[1] > y[1]); };
+const newerVersion = (a, b) => versionLevel(a) > versionLevel(b);
 function releaseHint() {              // after connecting: tell when there is something newer to install
   if (!latestRelease || !chWrite || busy) return;
   const cur = $("#fwVerFull").textContent.split(" ")[0];
   if (!custom) status(`This panel runs the vendor firmware. openipixelcolor ${latestRelease.version} can be installed under Settings.`, true);
-  else if (/^\d+\.\d+$/.test(cur) && newerVersion(latestRelease.version, cur)) status(`Firmware ${latestRelease.version} is available. Install it under Settings.`);
+  else if (versionLevel(cur) && newerVersion(latestRelease.version, cur)) status(`Firmware ${latestRelease.version} is available. Install it under Settings.`);
 }
 if (onThisComputer) {
   fetch(LOCAL_BUILD, { method: "HEAD", cache: "no-store" }).then((r) => {
@@ -1669,7 +1678,7 @@ if (onThisComputer) {
   }).catch(() => { /* not served by serve.py */ });
 } else {
   fetch("firmware/latest.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((j) => {
-    if (!j || !j.file || !/^\d+\.\d+$/.test(j.version)) return;
+    if (!j || !j.file || !versionLevel(String(j.version))) return;
     latestRelease = j;
     $("#fwRelNote").textContent = `openipixelcolor ${j.version}, ${new Date(j.date).toLocaleDateString()}`;
     $("#fwRelRow").hidden = false;
@@ -1764,7 +1773,7 @@ $("#btnInstall").addEventListener("click", async () => {
       const got = verText(v);
       if (want && got !== want) throw new Error(`The panel came back with ${got} instead of ${want}: the update wasn't installed.`);
       if (health && health[5] !== 0) throw new Error(`The panel came back in rescue mode (${healthText(health)}). Install a working firmware.`);
-      fwLog(`The panel is back and runs ${got}${v[4] === 99 ? "" : " (vendor firmware)"}.`);
+      fwLog(`The panel is back and runs ${got}${fwVersionOf(v).custom ? "" : " (vendor firmware)"}.`);
     }
     fwLog(rounds === 2 ? `Done: ${want} is installed and has proved it can install updates itself.` : "Done.");
     busy = false; holdDevice = false;

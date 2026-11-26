@@ -21,7 +21,7 @@ consecutive writes; the module puts it back together.
 most 16 bytes, and a 16-byte reply can arrive twice. Match replies to requests by bytes 2–3 (the
 command) and ignore anything else.
 
-Example: version query `04 00 05 80` → reply `08 00 05 80 63 11 xx yy` (MCU 99.17, module xx.yy).
+Example: version query `04 00 05 80` → reply `08 00 05 80 65 00 xx yy` (openipixelcolor 101, module xx.yy).
 
 ## Commands compatible with the vendor app
 
@@ -30,7 +30,7 @@ Example: version query `04 00 05 80` → reply `08 00 05 80 63 11 xx yy` (MCU 99
 | `0x8001` | `hh mm ss 00` | Sets the time; replies with the device type (`0x81` = 32×32) |
 | `0x8003` | – | Clear: back to effects with autoplay |
 | `0x8004` | `percent` | Brightness 0–100 |
-| `0x8005` | – | Versions: reply `mcu_major mcu_minor module_major module_minor`. openipixelcolor reports **99.xx**, the vendor firmware 3.x |
+| `0x8005` | – | Versions: reply `mcu_major mcu_minor module_major module_minor`. openipixelcolor reports its version number N (100 and up) as `N 0` (from 256 on: `255 N−255`); the vendor firmware reports 3.x, openipixelcolor builds before 100 reported 99.xx |
 | `0x8006` | `0–3` | Orientation |
 | `0x8008` | `x x n` | Show effect `n` (third byte) |
 | `0x8009` | `0 stop / 1 start / 2 pause` | Stopwatch |

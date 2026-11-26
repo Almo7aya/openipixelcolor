@@ -47,7 +47,7 @@ async def main():
         await send(bytes([4, 0, 5, 0x80]))
         _, v = await asyncio.wait_for(q.get(), 5)
         print(f"version reply {v.hex(' ')}")
-        if v[4] != 99:
+        if v[4] < 99:                  # openipixelcolor: 99.xx before, 100 and up now
             raise SystemExit("not running openipixelcolor - refusing")
 
         await send(announce)

@@ -25,7 +25,27 @@ SRCS_C  := $(wildcard src/*.c src/hal/*.c src/lib/*.c src/drv/*.c src/app/*.c)
 SRCS_S  := $(wildcard src/*.S)
 OBJS    := $(patsubst src/%,$(BUILD)/%,$(SRCS_C:.c=.o) $(SRCS_S:.S=.o))
 
+# Version: one number (src/app/fwinfo.h). Default: one more than the newest tag vN, or 100 without any.
+# The CI passes it explicitly (make FW_VERSION=101).
+ifeq ($(origin FW_VERSION),undefined)
+FW_VERSION := $(shell git -c safe.directory='*' tag -l 'v*' 2>/dev/null | sed -n 's/^v\([0-9][0-9]*\)$$/\1/p' \
+                | sort -n | tail -n 1 | awk '{ print $$1 + 1 }')
+endif
+ifeq ($(strip $(FW_VERSION)),)
+FW_VERSION := 100
+endif
+VERSION_STAMP := $(BUILD)/.version-$(FW_VERSION)
+
 all: $(TARGET).bin $(TARGET).ota.bin
+
+# the files that show the version are rebuilt when the number changes
+$(BUILD)/main.o $(BUILD)/app/proto.o $(BUILD)/app/modes.o $(BUILD)/app/screens.o: CFLAGS += -DFW_VERSION=$(FW_VERSION)
+$(BUILD)/main.o $(BUILD)/app/proto.o $(BUILD)/app/modes.o $(BUILD)/app/screens.o: $(VERSION_STAMP)
+$(VERSION_STAMP):
+	@mkdir -p $(BUILD)
+	@rm -f $(BUILD)/.version-*
+	@touch $@
+	@echo "firmware version $(FW_VERSION)"
 
 # flash driver runs from the cache-locked window with interrupts off: no jump tables in .rodata,
 # no compiler-generated memcpy/memset calls out of the window

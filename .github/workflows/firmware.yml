@@ -1,6 +1,7 @@
 # Every push and pull request: build the firmware, run the simulator tests, check the web UI.
 # On main it also
-#  - publishes a release when something under firmware/ changed (tag v<version>-<commit>),
+#  - publishes a release when something under firmware/ changed. Versions are single numbers: the next
+#    one after the newest tag vN (v100, v101, ...), built into the firmware (make FW_VERSION=N),
 #  - publishes the web UI on the gh-pages branch (GitHub Pages) together with the latest release's
 #    update file and firmware/latest.json, so the hosted page can install it.
 # "Run workflow" (manual) republishes the page and can force a release.
@@ -21,6 +22,11 @@ permissions:
   contents: write          # releases, the gh-pages branch
   pages: read              # the page's address for the release notes
 
+# one run at a time per branch: two quick pushes can't pick the same version number
+concurrency:
+  group: firmware-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build:
     name: Build and test
@@ -31,7 +37,7 @@ jobs:
       run:
         shell: bash
     outputs:
-      version: ${{ steps.files.outputs.version }}
+      version: ${{ steps.version.outputs.version }}
       firmware_changed: ${{ steps.changes.outputs.firmware }}
     steps:
       - name: Install the toolchain
@@ -41,19 +47,23 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: What changed
+      - name: What changed since the last release
         id: changes
-        env:
-          BEFORE: ${{ github.event.before }}
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          if [ "$GITHUB_EVENT_NAME" = push ] && git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
-            files=$(git diff --name-only "$BEFORE" "$GITHUB_SHA")
-          else
-            files=$(git ls-files)
-          fi
-          if grep -q '^firmware/' <<< "$files"; then echo firmware=true; else echo firmware=false; fi >> "$GITHUB_OUTPUT"
-          grep '^firmware/' <<< "$files" || echo "nothing under firmware/ changed"
+          last=$(git tag -l 'v*' --sort=-creatordate | head -n 1)
+          if [ -n "$last" ]; then files=$(git diff --name-only "$last" "$GITHUB_SHA" -- firmware/)
+          else files=$(git ls-files firmware/); fi
+          if [ -n "$files" ]; then echo firmware=true; else echo firmware=false; fi >> "$GITHUB_OUTPUT"
+          echo "under firmware/ since ${last:-the start}:"
+          echo "${files:-nothing changed}"
+
+      - name: Version number
+        id: version
+        run: |
+          last=$(git tag -l 'v*' | sed -n 's/^v\([0-9][0-9]*\)$/\1/p' | sort -n | tail -n 1)
+          echo "version=$(( ${last:-99} + 1 ))" >> "$GITHUB_OUTPUT"
+          echo "newest release tag: v${last:-none}"
 
       - name: Toolchain versions
         run: |
@@ -61,7 +71,7 @@ jobs:
           nds32le-elf-ld --version | head -n 1
 
       - name: Build the firmware
-        run: make -C firmware EXTRA_CFLAGS=-Werror
+        run: make -C firmware EXTRA_CFLAGS=-Werror FW_VERSION=${{ steps.version.outputs.version }}
 
       - name: Simulator tests
         working-directory: tools/sim
@@ -77,13 +87,12 @@ jobs:
         run: node tools/ci/check_webui.js
 
       - name: Collect the firmware files
-        id: files
+        env:
+          v: ${{ steps.version.outputs.version }}
         run: |
-          v=$(sed -n 's/^#define FW_VERSION_STR "\([0-9.]*\)".*/\1/p' firmware/src/app/fwinfo.h)
           mkdir -p dist
           cp firmware/build/fw.ota.bin "dist/openipixelcolor-$v.ota.bin"
           cp firmware/build/fw.bin "dist/openipixelcolor-$v.bin"
-          echo "version=$v" >> "$GITHUB_OUTPUT"
           ls -l dist
 
       - uses: actions/upload-artifact@v7
@@ -117,7 +126,7 @@ jobs:
       - name: Publish a release
         if: env.RELEASE == 'true'
         run: |
-          tag="v$VERSION-${GITHUB_SHA::7}"
+          tag="v$VERSION"
           prev=$(gh release list --limit 1 --json tagName -q '.[0].tagName' || true)
           page=$(gh api "repos/$GITHUB_REPOSITORY/pages" -q .html_url 2>/dev/null || echo "https://${GITHUB_REPOSITORY_OWNER,,}.github.io/${GITHUB_REPOSITORY#*/}/")
           page="https://${page#*://}"                 # Web Bluetooth needs HTTPS
@@ -134,14 +143,14 @@ jobs:
               git log -n 20 --format='- %s' "$GITHUB_SHA" -- firmware/
             fi
           } > notes.md
-          gh release create "$tag" dist/* --target "$GITHUB_SHA" --title "openipixelcolor $VERSION (${GITHUB_SHA::7})" \
+          gh release create "$tag" dist/* --target "$GITHUB_SHA" --title "openipixelcolor $VERSION" \
              --notes-file notes.md --latest
 
       - name: Firmware for the web page
         run: |
           mkdir -p fw
           if [ "$RELEASE" = true ]; then
-            tag="v$VERSION-${GITHUB_SHA::7}"
+            tag="v$VERSION"
             cp dist/*.ota.bin fw/
           else                                   # nothing new: keep offering the latest release
             tag=$(gh release view --json tagName -q .tagName 2>/dev/null || true)

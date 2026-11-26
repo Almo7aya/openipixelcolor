@@ -89,7 +89,7 @@ python tools/ble/ble_scan_all.py          # look for LED_BLE_… with svc=fa00
 python tools/ble/ble_probe.py <ADDRESS>   # read-only: shows the firmware version
 ```
 
-The vendor firmware reports MCU version 3.x; openipixelcolor reports 99.xx.
+The vendor firmware reports version 3.x; openipixelcolor reports its version number (100, 101, …).
 
 ### 2. Build
 
@@ -105,8 +105,9 @@ leaves its cache window.
 
 No toolchain? You don't need one. Every push to `main` that changes `firmware/` is built by
 [GitHub Actions](https://github.com/Almo7aya/openipixelcolor/actions/workflows/firmware.yml) and
-published on the [Releases](https://github.com/Almo7aya/openipixelcolor/releases) page (tag
-`v<version>-<commit>`); the hosted web page always offers the newest one. Builds of other pushes and of
+published on the [Releases](https://github.com/Almo7aya/openipixelcolor/releases) page as the next
+version: v100, v101, v102, … (one number, one more with every firmware release; the number is built into the
+firmware and shown on the panel when it starts). The hosted web page always offers the newest one. Builds of other pushes and of
 pull requests are kept as artifacts of their run.
 
 ### 3. Install
@@ -123,11 +124,11 @@ From the command line instead (dry run first; it only checks the version):
 ```sh
 python tools/ble/ota_flash_guarded.py <ADDRESS> firmware/build/fw.ota.bin --expect <version>
 python tools/ble/ota_flash_guarded.py <ADDRESS> firmware/build/fw.ota.bin --expect <version> --go
-python tools/ble/ble_probe.py <ADDRESS>   # should now say 99.xx
+python tools/ble/ble_probe.py <ADDRESS>   # the version reply now starts with 64 (100) or more
 ```
 
 `--expect` is the version the panel reports right now (for example `3.17` for the vendor firmware, or
-`99.17` when updating openipixelcolor). The tool stops if the panel reports anything else, and stops at
+`101` when updating openipixelcolor 101). The tool stops if the panel reports anything else, and stops at
 the first unexpected reply.
 
 After the last chunk the panel restarts and its bootloader installs the image.

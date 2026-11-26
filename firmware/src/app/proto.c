@@ -49,8 +49,8 @@ void proto_handle(const uint8_t *pkt, unsigned len)
         link_reply(0x8001, DEVICE_TYPE_32X32, x, sizeof x);
         break; }
     case 0x8005: {                                     /* versions: 08 00 05 80 mcu_maj mcu_min bt_maj bt_min */
-        uint8_t x[3] = { FW_VER_MINOR, bt_ver_major, bt_ver_minor };
-        link_reply(0x8005, FW_VER_MAJOR, x, 3);
+        uint8_t x[3] = { (uint8_t)FW_VER_MINOR, bt_ver_major, bt_ver_minor };   /* the version number: fwinfo.h */
+        link_reply(0x8005, (uint8_t)FW_VER_MAJOR, x, 3);
         break; }
     case 0xC000: {                                     /* OTA begin */
         anim_abort_upload();                           /* one flash writer at a time */

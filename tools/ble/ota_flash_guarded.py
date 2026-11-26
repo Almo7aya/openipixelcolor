@@ -5,7 +5,7 @@ exactly 05 00 00 C0 01 (announce) / 05 00 01 C0 01 (chunk), otherwise it stops. 
 connects and checks the version (dry run).
 
 usage: python ota_flash_guarded.py <addr> <encoded.bin> --expect <version shown by the panel> [--go]
-       e.g. --expect 99.17 when updating openipixelcolor, or the vendor version (3.x) for the first install
+       e.g. --expect 101 when updating openipixelcolor 101, or the vendor version (3.17) for the first install
 """
 import argparse
 import asyncio
@@ -30,11 +30,19 @@ def check_image(data: bytes) -> None:
         raise SystemExit("decoded first byte is not an NDS32 `j` (0x48) - not a valid encoded image")
 
 
+def version_text(major: int, minor: int) -> str:
+    """0x8005 reply -> version as shown: openipixelcolor 100, 101, ... (from 256 on: 255 + minor), earlier
+    builds 99.xx, the vendor firmware 3.x"""
+    if major >= 100:
+        return str(255 + minor if major == 255 else major)
+    return f"{major}.{minor:02d}"
+
+
 async def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("addr")
     ap.add_argument("image")
-    ap.add_argument("--expect", required=True, help="version the panel must report, e.g. 99.17")
+    ap.add_argument("--expect", required=True, help="version the panel must report, e.g. 101 or 3.17")
     ap.add_argument("--go", action="store_true")
     a = ap.parse_args()
 
@@ -66,10 +74,10 @@ async def main() -> None:
 
         await send(bytes([4, 0, 5, 0x80]))
         v = await reply(5)
-        ver = f"{v[4]}.{v[5]:02d}" if len(v) >= 8 and v[2:4] == b"\x05\x80" else "?"
-        print(f"device version reply {v.hex(' ')} -> MCU {ver}")
+        ver = version_text(v[4], v[5]) if len(v) >= 8 and v[2:4] == b"\x05\x80" else "?"
+        print(f"device version reply {v.hex(' ')} -> version {ver}")
         if ver != a.expect:
-            raise SystemExit(f"device reports MCU {ver}, expected {a.expect} - not flashing")
+            raise SystemExit(f"the panel reports version {ver}, expected {a.expect} - not flashing")
         if not a.go:
             print("dry run OK (add --go to flash)")
             return
