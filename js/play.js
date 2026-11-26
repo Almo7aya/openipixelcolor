@@ -1,12 +1,23 @@
 // Play, one page of sections: effects and clock faces as animated preview tiles (drawn by the firmware's
 // own code in the simulator, tools/sim/make_previews.py) with shuffle and clock options, the animations
 // stored on the panel (library.js), and the tools.
-import { $, $$, el, on, store, reducedMotion } from "./core.js?v=7d6fc0c";
-import { CMD, MODE } from "./protocol.js?v=7d6fc0c";
-import { send, act } from "./ble.js?v=7d6fc0c";
-import { EFFECTS, CLOCKS, TESTS, previewOf } from "./catalog.js?v=7d6fc0c";
+import { $, $$, el, on, store, reducedMotion } from "./core.js?v=1a4f799";
+import { CMD, MODE } from "./protocol.js?v=1a4f799";
+import { panel, send, act } from "./ble.js?v=1a4f799";
+import { EFFECTS, CLOCKS, TESTS, previewOf } from "./catalog.js?v=1a4f799";
+import { toastError } from "./toast.js?v=1a4f799";
+import { go } from "./nav.js?v=1a4f799";
 
 const pic = (name) => name + (reducedMotion() ? ".png" : ".gif");
+
+/* effects from 20 and clock faces from 10 came with openipixelcolor 103: an older panel would show
+   another one, so it gets a notice instead */
+const SINCE = 103, FIRST_NEW = { effect: 20, clock: 10 };
+function tooOld(kind, i) {
+  if (!panel.custom || panel.level >= SINCE || i < FIRST_NEW[kind]) return false;
+  toastError(`This one needs openipixelcolor ${SINCE} or newer on the panel.`, { label: "Update", fn: () => go("device") });
+  return true;
+}
 function tile(name, img, onclick) {
   const b = el("button", { class: "tile", "aria-pressed": "false" },
     el("span", { class: "screen" }, el("img", { src: pic(img), alt: "", loading: "lazy", width: 32, height: 32 })),
@@ -22,7 +33,7 @@ function initEffects() {
   welcome.dataset.mode = MODE.WELCOME;
   grid.append(welcome);
   EFFECTS.forEach((name, i) => {
-    const t = tile(name, previewOf("effect", i), () => act(async () => {
+    const t = tile(name, previewOf("effect", i), () => tooOld("effect", i) || act(async () => {
       await send(CMD.MODE, [MODE.EFFECT, i]);
       $("#shuffle").checked = false;
     }));
@@ -52,7 +63,7 @@ function initClocks() {
   const grid = $("#clockTiles");
   $("#h24").checked = store.get("clock.h24", true);
   $("#showDate").checked = store.get("clock.date", true);
-  CLOCKS.forEach((name, i) => grid.append(tile(name, previewOf("clock", i), () => act(async () => {
+  CLOCKS.forEach((name, i) => grid.append(tile(name, previewOf("clock", i), () => tooOld("clock", i) || act(async () => {
     const d = new Date();
     await send(CMD.TIME, [d.getHours(), d.getMinutes(), d.getSeconds(), 0]);
     const dow = d.getDay() === 0 ? 7 : d.getDay();

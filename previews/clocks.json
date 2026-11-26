@@ -8,5 +8,21 @@
   ["clock-06", "clock-06-12h", "clock-06", "clock-06-12h"],
   ["clock-07", "clock-07-12h", "clock-07", "clock-07-12h"],
   ["clock-08", "clock-08-12h", "clock-08", "clock-08-12h"],
-  ["clock-09", "clock-09-12h", "clock-09-nodate", "clock-09-12h-nodate"]
+  ["clock-09", "clock-09-12h", "clock-09-nodate", "clock-09-12h-nodate"],
+  ["clock-10", "clock-10", "clock-10", "clock-10"],
+  ["clock-11", "clock-11", "clock-11", "clock-11"],
+  ["clock-12", "clock-12", "clock-12", "clock-12"],
+  ["clock-13", "clock-13-12h", "clock-13-nodate", "clock-13-12h-nodate"],
+  ["clock-14", "clock-14-12h", "clock-14-nodate", "clock-14-12h-nodate"],
+  ["clock-15", "clock-15-12h", "clock-15-nodate", "clock-15-12h-nodate"],
+  ["clock-16", "clock-16-12h", "clock-16-nodate", "clock-16-12h-nodate"],
+  ["clock-17", "clock-17-12h", "clock-17-nodate", "clock-17-12h-nodate"],
+  ["clock-18", "clock-18-12h", "clock-18-nodate", "clock-18-12h-nodate"],
+  ["clock-19", "clock-19-12h", "clock-19-nodate", "clock-19-12h-nodate"],
+  ["clock-20", "clock-20-12h", "clock-20", "clock-20-12h"],
+  ["clock-21", "clock-21-12h", "clock-21-nodate", "clock-21-12h-nodate"],
+  ["clock-22", "clock-22", "clock-22", "clock-22"],
+  ["clock-23", "clock-23-12h", "clock-23-nodate", "clock-23-12h-nodate"],
+  ["clock-24", "clock-24-12h", "clock-24-nodate", "clock-24-12h-nodate"],
+  ["clock-25", "clock-25-12h", "clock-25-nodate", "clock-25-12h-nodate"]
 ]

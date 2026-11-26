@@ -2,9 +2,12 @@
 // Every file of a version sits in that version's cache, so an old script is never mixed with a new page.
 // The CI writes VERSION and FILES when it publishes the site (tools/ci/stamp_site.py). With "dev" (served
 // from this computer) the page doesn't register it.
-const VERSION = "7d6fc0c";
-const FILES = ["./", "css/base.css?v=7d6fc0c", "css/components.css?v=7d6fc0c", "css/layout.css?v=7d6fc0c", "css/views.css?v=7d6fc0c", "favicon.ico", "icons/apple-touch-icon.png", "icons/favicon.svg", "icons/icon-192.png", "icons/icon-512.png", "icons/logo.svg", "index.html", "js/animpreview.js?v=7d6fc0c", "js/ble.js?v=7d6fc0c", "js/catalog.js?v=7d6fc0c", "js/core.js?v=7d6fc0c", "js/create/anim-codec.js?v=7d6fc0c", "js/create/animate.js?v=7d6fc0c", "js/create/draw.js?v=7d6fc0c", "js/create/generators.js?v=7d6fc0c", "js/create/import.js?v=7d6fc0c", "js/create/picture.js?v=7d6fc0c", "js/create/pixelcanvas.js?v=7d6fc0c", "js/device.js?v=7d6fc0c", "js/firmware.js?v=7d6fc0c", "js/font5x7.js?v=7d6fc0c", "js/idb.js?v=7d6fc0c", "js/led.js?v=7d6fc0c", "js/library.js?v=7d6fc0c", "js/log.js?v=7d6fc0c", "js/main.js?v=7d6fc0c", "js/mirror.js?v=7d6fc0c", "js/nav.js?v=7d6fc0c", "js/play.js?v=7d6fc0c", "js/protocol.js?v=7d6fc0c", "js/pwa.js?v=7d6fc0c", "js/readback.js?v=7d6fc0c", "js/size.js?v=7d6fc0c", "js/toast.js?v=7d6fc0c", "js/views/device.js?v=7d6fc0c", "js/views/storage.js?v=7d6fc0c", "js/views/text.js?v=7d6fc0c", "js/views/textpreview.js?v=7d6fc0c", "js/virtual.js?v=7d6fc0c", "manifest.webmanifest", "package.json", "panel.wasm?v=7d6fc0c", "previews/clock-00-12h-nodate.gif", "previews/clock-00-12h-nodate.png", "previews/clock-00-12h.gif", "previews/clock-00-12h.png", "previews/clock-00-nodate.gif", "previews/clock-00-nodate.png", "previews/clock-00.gif", "previews/clock-00.png", "previews/clock-01.gif", "previews/clock-01.png", "previews/clock-02-12h.gif", "previews/clock-02-12h.png", "previews/clock-02.gif", "previews/clock-02.png", "previews/clock-03-12h.gif", "previews/clock-03-12h.png", "previews/clock-03.gif", "previews/clock-03.png", "previews/clock-04-12h.gif", "previews/clock-04-12h.png", "previews/clock-04.gif", "previews/clock-04.png", "previews/clock-05-12h-nodate.gif", "previews/clock-05-12h-nodate.png", "previews/clock-05-12h.gif", "previews/clock-05-12h.png", "previews/clock-05-nodate.gif", "previews/clock-05-nodate.png", "previews/clock-05.gif", "previews/clock-05.png", "previews/clock-06-12h.gif", "previews/clock-06-12h.png", "previews/clock-06.gif", "previews/clock-06.png", "previews/clock-07-12h.gif", "previews/clock-07-12h.png", "previews/clock-07.gif", "previews/clock-07.png", "previews/clock-08-12h.gif", "previews/clock-08-12h.png", "previews/clock-08.gif", "previews/clock-08.png", "previews/clock-09-12h-nodate.gif", "previews/clock-09-12h-nodate.png", "previews/clock-09-12h.gif", "previews/clock-09-12h.png", "previews/clock-09-nodate.gif", "previews/clock-09-nodate.png", "previews/clock-09.gif", "previews/clock-09.png", "previews/clocks.json", "previews/effect-00.gif", "previews/effect-00.png", "previews/effect-01.gif", "previews/effect-01.png", "previews/effect-02.gif", "previews/effect-02.png", "previews/effect-03.gif", "previews/effect-03.png", "previews/effect-04.gif", "previews/effect-04.png", "previews/effect-05.gif", "previews/effect-05.png", "previews/effect-06.gif", "previews/effect-06.png", "previews/effect-07.gif", "previews/effect-07.png", "previews/effect-08.gif", "previews/effect-08.png", "previews/effect-09.gif", "previews/effect-09.png", "previews/effect-10.gif", "previews/effect-10.png", "previews/effect-11.gif", "previews/effect-11.png", "previews/effect-12.gif", "previews/effect-12.png", "previews/effect-13.gif", "previews/effect-13.png", "previews/effect-14.gif", "previews/effect-14.png", "previews/effect-15.gif", "previews/effect-15.png", "previews/effect-16.gif", "previews/effect-16.png", "previews/effect-17.gif", "previews/effect-17.png", "previews/effect-18.gif", "previews/effect-18.png", "previews/effect-19.gif", "previews/effect-19.png", "previews/welcome-00.gif", "previews/welcome-00.png"];
+const VERSION = "1a4f799";
+const FILES = ["./", "css/base.css?v=1a4f799", "css/components.css?v=1a4f799", "css/layout.css?v=1a4f799", "css/views.css?v=1a4f799", "favicon.ico", "icons/apple-touch-icon.png", "icons/favicon.svg", "icons/icon-192.png", "icons/icon-512.png", "icons/logo.svg", "index.html", "js/animpreview.js?v=1a4f799", "js/ble.js?v=1a4f799", "js/catalog.js?v=1a4f799", "js/core.js?v=1a4f799", "js/create/anim-codec.js?v=1a4f799", "js/create/animate.js?v=1a4f799", "js/create/draw.js?v=1a4f799", "js/create/generators.js?v=1a4f799", "js/create/import.js?v=1a4f799", "js/create/picture.js?v=1a4f799", "js/create/pixelcanvas.js?v=1a4f799", "js/device.js?v=1a4f799", "js/firmware.js?v=1a4f799", "js/font5x7.js?v=1a4f799", "js/idb.js?v=1a4f799", "js/led.js?v=1a4f799", "js/library.js?v=1a4f799", "js/log.js?v=1a4f799", "js/main.js?v=1a4f799", "js/mirror.js?v=1a4f799", "js/nav.js?v=1a4f799", "js/play.js?v=1a4f799", "js/protocol.js?v=1a4f799", "js/pwa.js?v=1a4f799", "js/readback.js?v=1a4f799", "js/size.js?v=1a4f799", "js/toast.js?v=1a4f799", "js/views/device.js?v=1a4f799", "js/views/storage.js?v=1a4f799", "js/views/text.js?v=1a4f799", "js/views/textpreview.js?v=1a4f799", "js/virtual.js?v=1a4f799", "manifest.webmanifest", "package.json", "panel.wasm?v=1a4f799", "previews/clocks.json"];
 const CACHE = `oipc-${VERSION}`;
+// the effect and clock previews (2 MB of GIFs) aren't in FILES: they're kept across versions in their own
+// cache, each one stored when the page first shows it and refreshed in the background after that
+const PREVIEWS = "oipc-previews";
 
 self.addEventListener("install", (e) => {
   // straight from the server, not from the browser's HTTP cache (which may hold the last version)
@@ -13,7 +16,7 @@ self.addEventListener("install", (e) => {
 
 self.addEventListener("activate", (e) => {
   e.waitUntil(caches.keys()
-    .then((keys) => Promise.all(keys.filter((k) => k.startsWith("oipc-") && k !== CACHE).map((k) => caches.delete(k))))
+    .then((keys) => Promise.all(keys.filter((k) => k.startsWith("oipc-") && k !== CACHE && k !== PREVIEWS).map((k) => caches.delete(k))))
     .then(() => self.clients.claim()));
 });
 
@@ -28,6 +31,12 @@ self.addEventListener("fetch", (e) => {
   if (url.pathname.includes("/firmware/")) return;                  // releases: always fresh
   if (req.mode === "navigate") {                                    // the page itself, any #view
     e.respondWith(caches.match("./", { cacheName: CACHE }).then((r) => r || fetch(req)));
+    return;
+  }
+  if (/\/previews\/[^/]+\.(gif|png)$/.test(url.pathname)) {         // stored copy now, a fresh one for next time
+    const net = caches.open(PREVIEWS).then((c) => fetch(req).then((r) => { if (r.ok) c.put(req, r.clone()); return r; }));
+    e.respondWith(caches.match(req, { cacheName: PREVIEWS }).then((hit) => hit || net));
+    e.waitUntil(net.catch(() => {}));
     return;
   }
   e.respondWith(caches.match(req, { cacheName: CACHE }).then((r) => r || fetch(req)));

@@ -3,13 +3,13 @@
 // each status poll (every 4 s) puts it back in step if the panel changed by itself (its button, shuffle,
 // another phone). Effects, clocks, text, pictures and animations sent from this browser come out the same
 // as on the panel; random effects (stars, fireworks) differ in the details.
-import { on, store } from "./core.js?v=7d6fc0c";
-import { CMD, MODE, packet, u32, rd32 } from "./protocol.js?v=7d6fc0c";
-import { panel, onPacket } from "./ble.js?v=7d6fc0c";
-import { pix, drawMirror, claimMirror, mirrorOwner, mirrorNote, mirrorTag } from "./mirror.js?v=7d6fc0c";
-import { getAnim } from "./idb.js?v=7d6fc0c";
-import { is32, sizeText } from "./size.js?v=7d6fc0c";
-import OPA from "./create/anim-codec.js?v=7d6fc0c";
+import { on, store } from "./core.js?v=1a4f799";
+import { CMD, MODE, packet, u32, rd32 } from "./protocol.js?v=1a4f799";
+import { panel, onPacket } from "./ble.js?v=1a4f799";
+import { pix, drawMirror, claimMirror, mirrorOwner, mirrorNote, mirrorTag } from "./mirror.js?v=1a4f799";
+import { getAnim } from "./idb.js?v=1a4f799";
+import { is32, sizeText } from "./size.js?v=1a4f799";
+import OPA from "./create/anim-codec.js?v=1a4f799";
 
 let vp = null, synced = false, nowCaption = "", missing = null;
 const now = () => Math.floor(performance.now()) >>> 0;
@@ -157,7 +157,7 @@ export function showLive() {
 
 export async function initVirtual() {
   try {
-    const src = await fetch("panel.wasm?v=7d6fc0c");
+    const src = await fetch("panel.wasm?v=1a4f799");
     const { instance } = await WebAssembly.instantiate(await src.arrayBuffer(), {});
     vp = instance.exports;
     vp.vp_init(now());

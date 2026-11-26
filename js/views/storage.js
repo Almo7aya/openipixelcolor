@@ -1,13 +1,13 @@
 // Device > Storage. The animation space as its 20 slots of 32 KB (an animation always takes whole slots),
 // each animation with a moving preview, playing and deleting; then the whole 2 MB flash, area by area
 // (fixed by the firmware: firmware/src/drv/iflash.c, app/anim.h, app/settings.c).
-import { $, el, on, kb, holdToConfirm } from "../core.js?v=7d6fc0c";
-import { CMD } from "../protocol.js?v=7d6fc0c";
-import { panel, send, act } from "../ble.js?v=7d6fc0c";
-import { libraryState, refreshLibrary, deleteAnimation, ready } from "../library.js?v=7d6fc0c";
-import { previewInto } from "../animpreview.js?v=7d6fc0c";
-import { READBACK_LEVEL } from "../readback.js?v=7d6fc0c";
-import { latest } from "../firmware.js?v=7d6fc0c";
+import { $, el, on, kb, holdToConfirm } from "../core.js?v=1a4f799";
+import { CMD } from "../protocol.js?v=1a4f799";
+import { panel, send, act } from "../ble.js?v=1a4f799";
+import { libraryState, refreshLibrary, deleteAnimation, ready } from "../library.js?v=1a4f799";
+import { previewInto } from "../animpreview.js?v=1a4f799";
+import { READBACK_LEVEL } from "../readback.js?v=1a4f799";
+import { latest } from "../firmware.js?v=1a4f799";
 
 const K = 1024;
 /* the flash, in address order; `used` is filled in where it is known */

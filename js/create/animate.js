@@ -1,15 +1,15 @@
 // The animation maker: frames from files, the frame editor or a generator -> colours reduced and packed
 // (anim-codec.js) -> a preview decoded exactly like the panel plays it -> saved on the panel (library.js).
-import { $, $$, el, on, emit, store, segmented, fillSelect, kb } from "../core.js?v=7d6fc0c";
-import { pix, drawMirror, claimMirror, mirrorNote } from "../mirror.js?v=7d6fc0c";
-import { panel } from "../ble.js?v=7d6fc0c";
-import { size } from "../size.js?v=7d6fc0c";
-import { toast, toastError } from "../toast.js?v=7d6fc0c";
-import { uploadAnimation, ready as libReady, goToLibrary } from "../library.js?v=7d6fc0c";
-import OPA from "./anim-codec.js?v=7d6fc0c";
-import { readFiles, fitFrames, thumbOf, MAX_SOURCE_FRAMES } from "./import.js?v=7d6fc0c";
-import { PixelCanvas, PALETTE } from "./pixelcanvas.js?v=7d6fc0c";
-import { FORMULAS, MOTIONS, formulaFrames, emojiFrames } from "./generators.js?v=7d6fc0c";
+import { $, $$, el, on, emit, store, segmented, fillSelect, kb } from "../core.js?v=1a4f799";
+import { pix, drawMirror, claimMirror, mirrorNote } from "../mirror.js?v=1a4f799";
+import { panel } from "../ble.js?v=1a4f799";
+import { size } from "../size.js?v=1a4f799";
+import { toast, toastError } from "../toast.js?v=1a4f799";
+import { uploadAnimation, ready as libReady, goToLibrary } from "../library.js?v=1a4f799";
+import OPA from "./anim-codec.js?v=1a4f799";
+import { readFiles, fitFrames, thumbOf, MAX_SOURCE_FRAMES } from "./import.js?v=1a4f799";
+import { PixelCanvas, PALETTE } from "./pixelcanvas.js?v=1a4f799";
+import { FORMULAS, MOTIONS, formulaFrames, emojiFrames } from "./generators.js?v=1a4f799";
 
 const A = { src: "file", fileSrc: null, lastFiles: null, enc: null, encFrames: null, nameAuto: true, uploading: false };
 
