@@ -1642,10 +1642,12 @@ $("#btnInstall").addEventListener("click", async () => {
     busy = false; holdDevice = false;
     status("Firmware installed.");
     refreshStatus();
+    announce("connected", { custom, fwMinor, rescue: false });   // sections that skipped the busy reconnects
   } catch (e) {
     fwLog(sent ? e.message : `${e.message} Nothing was installed. The panel restarts on its own after 10 seconds.`, true);
     busy = false; holdDevice = false;
     if (!chWrite) { releaseDevice(); setConnected(false); }
+    else announce("connected", { custom, fwMinor, rescue: false });
   }
 });
 </script>

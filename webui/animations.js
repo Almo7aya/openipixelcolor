@@ -618,7 +618,7 @@
   });
 
   /* ---- panel events ---------------------------------------------------------------------------------- */
-  window.addEventListener("op32:connected", (e) => { A.lib = []; A.store = null; if (e.detail.custom && !e.detail.rescue && e.detail.fwMinor >= FW_MIN) refreshLibrary(); else renderLib(); });
+  window.addEventListener("op32:connected", (e) => { A.lib = []; A.store = null; if (busy) return; if (e.detail.custom && !e.detail.rescue && e.detail.fwMinor >= FW_MIN) refreshLibrary(); else renderLib(); });
   window.addEventListener("op32:disconnected", () => { A.lib = []; A.store = null; renderLib(); });
   window.addEventListener("op32:status", (e) => {
     const r = e.detail, mode = r[5];
