@@ -122,7 +122,7 @@ const thumbs = new Map();                                // slot -> RGB of the l
 function caption() {
   if (!live) return;
   mirrorTag(panel.chWrite ? "live" : "idle");
-  if (!panel.chWrite) mirrorNote(panel.state === "connecting" ? "Connecting…" : "Not connected: the welcome screen a new panel shows. Connect one to see what it shows.");
+  if (!panel.chWrite) mirrorNote(panel.state === "connecting" ? "Connecting…" : "The welcome screen a new panel shows.");
   else if (!is32()) mirrorNote(`A ${sizeText()} panel. The live preview is there for 32 × 32 panels for now.`);
   else if (!panel.custom) mirrorNote("The preview needs openipixelcolor on the panel.");
   else if (panel.rescue) mirrorNote("The panel is in rescue mode.");

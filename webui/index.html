@@ -405,23 +405,27 @@
       </div>
       <p class="note" id="mirrorNote" aria-live="polite">Connect the panel to see what it shows.</p>
     </div>
-    <div class="conn">
-      <div class="row">
-        <span class="status-chip" id="connChip"><span class="dot"></span><span id="connText">Not connected</span></span>
-        <span class="note num" id="devVersion"></span>
+    <!-- the panel: who it is and the connect button; once connected, its controls -->
+    <section class="dev-card" id="devCard" data-state="idle" aria-label="Connection">
+      <div class="dev-conn">
+        <span class="status-chip" id="connChip"><span class="dot"></span></span>
+        <div class="dev-who">
+          <strong id="connText">Not connected</strong>
+          <span class="note" id="devVersion">Switch the panel on, then connect.</span>
+        </div>
+        <button class="btn primary" id="btnConnect">Connect panel</button>
       </div>
-      <button class="btn primary" id="btnConnect">Connect panel</button>
-    </div>
+      <div class="dev-controls" id="devControls" hidden>
+        <label class="dev-row"><span>Power</span><span class="switch"><input type="checkbox" id="power" checked aria-label="Panel on"></span></label>
+        <label class="dev-row"><span>Brightness</span><input type="range" id="bright" min="0" max="100" step="5" value="80"><output id="brightOut">80%</output></label>
+        <button class="dev-row dev-key" id="btnKey" title="Same as a short press on the panel's button"><span>Panel button</span><span class="note">Press</span></button>
+      </div>
+    </section>
     <div class="banner" id="noBt" hidden>This browser can't use Bluetooth. Open this page in Chrome or Edge on a computer or Android phone.</div>
-    <div class="dev-controls">
-      <label class="switch"><input type="checkbox" id="power" checked> Panel on</label>
-      <label class="slider"><span class="label">Brightness</span><input type="range" id="bright" min="0" max="100" step="5" value="80"><output id="brightOut">80%</output></label>
-      <button class="btn small ghost dev-extra" id="btnKey" title="Same as a short press on the panel's button">Press the panel's button</button>
-    </div>
-    <div class="dev-extra row">
+    <footer class="dev-foot">
       <button class="btn small" id="installApp" hidden>Install as an app</button>
-      <a class="note" href="https://github.com/Almo7aya/openipixelcolor" target="_blank" rel="noopener">openipixelcolor on GitHub</a>
-    </div>
+      <a href="https://github.com/Almo7aya/openipixelcolor" target="_blank" rel="noopener">openipixelcolor on GitHub</a>
+    </footer>
   </aside>
 </div>
 

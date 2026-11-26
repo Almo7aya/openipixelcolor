@@ -44,6 +44,31 @@
 .dev-brand img { display: block; flex: none; }
 .wordmark { display: block; image-rendering: pixelated; }
 
+/* the panel card: who's connected and the button; once connected, the controls as rows */
+.dev-card { display: grid; padding: 14px; border-radius: var(--r-l); background: var(--bg); border: 1px solid var(--line); }
+.dev-conn { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "dot who btn"; align-items: center; gap: 4px 12px; }
+.dev-card:is([data-state="idle"], [data-state="lost"]) .dev-conn { grid-template-areas: "dot who who" "btn btn btn"; row-gap: 14px; }
+.dev-conn .status-chip { grid-area: dot; align-self: start; padding-top: 6px; }
+.dev-who { grid-area: who; display: grid; min-width: 0; }
+.dev-who strong { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dev-who .note { font-size: 13px; }
+.dev-conn .btn { grid-area: btn; }
+.dev-controls { display: grid; margin-top: 12px; border-top: 1px solid var(--line); }
+.dev-row {
+  display: grid; grid-template-columns: 84px minmax(0, 1fr) 3em; align-items: center; gap: 10px; min-height: 46px;
+  border-bottom: 1px solid var(--line); font-size: 14px; color: var(--ink);
+}
+.dev-row:last-child { border-bottom: 0; }
+.dev-row:has(> .switch) { grid-template-columns: minmax(0, 1fr) auto; cursor: pointer; }
+.dev-row output { text-align: right; font-family: var(--mono); font-size: 13px; color: var(--muted); }
+.dev-key { grid-template-columns: minmax(0, 1fr) auto; width: 100%; padding: 0; border: 0;
+  background: none; font: inherit; text-align: left; cursor: pointer; }
+.dev-key:hover .note { color: var(--ink); }
+.dev-foot { margin-top: auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px;
+  padding-top: 14px; border-top: 1px solid var(--line); font-size: 13px; }
+.dev-foot a { color: var(--muted); }
+.dev-foot a:hover { color: var(--ink); }
+
 /* ---- phones and narrow windows ---- */
 @media (max-width: 1080px) {
   :root { --device: 340px; }
@@ -63,7 +88,12 @@
     display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 10px 14px; align-items: center;
     padding: 12px 16px; border-left: 0; border-bottom: 1px solid var(--line);
   }
-  .device > .dev-brand, .device > .now, .device > .dev-extra { display: none; }
+  .device > .dev-brand, .device > .dev-foot, .device .preview .note { display: none; }
   .device > .preview { grid-row: span 2; }
+  .device > .banner { grid-column: 1 / -1; }
+  .dev-card { padding: 0; border: 0; background: none; }
+  .dev-controls { margin-top: 4px; border-top: 0; }
+  .dev-row { min-height: 34px; border-bottom: 0; }
+  .dev-key { display: none; }
   .content { padding: 20px 16px 110px; }
 }

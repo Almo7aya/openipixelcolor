@@ -11,15 +11,19 @@ import { sizeText } from "./size.js";
 let animName = (slot) => `slot ${slot + 1}`;
 export const setAnimNamer = (fn) => { animName = fn; };
 
+/* the panel card: not connected = a line and a big Connect button; connected = the panel's name, its
+   firmware and size, a small Disconnect, and the controls */
 function showState(s) {
-  const chip = $("#connChip"), text = $("#connText"), btn = $("#btnConnect");
-  chip.dataset.state = s === "idle" ? "" : s;
-  text.textContent = s === "connected" ? `Connected to ${panel.name}` : s === "connecting" ? "Connecting…" :
-    s === "lost" ? "Connection lost" : "Not connected";
-  btn.textContent = s === "connected" || s === "connecting" ? "Disconnect" : s === "lost" ? "Connect again" : "Connect panel";
-  btn.classList.toggle("primary", s !== "connected");
-  $("#devVersion").textContent = s === "connected" ? `${panel.custom ? `Firmware ${panel.version}` : `Vendor firmware ${panel.version}`}, ${sizeText()}` : "";
-  for (const id of ["#power", "#bright", "#btnKey"]) $(id).disabled = s !== "connected";
+  const on = s === "connected", btn = $("#btnConnect");
+  $("#devCard").dataset.state = s;
+  $("#connChip").dataset.state = s === "idle" ? "" : s;
+  $("#connText").textContent = on ? panel.name : s === "connecting" ? "Connecting…" : s === "lost" ? "Connection lost" : "Not connected";
+  $("#devVersion").textContent = on ? `${panel.custom ? `Firmware ${panel.version}` : `Stock firmware ${panel.version}`}, ${sizeText()}`
+    : s === "connecting" ? "Pick the panel in the list." : s === "lost" ? "Switch the panel off and on, then connect again." : "Switch the panel on, then connect.";
+  btn.textContent = on || s === "connecting" ? "Disconnect" : s === "lost" ? "Connect again" : "Connect panel";
+  btn.classList.toggle("primary", !on && s !== "connecting");
+  btn.classList.toggle("small", on || s === "connecting");
+  $("#devControls").hidden = !on;
 }
 
 /* the caption under the live preview: what the panel shows, in words */
@@ -43,6 +47,7 @@ export function initDevice() {
   $("#btnConnect").disabled = !supported;
   $("#btnConnect").addEventListener("click", () => connect());
   on("state", showState);
+  on("size", () => { if (panel.state === "connected") showState("connected"); });
   on("status", showStatus);
   showState("idle");
 
