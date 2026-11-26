@@ -3,6 +3,7 @@
 #include "regs.h"
 #include "sys.h"
 #include "irq.h"
+#include "cpu.h"
 
 #define T_CTRL(n)   REG32(TIMER_BASE(n) + 0x00)
 #define T_PERIOD(n) REG32(TIMER_BASE(n) + 0x0C)
@@ -75,6 +76,13 @@ void tick_init(void)
 }
 
 uint32_t millis(void) { return g_ms; }
+
+void tick_advance(uint32_t ms)
+{
+    uint32_t irq = cpu_irq_save();
+    g_ms += ms;
+    cpu_irq_restore(irq);
+}
 
 void delay_ms(uint32_t ms)
 {

@@ -25,7 +25,8 @@ const void *app_flash_ptr(uint32_t addr) { return (const void *)(uintptr_t)addr;
 
 /* An erase keeps interrupts off for ~0.5 s, so the row scan stops and the row latched at that moment
  * would stay lit at full duty. Blank the picture and let two rows go by first: the panel goes dark
- * briefly instead of flashing one bright line. The main loop draws the next frame afterwards. */
+ * briefly instead of flashing one bright line. The main loop draws the next frame afterwards.
+ * The 1 ms tick misses that time too; it is added back so the clock does not fall behind. */
 int app_flash_write_sector(uint32_t addr, const void *src, uint32_t len)
 {
     display_blank();
@@ -36,7 +37,24 @@ int app_flash_write_sector(uint32_t addr, const void *src, uint32_t len)
         uint32_t r = display_rows_scanned();
         if (r != last) { last = r; seen++; }
     }
-    return iflash_write(addr, src, len);
+    uint32_t t1 = millis();
+    int rc = iflash_write(addr, src, len);
+    uint32_t missed = IFLASH_REAL_MS(((len + 0xFFFu) >> 12) * IFLASH_ERASE_MIN_MS + ((len + 0xFFu) >> 8) * IFLASH_PROG_MIN_MS);
+    uint32_t seen_ms = millis() - t1;
+    if (missed > seen_ms) tick_advance(missed - seen_ms);
+    return rc;
 }
 
 int app_flash_program(uint32_t addr, const void *src, uint32_t len) { return iflash_program(addr, src, len); }
+
+/* The controller caches flash reads and a write does not update that cache: bytes read before a write can
+ * come back stale afterwards (seen on the panel when an animation that had been playing was overwritten).
+ * Reading 256 KiB of other flash pushes every cached line out (the cache is far smaller). The locked
+ * flash-driver window is not affected, and nothing here writes. Takes a few ms. */
+void app_flash_forget(void)
+{
+    const volatile uint32_t *p = (const volatile uint32_t *)0x00011000u;
+    uint32_t sum = 0;
+    for (uint32_t i = 0; i < 0x40000u / 4u; i++) sum += p[i];
+    (void)sum;
+}

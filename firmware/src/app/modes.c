@@ -6,6 +6,7 @@
 #include "clockface.h"
 #include "app_port.h"
 #include "fwinfo.h"
+#include "anim.h"
 
 #define TEXT_MAX MODES_TEXT_MAX
 
@@ -26,6 +27,7 @@ static struct {
     uint8_t  tstate;
     uint32_t tstart, tacc;
     uint8_t  next_after_splash;
+    uint8_t  anim_slot, anim_speed;
 } S;
 
 static fb_t canvas;
@@ -45,7 +47,7 @@ static void start_effect(unsigned e, uint32_t now)
 static int lasting(unsigned m)
 {
     return m == MODE_EFFECT || m == MODE_CLOCK || m == MODE_TEXT || m == MODE_CANVAS ||
-           m == MODE_RHYTHM || m == MODE_SCORE;
+           m == MODE_RHYTHM || m == MODE_SCORE || m == MODE_ANIM;
 }
 
 void modes_set(unsigned mode, unsigned arg, uint32_t now)
@@ -63,6 +65,10 @@ void modes_set(unsigned mode, unsigned arg, uint32_t now)
         S.text_last = now;
         break;
     case MODE_TEST:   S.test_pattern = (uint8_t)(arg % 7); break;
+    case MODE_ANIM:
+        S.anim_slot = (uint8_t)(arg < ANIM_SLOTS ? arg : ANIM_ALL);
+        anim_start(S.anim_slot, now);
+        break;
     default: break;
     }
 }
@@ -120,6 +126,7 @@ static void set_defaults(void)
     set_text_style(RGB(255, 200, 80), 4, 1);
     S.text_kind = 0; textfx_reset();
     clear_canvas();
+    S.anim_slot = ANIM_ALL; S.anim_speed = 10;     /* the stored animations themselves are not settings: kept */
     S.pmode = MODE_EFFECT;
     app_set_brightness_pct(S.bright_pct);
     app_set_orientation(S.orient);
@@ -128,6 +135,7 @@ static void set_defaults(void)
 void modes_init(uint32_t now)
 {
     set_defaults();
+    anim_init();                                       /* before settings_load(): a saved mode may be an animation */
     modes_set(MODE_SPLASH, 0, now);
 }
 
@@ -156,6 +164,7 @@ void modes_snapshot(modes_persist_t *p)
     p->s1 = S.s1; p->s2 = S.s2;
     for (unsigned i = 0; i < TEXT_MAX && S.text[i]; i++) p->text[i] = S.text[i];
     p->text_kind = S.text_kind;
+    p->anim_slot = S.anim_slot; p->anim_speed = S.anim_speed;
 }
 
 /* Applies saved settings (call right after modes_init: the splash then continues into the saved mode).
@@ -179,6 +188,11 @@ void modes_restore(const modes_persist_t *p, uint32_t now)
     S.rstyle = p->rstyle; S.ranimated = p->ranimated ? 1 : 0;
     for (int i = 0; i < 11; i++) S.lvl[i] = (uint8_t)(p->lvl[i] & 15u);
     S.s1 = (uint8_t)(p->s1 % 100); S.s2 = (uint8_t)(p->s2 % 100);
+    if (p->ver >= 3) {
+        S.anim_slot = (uint8_t)(p->anim_slot < ANIM_SLOTS ? p->anim_slot : ANIM_ALL);
+        S.anim_speed = (uint8_t)(p->anim_speed < 2 ? 10 : p->anim_speed > 40 ? 40 : p->anim_speed);
+    }
+    if (S.pmode == MODE_ANIM && !anim_valid(S.anim_slot)) S.pmode = MODE_EFFECT;   /* deleted or damaged since */
     app_set_brightness_pct(S.bright_pct);
     app_set_orientation(S.orient);
 }
@@ -193,7 +207,8 @@ void modes_restore_canvas(const uint8_t *px)
 
 static void enter_saved_mode(uint32_t now)
 {
-    unsigned arg = S.pmode == MODE_EFFECT ? S.effect : S.pmode == MODE_CLOCK ? S.clock_style : 0;
+    unsigned arg = S.pmode == MODE_EFFECT ? S.effect : S.pmode == MODE_CLOCK ? S.clock_style :
+                   S.pmode == MODE_ANIM ? S.anim_slot : 0;
     modes_set(S.pmode, arg, now);
 }
 
@@ -283,8 +298,8 @@ static void draw_splash(uint32_t now)
 {
     uint32_t t = now - S.mode_since;
     gfx_fill(0);
-    int w = gfx_text_width("fm");
-    gfx_text((32 - w) / 2, 6, "fm", gfx_hsv((uint8_t)(t / 6), 200, 255));
+    int w = gfx_text_width("op32");
+    gfx_text((32 - w) / 2, 6, "op32", gfx_hsv((uint8_t)(t / 6), 200, 255));
     gfx_text((32 - gfx_text_width(FW_VERSION_STR)) / 2, 18, FW_VERSION_STR, RGB(120, 120, 140));
     int bar = (int)(t * 32u / 1800u);
     gfx_rect(0, 30, bar > 32 ? 32 : bar, 1, gfx_hsv((uint8_t)(t / 5), 255, 160), 1);
@@ -294,7 +309,9 @@ static void draw_splash(uint32_t now)
 void modes_render(fb_t *fb, uint32_t now)
 {
     gfx_target(fb);
+    anim_tick(now);
     if (!S.power) { gfx_fill(0); return; }
+    if (anim_uploading()) { anim_draw_upload(); return; }
     switch (S.mode) {
     case MODE_EFFECT:
         if (S.autoplay && now - S.effect_since >= S.autoplay_s * 1000u) start_effect(S.effect + 1u, now);
@@ -320,11 +337,12 @@ void modes_render(fb_t *fb, uint32_t now)
     case MODE_SCORE:  draw_score(); break;
     case MODE_TIMER:  draw_timer(now); break;
     case MODE_TEST:   draw_test(now); break;
+    case MODE_ANIM:   anim_draw(now, S.anim_speed); break;
     default:          draw_splash(now); break;
     }
 }
 
-/* key: short = next effect / clock face / back to effects, long = brightness step */
+/* key: short = next effect / clock face / animation / back to effects, long = brightness step */
 void modes_key(int ev, uint32_t now)
 {
     if (ev == MKEY_LONG) {
@@ -348,6 +366,12 @@ void modes_key(int ev, uint32_t now)
         else S.clock_style++;
         break;
     case MODE_TEXT:
+        if (anim_valid(ANIM_ALL)) { modes_set(MODE_ANIM, ANIM_ALL, now); break; }
+        S.autoplay = 1;
+        modes_set(MODE_EFFECT, 0, now);
+        break;
+    case MODE_ANIM:                                    /* next stored animation, after the last: effects */
+        if (anim_next(now)) { if (S.anim_slot != ANIM_ALL) S.anim_slot = (uint8_t)anim_showing(); break; }
         S.autoplay = 1;
         modes_set(MODE_EFFECT, 0, now);
         break;
@@ -362,9 +386,11 @@ static void reply_status(uint32_t now)
 {
     clock_tm_t tm;
     clock_now(now, &tm);
-    /* 16-byte reply: mode effect bright power hh mm ss flags orient clock_style autoplay_s */
-    uint8_t x[11] = { S.mode, S.effect, S.bright_pct, S.power, tm.h, tm.m, tm.s,
-                      (uint8_t)((tm.synced ? 1 : 0) | (S.autoplay ? 2 : 0) | (S.fmt24 ? 4 : 0) | (S.show_date ? 8 : 0)),
+    /* 16-byte reply: mode effect bright power hh mm ss flags orient clock_style autoplay_s
+     * (animation mode: "effect" = the slot on screen, flags bit 4 = playing all, bit 5..7 unused) */
+    uint8_t x[11] = { S.mode, S.mode == MODE_ANIM ? (uint8_t)anim_showing() : S.effect, S.bright_pct, S.power, tm.h, tm.m, tm.s,
+                      (uint8_t)((tm.synced ? 1 : 0) | (S.autoplay ? 2 : 0) | (S.fmt24 ? 4 : 0) | (S.show_date ? 8 : 0) |
+                                (S.anim_slot == ANIM_ALL ? 16 : 0)),
                       S.orient, S.clock_style, (uint8_t)(S.autoplay_s > 255 ? 255 : S.autoplay_s) };
     app_reply(0xF106, 1, x, sizeof x);
 }
@@ -492,7 +518,17 @@ int modes_handle_cmd(uint16_t cmd, const uint8_t *p, unsigned len, uint32_t now)
         if (len < 5 || p[4] != 0xA5) return 0;
         modes_defaults(now);
         return 1;
-    default:
-        return -1;
+    case ANIM_CMD_PLAY:                                /* play a stored animation: slot (ANIM_ALL, ANIM_KEEP) speed */
+        if (len < 6) return 0;
+        if (p[5]) S.anim_speed = (uint8_t)(p[5] < 2 ? 2 : p[5] > 40 ? 40 : p[5]);
+        if (p[4] == ANIM_KEEP) return 1;
+        if (!anim_valid(p[4])) return 0;
+        modes_set(MODE_ANIM, p[4], now);
+        return 1;
+    default: {                                         /* animation store: upload, list, info, delete */
+        int r = anim_cmd(cmd, p, len, now);
+        if (r < 0) return -1;
+        if (r & ANIM_PLAY_REQ) modes_set(MODE_ANIM, (unsigned)r & 0xFFu, now);
+        return 2; }
     }
 }

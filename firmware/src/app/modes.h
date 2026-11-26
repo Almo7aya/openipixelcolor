@@ -5,7 +5,7 @@
 
 enum {
     MODE_EFFECT = 0, MODE_CLOCK, MODE_TEXT, MODE_CANVAS, MODE_RHYTHM, MODE_SCORE, MODE_TIMER, MODE_TEST,
-    MODE_SPLASH, MODE_COUNT
+    MODE_SPLASH, MODE_ANIM, MODE_COUNT
 };
 
 enum { MKEY_SHORT = 1, MKEY_LONG = 2 };
@@ -21,7 +21,7 @@ int  modes_handle_cmd(uint16_t cmd, const uint8_t *pkt, unsigned len, uint32_t n
 
 /* What survives a power cycle (saved by settings.c). Bytes only, so the layout has no padding and is the
  * same on the panel and in the PC simulator. Bump MODES_PERSIST_VER whenever the layout changes. */
-#define MODES_PERSIST_VER    2u     /* 2: + text_kind (99.14) */
+#define MODES_PERSIST_VER    3u     /* 2: + text_kind (99.14), 3: + anim_slot, anim_speed (99.18) */
 #define MODES_PERSIST_V1_LEN 152u   /* records of layout 1 are still accepted */
 #define MODES_TEXT_MAX       120u
 #define MODES_TEXTBITS_MAX   TEXTFX_SERIAL_MAX   /* saved message playlist (textfx.h) */
@@ -37,6 +37,9 @@ typedef struct {
     char    text[MODES_TEXT_MAX + 1];
     /* layout 2 */
     uint8_t text_kind;             /* 0 = text in the built-in font, 1 = message playlist (textfx.c) */
+    /* layout 3 */
+    uint8_t anim_slot;             /* animation to play (anim.h), ANIM_ALL = all in turn */
+    uint8_t anim_speed;            /* 10 = as recorded, 2..40 */
 } modes_persist_t;
 
 void modes_snapshot(modes_persist_t *p);

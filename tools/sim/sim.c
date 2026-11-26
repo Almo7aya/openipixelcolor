@@ -2,6 +2,7 @@
  * Everything is driven through modes_handle_cmd() with the same packets the BLE tools send.
  * Output: frames.bin = repeated [32-byte label][32*32*3 RGB].  See make_sheet.py. */
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
 #include "gfx.h"
@@ -10,6 +11,7 @@
 #include "clockface.h"
 #include "app_port.h"
 #include "settings.h"
+#include "anim.h"
 
 static int quiet;
 static uint8_t last_reply[16];
@@ -28,9 +30,9 @@ void app_reply(uint16_t c, uint8_t s, const uint8_t *x, unsigned n)
     printf("\n");
 }
 
-/* ---- emulated internal flash for settings.c: NOR rules (erase -> 0xFF, program only clears bits) ---- */
-#define FL_BASE 0x1F0000u
-static uint8_t flash_mem[0x10000];
+/* ---- emulated internal flash for settings.c and anim.c: NOR rules (erase -> 0xFF, program only clears bits) ---- */
+#define FL_BASE ANIM_BASE
+static uint8_t flash_mem[0x200000u - ANIM_BASE];
 static int fl_erases, fl_programs, fl_bad, fl_cut = -1;
 
 const void *app_flash_ptr(uint32_t a) { return flash_mem + (a - FL_BASE); }
@@ -49,6 +51,8 @@ int app_flash_program(uint32_t a, const void *src, uint32_t n)
     return 0;
 }
 
+void app_flash_forget(void) { }
+
 int app_flash_write_sector(uint32_t a, const void *src, uint32_t n)
 {
     if ((a & 0xFFFu) || n > 4096u || a < FL_BASE || a + 4096u > FL_BASE + sizeof flash_mem) return -1;
@@ -63,7 +67,7 @@ static uint32_t now = 1000;
 
 static int cmd(uint16_t c, const uint8_t *payload, unsigned n)
 {
-    uint8_t p[4 + 3200];
+    static uint8_t p[4 + 8 + 4096] __attribute__((aligned(4)));
     unsigned len = 4 + n;
     p[0] = (uint8_t)len; p[1] = (uint8_t)(len >> 8); p[2] = (uint8_t)c; p[3] = (uint8_t)(c >> 8);
     if (n) memcpy(p + 4, payload, n);
@@ -319,9 +323,254 @@ static int settings_test(void)
     return nfail ? 1 : 0;
 }
 
+/* ---- "sim anim <dir>": animation upload, storage and player against files made by webui/anim.js --------- */
+typedef struct { uint8_t *opa, *rgb; uint16_t *del; uint32_t len; unsigned frames; } vec_t;
+
+static uint8_t *slurp(const char *dir, const char *name, const char *ext, uint32_t *len)
+{
+    char path[512];
+    snprintf(path, sizeof path, "%s/%s%s", dir, name, ext);
+    FILE *f = fopen(path, "rb");
+    if (!f) { printf("missing %s (run: node tools/sim/anim_vectors.js %s)\n", path, dir); return 0; }
+    fseek(f, 0, SEEK_END);
+    long n = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    uint8_t *b = malloc((size_t)n + 1);
+    if (fread(b, 1, (size_t)n, f) != (size_t)n) n = 0;
+    fclose(f);
+    *len = (uint32_t)n;
+    return b;
+}
+
+static int load_vec(const char *dir, const char *name, vec_t *v)
+{
+    uint32_t n1, n2;
+    v->opa = slurp(dir, name, ".opa", &v->len);
+    v->rgb = slurp(dir, name, ".rgb", &n1);
+    v->del = (uint16_t *)slurp(dir, name, ".del", &n2);
+    v->frames = n2 / 2;
+    return v->opa && v->rgb && v->del && n1 == v->frames * 3072u;
+}
+
+static void put32(uint8_t *p, uint32_t v) { p[0] = (uint8_t)v; p[1] = (uint8_t)(v >> 8); p[2] = (uint8_t)(v >> 16); p[3] = (uint8_t)(v >> 24); }
+
+/* the web UI's upload: begin, then 4 KiB pieces. Returns 0 = stored, else the failing step's reason code
+ * (+100 for begin); stop_after >= 0 stops sending after that many pieces. */
+static int upload(unsigned slot, const uint8_t *f, uint32_t len, int play, int stop_after)
+{
+    uint8_t b[6] = { (uint8_t)slot };
+    put32(b + 1, len);
+    b[5] = (uint8_t)(play ? 1 : 0);
+    cmd(ANIM_CMD_BEGIN, b, 6);
+    if (last_reply[2] != 1) return 100 + last_reply[3];
+    static uint8_t pk[8 + 4096];
+    int pieces = 0;
+    for (uint32_t off = 0; off < len; off += 4096) {
+        if (stop_after >= 0 && pieces == stop_after) return -1;
+        uint32_t n = len - off < 4096 ? len - off : 4096;
+        put32(pk, off);
+        memcpy(pk + 4, f + off, n);
+        cmd(ANIM_CMD_DATA, pk, 4 + n);
+        uint32_t echo = last_reply[3] | (last_reply[4] << 8) | (last_reply[5] << 16) | ((uint32_t)last_reply[6] << 24);
+        if (echo != off) return 98;
+        if (last_reply[2] == 0) return last_reply[7];
+        if ((last_reply[2] == 2) != (off + n == len)) return 97;
+        pieces++;
+    }
+    return 0;
+}
+
+static void anim_list(uint32_t *valid, uint32_t *used)
+{
+    cmd(ANIM_CMD_LIST, 0, 0);
+    *valid = last_reply[5] | (last_reply[6] << 8) | ((uint32_t)last_reply[7] << 16) | ((uint32_t)last_reply[8] << 24);
+    *used = last_reply[9] | (last_reply[10] << 8) | ((uint32_t)last_reply[11] << 16) | ((uint32_t)last_reply[12] << 24);
+}
+
+static void play(uint8_t slot, uint8_t speed) { uint8_t b[2] = { slot, speed }; cmd(ANIM_CMD_PLAY, b, 2); }
+
+/* render for two rounds and compare every 25 ms tick with the frame that must be on screen then */
+static int play_matches(const vec_t *v, const char *label)
+{
+    uint32_t total = 0;
+    for (unsigned i = 0; i < v->frames; i++) total += v->del[i];
+    int bad = 0;
+    uint32_t t0 = now;
+    for (uint32_t t = 0; t < 2 * total; t += 25) {
+        now = t0 + t;
+        modes_render(&fb, now);
+        uint32_t in = t % total, acc = 0;
+        unsigned k = 0;
+        while (k + 1 < v->frames && acc + v->del[k] <= in) acc += v->del[k++];
+        if (memcmp(fb, v->rgb + k * 3072u, 3072) != 0) bad++;
+        if (out && label[0] && t < total && (t == 0 || in - acc < 25)) {   /* one picture per frame, first round */
+            char name[32] = { 0 };
+            snprintf(name, sizeof name, "%s %u", label, k);
+            fwrite(name, 1, 32, out);
+            fwrite(fb, 1, sizeof fb, out);
+        }
+    }
+    return bad;
+}
+
+static int anim_test(const char *dir)
+{
+    vec_t A, B, C;
+    if (!load_vec(dir, "bounce", &A) || !load_vec(dir, "plasma", &B) || !load_vec(dir, "still", &C)) return 2;
+    uint8_t st[11];
+    uint32_t valid, used;
+    quiet = 1;
+    out = fopen("anim_frames.bin", "wb");
+    for (unsigned i = 0; i < sizeof flash_mem; i++) flash_mem[i] = (uint8_t)(i * 7u + 3u);   /* unknown old content */
+
+    printf("1. first boot on old flash content\n");
+    reboot(1);
+    anim_list(&valid, &used);
+    CHECK(last_reply[2] == 1 && valid == 0 && used == 0 && last_reply[3] == 20 && last_reply[4] == 32, "store empty: 20 slots of 32 KiB");
+    CHECK(fl_programs == 0 && fl_erases == 0, "nothing written");
+
+    printf("2. upload a small animation into slot 0 and play it\n");
+    int r = upload(0, A.opa, A.len, 1, -1);
+    CHECK(r == 0, "uploaded (begin, 1 piece, stored)");
+    anim_list(&valid, &used);
+    CHECK(valid == 1u && used == 1u, "slot 0 holds it");
+    uint8_t q[2] = { 0, 0 };
+    cmd(ANIM_CMD_INFO, q, 2);
+    CHECK(last_reply[2] == 1 && last_reply[3] == 0 && (unsigned)(last_reply[5] | (last_reply[6] << 8)) == A.frames &&
+          (uint32_t)(last_reply[7] | (last_reply[8] << 8) | (last_reply[9] << 16)) == A.len, "info: frames and size");
+    q[1] = 1; cmd(ANIM_CMD_INFO, q, 2);
+    CHECK(last_reply[2] == 1 && memcmp(last_reply + 5, "bounce \xE2\x9C", 9) == 0, "info part 1: name bytes 0-8");
+    status(st);
+    CHECK(st[0] == MODE_ANIM && st[1] == 0, "play-when-done: animation mode, slot 0 on screen");
+    CHECK(play_matches(&A, "bounce") == 0, "every frame on time and pixel-exact (2 rounds)");
+
+    printf("3. a bigger one across several slots, at half speed\n");
+    r = upload(3, B.opa, B.len, 0, -1);
+    CHECK(r == 0, "uploaded into slot 3 (19 pieces)");
+    anim_list(&valid, &used);
+    CHECK(valid == ((1u << 0) | (1u << 3)) && used == ((1u << 0) | (7u << 3)), "slots 3-5 in use");
+    play(3, 10);
+    CHECK(last_reply[2] == 1, "play slot 3");
+    CHECK(play_matches(&B, "plasma") == 0, "every frame on time and pixel-exact");
+    play(ANIM_KEEP, 5);
+    {
+        vec_t slow = B;
+        static uint16_t d2[100];
+        for (unsigned i = 0; i < B.frames; i++) d2[i] = (uint16_t)(B.del[i] * 2u);
+        slow.del = d2;
+        play(3, 5);
+        CHECK(play_matches(&slow, "") == 0, "speed 0.5: every frame twice as long");
+        play(3, 10);
+    }
+
+    printf("4. power cycle\n");
+    idle(4000);
+    reboot(1);
+    idle(2500);
+    status(st);
+    anim_list(&valid, &used);
+    CHECK(valid == ((1u << 0) | (1u << 3)), "both still there after the boot scan");
+    CHECK(st[0] == MODE_ANIM && st[1] == 3, "back to playing slot 3");
+
+    printf("5. a new upload over part of an old one replaces it\n");
+    r = upload(4, C.opa, C.len, 0, -1);
+    CHECK(r == 0, "uploaded into slot 4 (inside slot 3's animation)");
+    anim_list(&valid, &used);
+    CHECK(valid == ((1u << 0) | (1u << 4)) && used == ((1u << 0) | (1u << 4)), "slot 3's animation is gone");
+    reboot(1);
+    anim_list(&valid, &used);
+    CHECK(valid == ((1u << 0) | (1u << 4)), "and stays gone after a power cycle");
+    play(4, 10);
+    CHECK(play_matches(&C, "still") == 0, "the still picture shows");
+
+    printf("6. an upload that stops half way never becomes valid\n");
+    r = upload(8, B.opa, B.len, 0, 7);
+    anim_list(&valid, &used);
+    CHECK(r == -1 && last_reply[13] == 1 && !(valid & (1u << 8)), "7 of 19 pieces: not listed, upload running");
+    idle(16000);
+    anim_list(&valid, &used);
+    CHECK(last_reply[13] == 0, "given up after 15 s without data");
+    reboot(1);
+    anim_list(&valid, &used);
+    CHECK(!(valid & (1u << 8)), "not valid after a power cycle either");
+
+    printf("7. wrong requests\n");
+    uint8_t b[6] = { 19 };
+    put32(b + 1, B.len); b[5] = 0;
+    cmd(ANIM_CMD_BEGIN, b, 6);
+    CHECK(last_reply[2] == 0, "too big for the slots left: refused");
+    b[0] = 20; put32(b + 1, 1000);
+    cmd(ANIM_CMD_BEGIN, b, 6);
+    CHECK(last_reply[2] == 0, "slot 20: refused");
+    b[0] = 9; put32(b + 1, A.len);
+    cmd(ANIM_CMD_BEGIN, b, 6);
+    static uint8_t pk[8 + 4096];
+    put32(pk, 4096);
+    memcpy(pk + 4, A.opa, A.len);
+    cmd(ANIM_CMD_DATA, pk, 4 + A.len);
+    CHECK(last_reply[2] == 0 && last_reply[7] == 6, "wrong offset refused");
+    put32(pk, 0);
+    memcpy(pk + 4, A.opa, A.len);
+    pk[4 + 28] = 0x44;                                     /* state must be FFFFFFFF as sent */
+    cmd(ANIM_CMD_DATA, pk, 4 + A.len);
+    CHECK(last_reply[2] == 0 && last_reply[7] == 8, "header with the state already set refused");
+    cmd(ANIM_CMD_BEGIN, b, 6);
+    memcpy(pk + 4, A.opa, A.len);
+    pk[4 + 200] ^= 0x55;                                   /* damaged on the way: CRC check after the write */
+    cmd(ANIM_CMD_DATA, pk, 4 + A.len);
+    anim_list(&valid, &used);
+    CHECK(last_reply[2] == 1 && !(valid & (1u << 9)), "damaged data: refused after the read-back check");
+    cmd(ANIM_CMD_DATA, pk, 4 + A.len);
+    CHECK(last_reply[2] == 0 && last_reply[7] == 5, "piece without an upload refused");
+    uint8_t s9 = 9;
+    q[0] = 9; q[1] = 0; cmd(ANIM_CMD_INFO, q, 2);
+    CHECK(last_reply[2] == 0, "info on an empty slot: status 0");
+    play(s9, 10);
+    CHECK(last_reply[2] == 0, "play on an empty slot refused");
+
+    printf("8. damaged flash is found at boot\n");
+    flash_mem[ANIM_BASE - FL_BASE + 0 * ANIM_SLOT_SIZE + 300] ^= 0x01;
+    reboot(1);
+    anim_list(&valid, &used);
+    CHECK(valid == (1u << 4), "slot 0 left out (CRC), slot 4 kept");
+
+    printf("9. play all, delete\n");
+    CHECK(upload(10, A.opa, A.len, 0, -1) == 0 && upload(12, B.opa, B.len, 0, -1) == 0, "two more uploaded");
+    play(ANIM_ALL, 10);
+    unsigned seen = 0;
+    for (int i = 0; i < 70 * 40; i++) { idle(25); status(st); if (st[1] < 20) seen |= 1u << st[1]; }
+    CHECK(seen == ((1u << 4) | (1u << 10) | (1u << 12)) && (st[7] & 16), "all three played in turn within 70 s");
+    uint8_t d = 10;
+    cmd(ANIM_CMD_DELETE, &d, 1);
+    anim_list(&valid, &used);
+    CHECK(last_reply[2] == 1 && valid == ((1u << 4) | (1u << 12)), "slot 10 deleted");
+    reboot(1);
+    anim_list(&valid, &used);
+    CHECK(valid == ((1u << 4) | (1u << 12)), "still deleted after a power cycle");
+    uint8_t a5 = 0xA5; cmd(0xF108, &a5, 1);
+    anim_list(&valid, &used);
+    CHECK(valid == ((1u << 4) | (1u << 12)), "factory settings keep the animations");
+    d = ANIM_ALL;
+    cmd(ANIM_CMD_DELETE, &d, 1);
+    anim_list(&valid, &used);
+    CHECK(valid == 0, "delete all");
+    uint8_t m[2] = { MODE_ANIM, ANIM_ALL };
+    cmd(0xF101, m, 2);
+    modes_render(&fb, now);
+    int lit = 0;
+    for (unsigned i = 0; i < sizeof fb; i++) lit += ((uint8_t *)fb)[i] != 0;
+    CHECK(lit > 0, "nothing stored: a placeholder instead of a black panel");
+    CHECK(fl_bad == 0, "never programmed over unerased bytes");
+
+    fclose(out);
+    printf("%s: %d failed\n", nfail ? "ANIM TEST FAILED" : "anim test passed", nfail);
+    return nfail ? 1 : 0;
+}
+
 int main(int argc, char **argv)
 {
     if (argc > 1 && strcmp(argv[1], "settings") == 0) return settings_test();
+    if (argc > 2 && strcmp(argv[1], "anim") == 0) return anim_test(argv[2]);
     out = fopen("frames.bin", "wb");
     static const uint32_t S5[5] = { 1000, 2000, 3500, 5000, 6000 };
     static const uint32_t SPL[3] = { 300, 900, 1500 };

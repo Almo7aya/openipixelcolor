@@ -22,14 +22,16 @@ Panels with this board advertise as `LED_BLE_…` and offer the Bluetooth servic
 | `0x000000–0x00FFFF` | Bootloader. Never written by openpanel32 |
 | `0x010000–…` | Application (openpanel32 or the vendor firmware). Runs in place |
 | `0x108000–0x1FEFFF` | Update staging area: a new image is received here, the bootloader copies it to `0x10000` |
+| `0x150000–0x1EFFFF` | openpanel32: stored animations (20 slots of 32 KiB) |
 | `0x1FB000` | openpanel32: saved text playlist (one 4 KiB sector) |
 | `0x1FC000` | openpanel32: saved picture |
 | `0x1FD000` | openpanel32: settings log (16 × 256-byte records) |
 | `0x1FF000` | Update record: tells the bootloader that a complete, checked image waits in the staging area |
 
-The three openpanel32 sectors sit at the very top of the staging area. An update only reaches them
-when the image is larger than about 0xF3000 bytes (openpanel32 is about 40 KiB). If one ever does,
-the saved records fail their checks and the panel starts with factory settings.
+The openpanel32 data sits at the top of the staging area. An update reaches the animations only with an
+image larger than 0x48000 bytes, and the settings only beyond about 0xF3000 bytes (openpanel32 is about
+45 KiB, the vendor firmware about 255 KiB). If one ever does, the damaged records fail their checks:
+the panel leaves those animations out, or starts with factory settings.
 
 The flash driver (`firmware/src/drv/iflash.c`) refuses any write below `0x108000`, so the bootloader
 and the running application cannot be overwritten by mistake.
@@ -40,6 +42,16 @@ The code runs from the same flash it writes. The chip can lock a 4 KiB window (`
 into cache; every flash routine is linked into that window (`.text.flashdrv`) and runs with
 interrupts off. `tools/check_image.py` checks after every build that these routines stay inside the
 window and call nothing outside it.
+
+Interrupts stay off for each minimum wait (an erased sector takes about 0.6 s), so the 1 ms tick misses
+that time; `app_port.c` adds it back.
+
+### The flash cache keeps old bytes
+
+Flash reads go through a cache, and erasing or programming does not update it. Data that was read before
+a write can come back unchanged afterwards. This was seen when an animation that had been playing was
+overwritten: the read-back check failed. Reading 256 KiB of other flash first pushes the old lines out
+(`app_flash_forget()`). Settings avoid the problem by never reading back in the same boot.
 
 ## Application image
 

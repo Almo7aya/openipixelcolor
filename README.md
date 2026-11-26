@@ -20,6 +20,10 @@ and is installed over Bluetooth through the panel's own update path. No programm
   9 colour modes, shadow/outline/glow/rails, animated backgrounds, live `{time}` `{date}` tokens.
   Any language: the web UI draws the text with your computer's fonts (Arabic shaping and
   right-to-left included) and sends it as a picture strip.
+- **Your own animations, stored on the panel:** bring a GIF, an animated WebP or PNG, a video or a
+  series of pictures; draw one frame by frame; or generate one (animated emoji, or a formula for every
+  LED). The web UI shrinks the frames to 32 × 32, reduces the colours and packs them. The panel keeps up to
+  20 animations (640 KiB) and plays them by itself, one or all in turn, also after a power cycle.
 - **Pictures and drawing:** send any image (resized to 32 × 32) or draw pixel by pixel.
 - **Scoreboard, stopwatch, rhythm bars, test patterns.**
 - **Remembers everything** across power cycles: settings, the last picture and the text are saved
@@ -31,10 +35,11 @@ and is installed over Bluetooth through the panel's own update path. No programm
 
 ```
 firmware/        the firmware (C + a little assembly), Makefile, build scripts
-webui/           browser control page (Web Bluetooth; Chrome or Edge)
+webui/           browser control page (Web Bluetooth; Chrome or Edge): controls, animations, firmware install
+  anim.js        animation file encoder/decoder (the decoder mirrors the firmware's player)
 tools/
   ble/           Bluetooth tools: scan, probe, install, safe update check, command-line control
-  sim/           PC simulator: runs the firmware's app code and renders frames / runs flash tests
+  sim/           PC simulator: runs the firmware's app code, renders frames, runs flash and animation tests
   fwcodec.py     encodes a built image into an update file (and back)
   check_image.py build-time checks of the image
   gen_*.py       generators for the font, gamma and lookup tables
@@ -77,7 +82,14 @@ leaves its cache window.
 
 ### 3. Install
 
-From the command line (dry run first; it only checks the version):
+With the web UI (step 4 shows how to open it): connect the panel, then in **Firmware** click
+**Use the build on this computer** (or drop `firmware/build/fw.bin` or `fw.ota.bin` on it) and
+**Install firmware** twice. The page sends the update, waits for the panel to restart, connects again by
+itself and checks that the panel reports the new version. With **Then install it once more** ticked it
+then installs the same build again, which proves the new firmware can install updates itself (see
+[Safety](#safety)).
+
+From the command line instead (dry run first; it only checks the version):
 
 ```sh
 python tools/ble/ota_flash_guarded.py <ADDRESS> firmware/build/fw.ota.bin --expect <version>
@@ -98,7 +110,8 @@ python webui/serve.py                     # opens http://localhost:8321 in your 
 ```
 
 Click **Connect panel**. The panel accepts one Bluetooth connection at a time, so close other
-pages or tools that are connected.
+pages or tools that are connected. `serve.py` only serves the page (Web Bluetooth needs `localhost` or
+HTTPS) and offers the latest firmware build to it; everything else happens in the browser.
 
 Command line instead:
 
@@ -132,16 +145,16 @@ built so this is hard to get wrong:
   crash loop.
 
 **Before installing a build you changed**, and again right after installing it, run the safe update
-check. It sends one chunk with a deliberately wrong overall CRC, so the panel erases and writes the
-staging area, then rejects the update and installs nothing (it answers with status `00`, which is
-expected, and restarts about 10 s later):
+check (**Check flash writing** in the web UI, or the tool below). It sends one chunk with a deliberately
+wrong overall CRC, so the panel erases and writes the staging area, then rejects the update and installs
+nothing (it answers with status `00`, which is expected, and restarts about 10 s later):
 
 ```sh
 python tools/ble/ota_flash_probe.py <ADDRESS> --bytes 12288
 ```
 
-Then prove the new build can update itself: install the same file once more with
-`--expect <new version>`. This succeeds only if the staged copy reads back correctly, so a build that
+Then prove the new build can update itself: install the same file once more (the web UI's
+**Then install it once more**, or `--expect <new version>` on the command line). This succeeds only if the staged copy reads back correctly, so a build that
 cannot write flash fails here, not later. If the check or the reinstall fails, install a known-good
 build at once, while the link still works.
 Changes to `firmware/src/drv/iflash.c`, `firmware/src/app/ota.c`, `firmware/src/start.S`,
@@ -157,8 +170,10 @@ The app code (`firmware/src/app`) does not touch hardware, so it also runs on a 
 
 ```sh
 gcc -O2 -std=gnu11 -Ifirmware/src/app tools/sim/sim.c \
-    firmware/src/app/{gfx,effects,fx_more,modes,clockface,tables,font5x7,settings,textfx}.c -o sim
+    firmware/src/app/{gfx,effects,fx_more,modes,clockface,tables,font5x7,settings,textfx,anim}.c -o sim
 ./sim settings                      # power-cycle tests of the settings storage on emulated flash
+node tools/sim/anim_vectors.js vec  # test animations made by the web UI's encoder (needs Node.js)
+./sim anim vec                      # upload, store, play (pixel-exact against the web UI's decoder), damage
 ./sim                               # renders every effect, clock face and text effect to frames.bin
 python tools/sim/make_sheet.py frames.bin sheet.png
 ```

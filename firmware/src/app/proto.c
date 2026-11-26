@@ -8,6 +8,7 @@
 #include "../drv/display.h"
 #include "modes.h"
 #include "settings.h"
+#include "anim.h"
 #include "../hal/sys.h"
 #include "../hal/timer.h"
 #include "../lib/printf.h"
@@ -45,6 +46,7 @@ void proto_handle(const uint8_t *pkt, unsigned len)
         link_reply(0x8005, FW_VER_MAJOR, x, 3);
         break; }
     case 0xC000: {                                     /* OTA begin */
+        anim_abort_upload();                           /* one flash writer at a time */
         int ok = (len >= 13) ? ota_begin(pkt[4], rd32(pkt + 5), rd32(pkt + 9)) : (int)OTA_FAIL;
         kprintf("ota begin: count %u size %lu -> %d\n", pkt[4], len >= 13 ? rd32(pkt + 9) : 0, ok);
         if (ok && fw_mode() == 0) display_suspend();   /* nothing else running during flash writes */

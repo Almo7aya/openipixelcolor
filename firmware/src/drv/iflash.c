@@ -64,10 +64,9 @@ static FDRV uint32_t flash_status(void)
     return (sr2 << 8) | sr1;
 }
 
-/* Minimum busy times, independent of the status register (belt and braces after the 99.01 bug):
- * longer than datasheet maxima of the usual 2 MiB parts (4K erase <= 400 ms, page program <= 3 ms). */
-#define ERASE_MIN_MS 500u
-#define PROG_MIN_MS  4u
+/* minimum busy times: see iflash.h */
+#define ERASE_MIN_MS IFLASH_ERASE_MIN_MS
+#define PROG_MIN_MS  IFLASH_PROG_MIN_MS
 
 uint32_t iflash_loops_per_ms;                      /* set by iflash_calibrate(); writes refused while 0 */
 

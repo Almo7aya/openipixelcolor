@@ -11,3 +11,4 @@ void app_reply(uint16_t cmd, uint8_t status, const uint8_t *extra, unsigned n); 
 const void *app_flash_ptr(uint32_t addr);
 int app_flash_write_sector(uint32_t addr, const void *src, uint32_t len);   /* erase 4 KiB, then program */
 int app_flash_program(uint32_t addr, const void *src, uint32_t len);        /* program erased bytes only */
+void app_flash_forget(void);    /* drop cached flash reads: call before reading back what was rewritten */

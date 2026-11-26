@@ -6,6 +6,7 @@ tools/sim/sim
 tools/sim/sim.exe
 tools/sim/frames.bin
 tools/sim/*.png
+vec/
 
 # firmware images (built ones and the vendor's) never belong in this repository
 *.bin

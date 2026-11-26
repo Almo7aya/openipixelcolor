@@ -156,6 +156,37 @@ progress { width: 100%; height: 10px; accent-color: var(--ink); }
 .log { font-size: 12.5px; color: var(--muted); max-height: 160px; overflow: auto; margin: 0; padding: 0; list-style: none; }
 .log li.err { color: var(--red); }
 
+/* ---- animations ---------------------------------------------------------------------------- */
+.sub { font-size: 13.5px; color: var(--muted); margin: 6px 0 -4px; }
+.alib { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; }
+.atile { position: relative; display: grid; gap: 4px; padding: 8px; border-radius: 10px; border: 1px solid var(--hair);
+         background: var(--plate); text-align: left; cursor: pointer; }
+.atile:hover { border-color: var(--hair-hi); }
+.atile.lit { border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue), 0 0 18px -6px var(--blue); }
+.atile img, .atile .film { width: 100%; aspect-ratio: 1; border-radius: 6px; image-rendering: pixelated; background: #07080a; display: block; }
+.atile .film { display: grid; place-items: center; color: var(--muted); font-size: 12px; }
+.atile .nm { font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.atile .meta { font-size: 12px; color: var(--muted); }
+.atile .del { position: absolute; top: 12px; right: 12px; padding: 2px 8px; font-size: 12px; border-radius: 4px;
+              border: 1px solid var(--hair-hi); background: rgba(10,11,13,.85); cursor: pointer; }
+.atile .del.armed { background: var(--red); border-color: var(--red); color: #fff; }
+.empty-note { color: var(--muted); font-size: 13.5px; grid-column: 1 / -1; }
+.afacts { font-size: 13.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.afacts.err { color: var(--red); }
+.editor { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 16px; align-items: start; }
+#aEd { width: 100%; aspect-ratio: 1; border-radius: 8px; background: #07080a; touch-action: none; cursor: crosshair; display: block; }
+.edtools { display: grid; gap: 10px; align-content: start; }
+.strip { display: flex; gap: 6px; overflow-x: auto; padding: 4px 2px 8px; }
+.strip button { flex: none; display: grid; gap: 2px; justify-items: center; padding: 4px; border-radius: 6px;
+                border: 1px solid var(--hair); background: var(--plate); cursor: pointer; font-size: 11px; color: var(--muted); }
+.strip button.lit { border-color: var(--blue); color: var(--ink); }
+.strip canvas { width: 44px; height: 44px; image-rendering: pixelated; border-radius: 3px; background: #07080a; }
+.tiny-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.tiny-row .btn { padding: 5px 10px; font-size: 13.5px; }
+textarea { width: 100%; min-height: 64px; border: 1px solid var(--hair); background: var(--field); border-radius: var(--r-s);
+           padding: 8px 10px; font: 13.5px/1.45 Consolas, "Cascadia Mono", monospace; color: inherit; resize: vertical; }
+@media (max-width: 640px) { .editor { grid-template-columns: minmax(0, 1fr); } }
+
 .banner { background: #2a2210; border: 1px solid #6b5617; color: #f3d98b; border-radius: 10px; padding: 12px 14px; }
 code { font-size: .92em; background: var(--plate); border: 1px solid var(--hair); border-radius: 4px; padding: 0 4px; }
 ::selection { background: rgba(91,140,255,.35); }
@@ -184,6 +215,7 @@ code { font-size: .92em; background: var(--plate); border: 1px solid var(--hair)
         <dt>Panel clock</dt><dd id="panelTime">–</dd>
         <dt>Showing</dt><dd id="nowShowing">–</dd>
         <dt>Saved</dt><dd id="savedState">–</dd>
+        <dt>Health</dt><dd id="health">–</dd>
       </dl>
     </header>
 
@@ -267,9 +299,85 @@ code { font-size: .92em; background: var(--plate); border: 1px solid var(--hair)
       </div>
     </section>
 
+    <section id="secAnim">
+      <canvas class="led" data-text="Animations"></canvas>
+      <p>Bring a GIF, a video or a few pictures, draw one frame by frame, or generate one. It's saved on the panel, which plays it by itself, also after it's switched off and on. Needs firmware 99.18.</p>
+
+      <div class="sub">On the panel</div>
+      <div class="alib" id="aLib"><span class="empty-note">Connect the panel to see its animations.</span></div>
+      <div class="row">
+        <button class="btn" id="aPlayAll">Play all in turn</button>
+        <label class="slider-row" style="flex:1;min-width:220px"><span>Speed</span><input type="range" id="aSpeed" min="2" max="40" step="1" value="10"><output id="aSpeedOut">1×</output></label>
+        <span class="tmem" id="aStore"></span>
+      </div>
+
+      <div class="sub">Make a new one</div>
+      <div class="row"><span class="seg" id="aSrcSeg"><button class="lit" data-src="file">From files</button><button data-src="draw">Draw it</button><button data-src="gen">Generate</button></span></div>
+
+      <div id="aSrcFile" class="field" style="gap:12px">
+        <label class="drop" id="aDrop"><input type="file" id="aFile" accept="image/*,video/*" multiple hidden>Drop a GIF, an animated WebP or PNG, a video, or several pictures (one per frame) here, or click to choose.</label>
+        <div class="tgrid">
+          <label class="field"><span>Fit</span><select id="aFit"><option value="cover">Fill, cut the edges</option><option value="contain">Whole picture</option><option value="stretch">Stretch</option></select></label>
+          <label class="field"><span>Scaling</span><select id="aSmooth"><option value="1">Smooth (photos, video)</option><option value="0">Sharp (pixel art)</option></select></label>
+          <label class="field"><span>Frames</span><select id="aStep"><option value="1">Every frame</option><option value="2">Every 2nd</option><option value="3">Every 3rd</option><option value="4">Every 4th</option></select></label>
+          <label class="field"><span>Frames per second (video, pictures)</span><select id="aFps"><option>5</option><option>8</option><option selected>10</option><option>12</option><option>15</option><option>20</option><option>25</option></select></label>
+          <div class="field"><span>Background</span><input type="color" id="aBg" value="#000000" aria-label="Background colour"></div>
+        </div>
+        <div class="row"><button class="btn" id="aToEditor" disabled>Edit these frames</button><span class="afacts" id="aFileNote"></span></div>
+      </div>
+
+      <div id="aSrcDraw" hidden>
+        <div class="editor">
+          <canvas id="aEd" width="640" height="640" aria-label="Frame editor"></canvas>
+          <div class="edtools">
+            <span class="seg" id="aTool"><button class="lit" data-tool="pen">Pen</button><button data-tool="erase">Eraser</button><button data-tool="fill">Fill</button><button data-tool="pick">Pick colour</button></span>
+            <div class="row"><input type="color" id="aPen" value="#ff3355" aria-label="Pen colour"><div class="palette" id="aPal"></div></div>
+            <label class="check"><input type="checkbox" id="aOnion" checked> Show the previous frame faintly</label>
+            <label class="field"><span>This frame stays for <output id="aDurOut"></output></span><input type="range" id="aDur" min="20" max="1000" step="10"></label>
+            <div class="tiny-row">
+              <button class="btn" id="aFrAdd">New frame</button><button class="btn" id="aFrDup">Copy frame</button><button class="btn" id="aFrDel">Delete frame</button>
+              <button class="btn" id="aFrLeft" title="Move this frame earlier">Move ◀</button><button class="btn" id="aFrRight" title="Move this frame later">Move ▶</button>
+            </div>
+            <div class="tiny-row" aria-label="Move the picture">
+              <button class="btn" data-shift="-1,0" title="Move the picture left">←</button><button class="btn" data-shift="1,0" title="Move the picture right">→</button>
+              <button class="btn" data-shift="0,-1" title="Move the picture up">↑</button><button class="btn" data-shift="0,1" title="Move the picture down">↓</button>
+              <button class="btn" id="aFlip">Mirror</button><button class="btn" id="aClr">Clear frame</button><button class="btn" id="aDurAll">Same time for all</button>
+            </div>
+          </div>
+        </div>
+        <div class="strip" id="aStrip" role="listbox" aria-label="Frames"></div>
+      </div>
+
+      <div id="aSrcGen" hidden class="field" style="gap:12px">
+        <div class="tgrid">
+          <label class="field"><span>Kind</span><select id="gKind"><option value="emoji">Emoji or letters</option><option value="formula">Formula</option></select></label>
+          <label class="field" data-gen="emoji"><span>Emoji or letters</span><input type="text" id="gText" value="❤️" maxlength="12"></label>
+          <label class="field" data-gen="emoji"><span>Motion</span><select id="gMotion"><option value="beat">Heartbeat</option><option value="bounce">Bounce</option><option value="spin">Spin</option><option value="wobble">Wobble</option><option value="float">Float</option><option value="zoom">Zoom in and out</option><option value="flash">Rainbow flash</option></select></label>
+          <div class="field" data-gen="emoji"><span>Letter colour and background</span><div class="row"><input type="color" id="gInk" value="#ffd23c" aria-label="Letter colour"><input type="color" id="gBg" value="#000000" aria-label="Background colour"></div></div>
+          <label class="field" data-gen="formula"><span>Example</span><select id="gPreset"></select></label>
+          <label class="field"><span>Length</span><select id="gSecs"><option value="1">1 second</option><option value="2" selected>2 seconds</option><option value="3">3 seconds</option><option value="5">5 seconds</option><option value="8">8 seconds</option></select></label>
+          <label class="field"><span>Frames per second</span><select id="gFps"><option>10</option><option selected>15</option><option>20</option><option>25</option></select></label>
+        </div>
+        <label class="field" data-gen="formula"><span>Colour of each LED. <code>x</code> <code>y</code> are 0–31, <code>t</code> is the time in seconds. Give <code>[r, g, b]</code> (0–255) or <code>hsv(hue, sat, val)</code> (0–1; the hue wraps around).</span>
+          <textarea id="gFormula" spellcheck="false"></textarea></label>
+      </div>
+
+      <div class="tgrid">
+        <label class="field"><span>Name</span><input type="text" id="aName" maxlength="40" placeholder="My animation"></label>
+        <label class="field"><span>Colours</span><select id="aColors"><option value="256">256 (best)</option><option value="128">128</option><option value="64">64</option><option value="32">32</option><option value="16">16 (smallest)</option></select></label>
+        <label class="field"><span>Speed</span><select id="aTempo"><option value="0.5">Half speed</option><option value="0.75">Slower</option><option value="1" selected>As made</option><option value="1.5">Faster</option><option value="2">Double speed</option></select></label>
+      </div>
+      <div class="afacts" id="aFacts">Nothing made yet.</div>
+      <div class="row">
+        <button class="btn primary" id="aSave" disabled>Save to the panel and play</button>
+        <button class="btn" id="aPreview" disabled>Play the preview</button>
+        <progress id="aProg" value="0" max="1" hidden style="flex:1;min-width:160px"></progress>
+      </div>
+    </section>
+
     <section id="secPicture">
       <canvas class="led" data-text="Picture"></canvas>
-      <label class="drop" id="drop"><input type="file" id="picFile" accept="image/*" hidden>Drop a picture here or choose one. It's cut to a square and shrunk to 32 × 32.</label>
+      <label class="drop" id="drop"><input type="file" id="picFile" accept="image/*" hidden>Drop a picture here or choose one. It's cut to a square and shrunk to 32 × 32. For moving pictures (GIF, video) use Animations.</label>
       <div class="row">
         <span class="seg" id="fitSeg"><button class="lit" data-fit="cover">Fill</button><button data-fit="contain">Fit whole picture</button></span>
         <button class="btn primary" id="btnPicture" disabled>Send picture</button>
@@ -335,24 +443,28 @@ code { font-size: .92em; background: var(--plate); border: 1px solid var(--hair)
 
     <section id="secFw" class="fw">
       <canvas class="led" data-text="Firmware"></canvas>
-      <p>Installs a firmware file over Bluetooth. Use the encoded update file (the kind <code>tools/fwcodec.py encode</code> makes, like <code>firmware/build/fw.ota.bin</code>). Check flash writing first: it writes a test block, installs nothing, and the panel restarts about 10 seconds later.</p>
-      <label class="drop" id="fwDrop"><input type="file" id="fwFile" accept=".bin" hidden>Choose a firmware file (.bin)</label>
+      <p>Installs firmware over Bluetooth: an openpanel32 build (<code>fw.bin</code> or <code>fw.ota.bin</code> from <code>firmware/build</code>) or a vendor update file. Keep the panel switched on and close to this computer. Afterwards this page connects again by itself and checks that the panel runs the new version.</p>
+      <div class="row" id="fwLocalRow" hidden><button class="btn" id="btnFwLocal">Use the build on this computer</button><span class="tmem" id="fwLocalNote"></span></div>
+      <label class="drop" id="fwDrop"><input type="file" id="fwFile" accept=".bin" hidden>Drop a firmware file (.bin) here, or click to choose one</label>
       <dl class="fw-facts" id="fwFacts" hidden>
         <dt>File</dt><dd id="fwName"></dd>
         <dt>Size</dt><dd id="fwSize"></dd>
         <dt>Contains</dt><dd id="fwKind"></dd>
       </dl>
+      <label class="check"><input type="checkbox" id="fwTwice" checked> Then install it once more, to prove the new firmware can install updates itself (recommended for builds you changed)</label>
       <div class="row">
         <button class="btn" id="btnSelfTest">Check flash writing</button>
         <button class="btn danger" id="btnInstall" disabled>Install firmware</button>
       </div>
       <progress id="fwProgress" value="0" max="1" hidden></progress>
       <ul class="log" id="fwLog"></ul>
+      <p class="sub">Check flash writing writes a test block and installs nothing; the panel restarts about 10 seconds later. If the panel misbehaves after an update, hold its button while switching it on: it starts in rescue mode, where installing still works.</p>
     </section>
   </main>
 </div>
 
 <script src="font5x7.js"></script>
+<script src="anim.js"></script>
 <script>
 "use strict";
 const $ = (s) => document.querySelector(s);
@@ -470,15 +582,17 @@ function packet(cmd, payload = []) {
 function onNotify(ev) {
   const dv = ev.target.value;
   const v = new Uint8Array(dv.buffer.slice(dv.byteOffset, dv.byteOffset + dv.byteLength));
-  if (waiter && v.length >= 4 && (v[2] | (v[3] << 8)) === waiter.cmd) waiter.take(v);
+  if (waiter && v.length >= 4 && (v[2] | (v[3] << 8)) === waiter.cmd && (!waiter.match || waiter.match(v))) waiter.take(v);
 }
-function rawSend(bytes, timeout) {
+/* match (optional): a reply only counts if match(reply) is true - for replies that echo what they answer */
+function rawSend(bytes, timeout, match) {
   return new Promise(async (resolve, reject) => {
     if (!chWrite) { reject(new Error("Connect the panel first.")); return; }
     let reply = null, written = false, done = false;
     const end = (fn, arg) => { if (done) return; done = true; clearTimeout(w.timer); if (waiter === w) waiter = null; fn(arg); };
     const w = waiter = {
       cmd: bytes[2] | (bytes[3] << 8),
+      match,
       take: (v) => { if (!reply) reply = v; if (written) end(resolve, reply); },
       timer: setTimeout(() => end(reject, new Error("The panel didn't answer.")), timeout),
     };
@@ -491,19 +605,20 @@ function rawSend(bytes, timeout) {
     }
   });
 }
-function send(cmd, payload = [], timeout = 4000) {
+function send(cmd, payload = [], timeout = 4000, match) {
   if (busy) return Promise.reject(new Error("Wait until the firmware step finishes."));
-  const job = chain.then(() => rawSend(packet(cmd, payload), timeout));
+  const job = chain.then(() => rawSend(packet(cmd, payload), timeout, match));
   chain = job.catch(() => {});
   return job;
 }
+const announce = (name, detail) => window.dispatchEvent(new CustomEvent("op32:" + name, { detail }));
 async function act(label, fn) {
   if (!chWrite) { status("Connect the panel first.", true); $("#btnConnect").focus(); return; }
   try { await fn(); status(label); refreshSoon(); }
   catch (e) { status(e.message, true); }
 }
 
-const MODES = ["Effect", "Clock", "Text", "Picture or drawing", "Equalizer", "Scoreboard", "Stopwatch", "Test pattern", "Starting up"];
+const MODES = ["Effect", "Clock", "Text", "Picture or drawing", "Equalizer", "Scoreboard", "Stopwatch", "Test pattern", "Starting up", "Animation"];
 const EFFECTS = ["Plasma", "Fire", "Matrix rain", "Starfield", "Game of Life", "Fireworks", "Ripples", "Sparkles",
                  "Rainbow swirl", "Tunnel", "Snake", "Pong", "Bouncing balls", "Equalizer",
                  "Aurora", "Lava lamp", "Rainstorm", "DNA helix", "Warp speed", "Radar"];
@@ -538,7 +653,7 @@ function setConnected(on, name) {
   $("#conn").classList.toggle("on", on);
   $("#connText").textContent = on ? `Connected to ${name}` : "Not connected";
   $("#btnConnect").textContent = on ? "Disconnect" : "Connect panel";
-  if (!on) for (const id of ["#fwVer", "#panelTime", "#nowShowing", "#savedState"]) $(id).textContent = "–";
+  if (!on) for (const id of ["#fwVer", "#panelTime", "#nowShowing", "#savedState", "#health"]) $(id).textContent = "–";
 }
 /* Let go of the panel completely. On Windows, Chrome otherwise keeps the Bluetooth link open (and even
    reconnects after the panel restarts) while this page still holds the device: the panel then stops
@@ -550,38 +665,65 @@ function releaseDevice() {
   d.removeEventListener("gattserverdisconnected", onDisconnected);
   try { d.gatt.disconnect(); } catch (e) { /* already gone */ }
 }
+let holdDevice = false;          // a firmware install keeps the device to reconnect after the panel restarts
 function onDisconnected() {
   chWrite = chNotify = null; waiter = null; custom = false; fwMinor = 0;
   clearInterval(pollTimer);
-  releaseDevice();
   setConnected(false);
+  announce("disconnected");
+  if (holdDevice) return;
+  releaseDevice();
   status(busy ? "Panel restarted. Connect again when it's back." : "Panel disconnected.");
   busy = false;
 }
 window.addEventListener("pagehide", releaseDevice);
+const verText = (v) => `${v[4]}.${String(v[5]).padStart(2, "0")}`;
+/* 0xF0F1: mode crashes exc_type exc_address(4) uptime_s(4) - see firmware/src/main.c */
+function healthText(d) {
+  const mode = d[5], exc = d[7], addr = (d[8] | (d[9] << 8) | (d[10] << 16) | (d[11] << 24)) >>> 0;
+  const up = (d[12] | (d[13] << 8) | (d[14] << 16) | (d[15] << 24)) >>> 0;
+  const upText = up < 120 ? `${up} s` : up < 7200 ? `${Math.round(up / 60)} min` : `${Math.round(up / 3600)} h`;
+  const last = exc ? `; an earlier crash was at 0x${addr.toString(16).padStart(8, "0")}` : "";
+  if (mode === 1) return "Rescue mode (button held while switching on): only firmware install works";
+  if (mode === 2) return `Rescue mode: it kept crashing at start-up${last}. Install a working firmware`;
+  return `Running for ${upText}${last}`;
+}
+/* GATT connection to `device`, then time, versions and health. Uses rawSend: also works during a firmware step. */
+async function attach() {
+  const server = await device.gatt.connect();
+  const svc = await server.getPrimaryService(SVC);
+  chWrite = await svc.getCharacteristic(WR);
+  chNotify = await svc.getCharacteristic(NT);
+  await chNotify.startNotifications();
+  chNotify.addEventListener("characteristicvaluechanged", onNotify);
+  setConnected(true, device.name || "panel");
+  const now = new Date();
+  await rawSend(packet(0x8001, [now.getHours(), now.getMinutes(), now.getSeconds(), 0]), 4000);
+  const v = await rawSend(packet(0x8005), 4000);
+  custom = v[4] === 99;
+  fwMinor = custom ? v[5] : 0;
+  $("#fwVer").textContent = `${verText(v)}${custom ? " (openpanel32)" : " (vendor firmware)"} · Bluetooth ${v[6]}.${String(v[7]).padStart(2, "0")}`;
+  let health = null;
+  if (custom) {
+    health = await rawSend(packet(0xF0F1), 4000).catch(() => null);
+    $("#health").textContent = health ? healthText(health) : "–";
+  }
+  const rescue = health && health[5] !== 0;
+  status(!custom ? "This panel runs the vendor firmware. Install openpanel32 to use these controls." :
+         rescue ? "The panel is in rescue mode: only the Firmware section works until it starts normally." : "Ready.", !custom || rescue);
+  clearInterval(pollTimer);
+  pollTimer = setInterval(() => { if (!busy) refreshStatus(); }, 4000);
+  announce("connected", { custom, fwMinor, rescue });
+  return { v, health };
+}
 async function connect() {
   if (device) { const d = device; onDisconnected(); try { d.gatt.disconnect(); } catch (e) { /* */ } return; }
   try {
     device = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: "LED_BLE" }, { services: [SVC] }], optionalServices: [SVC] });
     device.addEventListener("gattserverdisconnected", onDisconnected);
     status("Connecting…");
-    const server = await device.gatt.connect();
-    const svc = await server.getPrimaryService(SVC);
-    chWrite = await svc.getCharacteristic(WR);
-    chNotify = await svc.getCharacteristic(NT);
-    await chNotify.startNotifications();
-    chNotify.addEventListener("characteristicvaluechanged", onNotify);
-    setConnected(true, device.name || "panel");
-    const now = new Date();
-    await send(0x8001, [now.getHours(), now.getMinutes(), now.getSeconds(), 0]);
-    const v = await send(0x8005);
-    custom = v[4] === 99;
-    fwMinor = custom ? v[5] : 0;
-    $("#fwVer").textContent = `${v[4]}.${String(v[5]).padStart(2, "0")}${custom ? " (openpanel32)" : " (vendor firmware)"} · Bluetooth ${v[6]}.${String(v[7]).padStart(2, "0")}`;
-    status(custom ? "Ready." : "This panel runs the vendor firmware. Install openpanel32 to use these controls.", !custom);
+    await attach();
     await refreshStatus();
-    clearInterval(pollTimer);
-    pollTimer = setInterval(() => { if (!busy) refreshStatus(); }, 4000);
   } catch (e) {
     if (e.name === "NotFoundError") {
       status("No panel picked. If it isn't in the list: it takes one connection at a time, so close other tabs " +
@@ -603,6 +745,7 @@ async function refreshStatus() {
     $("#panelTime").textContent = `${String(r[9]).padStart(2, "0")}:${String(r[10]).padStart(2, "0")}:${String(r[11]).padStart(2, "0")}${flags & 1 ? "" : " (not set)"}`;
     $("#nowShowing").textContent = mode === 0 ? `${EFFECTS[eff] || "Effect " + eff}${flags & 2 ? ", cycling" : ""}` :
                                    mode === 1 ? `Clock: ${CLOCKS[r[14]] || ""}` : (MODES[mode] || "–");
+    announce("status", r);
     if (document.activeElement !== $("#bright")) { $("#bright").value = bright; $("#brightOut").value = bright + "%"; }
     $("#btnPower").textContent = power ? "Turn panel off" : "Turn panel on";
     $("#btnPower").setAttribute("aria-pressed", power ? "true" : "false");
@@ -1106,6 +1249,7 @@ function pvTick(ts) {
   pvRender(ts);
 }
 function pvRestart() {
+  announce("mirror", "text");
   PV.list = msgs.map(compileMsg).filter(Boolean);
   if (!PV.list.length) { pvStop(); pix.fill(0); drawMirror(); return; }
   const now = performance.now();
@@ -1180,6 +1324,7 @@ let picImage = null, fit = "cover";
 function renderPicture() {
   if (!picImage) return;
   pvStop();
+  announce("mirror", "picture");
   const c = document.createElement("canvas");
   c.width = c.height = 32;
   const ctx = c.getContext("2d");
@@ -1292,6 +1437,7 @@ mirror.addEventListener("pointermove", (e) => {
 ["pointerup", "pointercancel"].forEach((t) => mirror.addEventListener(t, () => { painting = false; lastCell = null; }));
 $("#btnDraw").addEventListener("click", () => {
   pvStop();
+  announce("mirror", "draw");
   drawing = !drawing;
   mirror.classList.toggle("drawing", drawing);
   $("#btnDraw").textContent = drawing ? "Stop drawing" : "Start drawing";
@@ -1300,6 +1446,7 @@ $("#btnDraw").addEventListener("click", () => {
 });
 $("#btnClearDraw").addEventListener("click", () => {
   pvStop();
+  announce("mirror", "draw");
   pix.fill(0); dirty.clear(); drawMirror();
   act("Drawing cleared.", () => send(0x0104, [1]));
 });
@@ -1357,30 +1504,63 @@ function fwLog(msg, err) {
   const li = document.createElement("li"); li.textContent = msg; if (err) li.className = "err";
   $("#fwLog").prepend(li);
 }
-$("#fwFile").addEventListener("change", async (e) => {
-  const f = e.target.files[0];
-  if (!f) return;
-  const data = new Uint8Array(await f.arrayBuffer());
-  $("#fwFacts").hidden = false;
-  $("#fwName").textContent = f.name;
-  const nBlocks = Math.ceil(data.length / CHUNK);
-  $("#fwSize").textContent = `${data.length.toLocaleString()} bytes, ${nBlocks} ${nBlocks === 1 ? "block" : "blocks"}`;
-  const decodedFirst = ((data[0] - 0x8A) & 255) ^ 0x4A;
-  let kind, ok = true;
-  if (data.length === 0 || data.length > 0xF7800) { kind = "Too big for this panel."; ok = false; }
-  else if (data[0] === 0x48) { kind = "A raw image. Encode it with tools/fwcodec.py first."; ok = false; }
-  else if (decodedFirst !== 0x48) { kind = "Not a firmware update file for this panel."; ok = false; }
+/* Update files are byte-substituted (tools/fwcodec.py); a raw build (firmware/build/fw.bin) is encoded here.
+   Either way the decoded image must carry the bootloader's header magic "FHD\x03" at 0xD4. */
+const fwEncode = (raw) => raw.map((b) => ((b ^ 0x4A) + 0x8A) & 255);
+const fwDecode = (enc) => enc.map((b) => ((b - 0x8A) & 255) ^ 0x4A);
+const hasImageHeader = (raw) => raw.length > 0x100 && raw[0] === 0x48 && raw[0xD4] === 0x46 && raw[0xD5] === 0x48 && raw[0xD6] === 0x44 && raw[0xD7] === 0x03;
+let fwVersion = null;              // "99.18" when the file is openpanel32, else null
+function loadFirmware(bytes, name) {
+  let raw = null, enc = null, kind, ok = false;
+  if (hasImageHeader(bytes)) { raw = bytes; enc = fwEncode(bytes); }
+  else { const d = fwDecode(bytes); if (hasImageHeader(d)) { raw = d; enc = bytes; } }
+  fwVersion = null;
+  if (!raw) kind = "Not a firmware file for this panel.";
+  else if (raw.length > 0xF7800) kind = "Too big for this panel.";
   else {
-    const dec = data.map((b) => ((b - 0x8A) & 255) ^ 0x4A);
-    const txt = new TextDecoder("latin1").decode(dec);
-    const m = txt.match(/openpanel32 (\d+\.\d+)/);
-    kind = m ? `openpanel32 ${m[1]}` : "Firmware for this panel (not openpanel32, for example the vendor's)";
+    const m = new TextDecoder("latin1").decode(raw).match(/openpanel32 (\d+\.\d\d)/);
+    fwVersion = m ? m[1] : null;
+    kind = m ? `openpanel32 ${m[1]}` : "Firmware for this panel that isn't openpanel32 (for example the vendor's)";
+    if (enc !== bytes) kind += ", encoded here for the update";
+    ok = true;
   }
+  $("#fwFacts").hidden = false;
+  $("#fwName").textContent = name;
+  const nBlocks = Math.ceil(bytes.length / CHUNK);
+  $("#fwSize").textContent = `${bytes.length.toLocaleString()} bytes, ${nBlocks} ${nBlocks === 1 ? "block" : "blocks"}`;
   $("#fwKind").textContent = kind;
   $("#fwKind").style.color = ok ? "" : "var(--red)";
-  fwData = ok ? data : null;
+  $("#fwTwice").disabled = !fwVersion;
+  fwData = ok ? enc : null;
   disarm();
   $("#btnInstall").disabled = !ok;
+}
+$("#fwFile").addEventListener("change", async (e) => {
+  const f = e.target.files[0];
+  if (f) loadFirmware(new Uint8Array(await f.arrayBuffer()), f.name);
+});
+const fwDrop = $("#fwDrop");
+fwDrop.addEventListener("dragover", (e) => { e.preventDefault(); fwDrop.classList.add("over"); });
+fwDrop.addEventListener("dragleave", () => fwDrop.classList.remove("over"));
+fwDrop.addEventListener("drop", async (e) => {
+  e.preventDefault(); fwDrop.classList.remove("over");
+  const f = e.dataTransfer.files[0];
+  if (f) loadFirmware(new Uint8Array(await f.arrayBuffer()), f.name);
+});
+/* webui/serve.py also serves firmware/build/fw.ota.bin: offer the latest local build */
+const LOCAL_BUILD = "local-build/fw.ota.bin";
+fetch(LOCAL_BUILD, { method: "HEAD", cache: "no-store" }).then((r) => {
+  if (!r.ok) return;
+  const t = r.headers.get("Last-Modified");
+  $("#fwLocalNote").textContent = t ? `firmware/build/fw.ota.bin, built ${new Date(t).toLocaleString()}` : "firmware/build/fw.ota.bin";
+  $("#fwLocalRow").hidden = false;
+}).catch(() => { /* page not served by serve.py */ });
+$("#btnFwLocal").addEventListener("click", async () => {
+  try {
+    const r = await fetch(LOCAL_BUILD, { cache: "no-store" });
+    if (!r.ok) throw new Error("The build isn't there any more. Build the firmware first.");
+    loadFirmware(new Uint8Array(await r.arrayBuffer()), "fw.ota.bin (built on this computer)");
+  } catch (e) { fwLog(e.message, true); }
 });
 async function frame(cmd, payload, expect, timeout = 20000) {
   const r = await rawSend(packet(cmd, payload), timeout);
@@ -1405,37 +1585,70 @@ $("#btnSelfTest").addEventListener("click", async () => {
 });
 let armed = null;
 function disarm() { clearTimeout(armed); armed = null; $("#btnInstall").textContent = "Install firmware"; }
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const withTimeout = (p, ms, msg) => Promise.race([p, sleep(ms).then(() => { throw new Error(msg); })]);
+/* one install: announce, then the blocks; every reply must be exactly the expected one */
+async function otaSend(data) {
+  const n = Math.ceil(data.length / CHUNK), prog = $("#fwProgress");
+  prog.hidden = false; prog.max = n; prog.value = 0;
+  await frame(0xC000, [n, ...u32(crc32(data)), ...u32(data.length)], [5, 0, 0, 0xC0, 1], 10000);
+  for (let i = 0; i < n; i++) {
+    const chunk = data.slice(i * CHUNK, (i + 1) * CHUNK);
+    await frame(0xC001, [i, ...u32(crc32(chunk)), ...u32(chunk.length), ...chunk], [5, 0, 1, 0xC0, 1], 30000);
+    prog.value = i + 1;
+  }
+}
+/* after the restart: connect to the same panel again (no picker needed), for up to 90 s */
+async function reconnect() {
+  const t0 = performance.now();
+  while (performance.now() - t0 < 90000) {
+    await sleep(3000);
+    if (!device) throw new Error("The panel was forgotten. Connect it again by hand.");
+    try { return await withTimeout(attach(), 20000, "timeout"); }
+    catch (e) { try { device.gatt.disconnect(); } catch (x) { /* not connected */ } }
+  }
+  throw new Error("The panel didn't come back within 90 seconds. Switch it off and on, then connect again.");
+}
 $("#btnInstall").addEventListener("click", async () => {
   if (!chWrite) { status("Connect the panel first.", true); return; }
   if (!fwData || busy) return;
   if (!armed) {
     const v = await send(0x8005).catch(() => null);
     if (!v) { fwLog("The panel didn't report its version. Nothing was installed.", true); return; }
-    const cur = `${v[4]}.${String(v[5]).padStart(2, "0")}`;
-    fwLog(`The panel runs ${cur}. Keep it powered and close to this computer, then click again to install.`);
+    fwLog(`The panel runs ${verText(v)}. Keep it switched on and close to this computer, then click again to install${fwVersion ? " " + fwVersion : ""}.`);
     $("#btnInstall").textContent = "Click again to install";
     armed = setTimeout(disarm, 8000);
     return;
   }
   disarm();
-  busy = true;
-  const data = fwData, n = Math.ceil(data.length / CHUNK), prog = $("#fwProgress");
-  prog.hidden = false; prog.max = n; prog.value = 0;
+  busy = true; holdDevice = true;
+  const data = fwData, want = fwVersion, rounds = want && $("#fwTwice").checked ? 2 : 1;
+  let sent = false;
   try {
     await chain;
-    await frame(0xC000, [n, ...u32(crc32(data)), ...u32(data.length)], [5, 0, 0, 0xC0, 1], 10000);
-    fwLog("Update accepted. Sending blocks…");
-    for (let i = 0; i < n; i++) {
-      const chunk = data.slice(i * CHUNK, (i + 1) * CHUNK);
-      await frame(0xC001, [i, ...u32(crc32(chunk)), ...u32(chunk.length), ...chunk], [5, 0, 1, 0xC0, 1], 30000);
-      prog.value = i + 1;
+    for (let round = 1; round <= rounds; round++) {
+      fwLog(round === 1 ? "Sending the firmware…" : "Installing it once more, now with the new firmware receiving it…");
+      sent = false;
+      await otaSend(data);
+      sent = true;
+      fwLog("All blocks confirmed. The panel installs the firmware and restarts. Connecting again…");
+      const { v, health } = await reconnect();
+      const got = verText(v);
+      if (want && got !== want) throw new Error(`The panel came back with ${got} instead of ${want}: the update wasn't installed.`);
+      if (health && health[5] !== 0) throw new Error(`The panel came back in rescue mode (${healthText(health)}). Install a working firmware.`);
+      fwLog(`The panel is back and runs ${got}${v[4] === 99 ? "" : " (vendor firmware)"}.`);
     }
-    fwLog("All blocks confirmed. The panel installs the firmware and restarts. Connect again in about 20 seconds.");
+    fwLog(rounds === 2 ? `Done: ${want} is installed and has proved it can install updates itself.` : "Done.");
+    busy = false; holdDevice = false;
+    status("Firmware installed.");
+    refreshStatus();
   } catch (e) {
-    fwLog(`${e.message} Nothing was installed. The panel restarts on its own after 10 seconds.`, true);
-    busy = false;
+    fwLog(sent ? e.message : `${e.message} Nothing was installed. The panel restarts on its own after 10 seconds.`, true);
+    busy = false; holdDevice = false;
+    if (!chWrite) { releaseDevice(); setConnected(false); }
   }
 });
 </script>
+<script src="animations.js"></script>
 </body>
 </html>

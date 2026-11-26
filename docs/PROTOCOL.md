@@ -49,7 +49,7 @@ Example: version query `04 00 05 80` → reply `08 00 05 80 63 11 xx yy` (MCU 99
 |---|---|---|
 | `0xF000` | – | Ping |
 | `0xF0F1` | – | Diagnostics: reply `mode crashes exc_type exc_address(4) uptime_s(4)`; mode 0 normal, 1 rescue (key), 2 rescue (crash loop) |
-| `0xF101` | `mode arg` | Switch mode: 0 effect, 1 clock, 2 text, 3 canvas, 4 rhythm, 5 score, 6 timer, 7 test pattern, 8 splash |
+| `0xF101` | `mode arg` | Switch mode: 0 effect, 1 clock, 2 text, 3 canvas, 4 rhythm, 5 score, 6 timer, 7 test pattern, 8 splash, 9 animation (arg = slot, `FF` = all in turn) |
 | `0xF102` | `r g b speed flags text…` | Scrolling text in the panel font (ASCII); flags bit 0 = rainbow |
 | `0xF103` | 3072 bytes | Whole picture, 32×32 RGB, row by row |
 | `0xF104` | `on secs_lo secs_hi` | Effect autoplay and its interval (minimum 3 s) |
@@ -60,12 +60,19 @@ Example: version query `04 00 05 80` → reply `08 00 05 80 63 11 xx yy` (MCU 99
 | `0xF109` | – | Saved-settings status, see below |
 | `0xF10A` | `r g b speed flags h w_lo w_hi columns…` | One text strip (older single-message form) |
 | `0xF10B` | see below | Text playlist with effects |
+| `0xF10C` | `slot length(4) flags` | Animation upload: begin. flags bit 0 = play it when stored. See [Animations](#animations) |
+| `0xF10D` | `offset(4) data` | Animation upload: one piece of up to 4096 bytes |
+| `0xF10E` | – | Animation store: what's in use |
+| `0xF10F` | `slot part` | Animation details: size and checksum (part 0) or name (parts 1–3) |
+| `0xF110` | `slot` | Delete the animation that starts in `slot` (`FF` = all) |
+| `0xF111` | `slot speed` | Play an animation (`FF` = all in turn, `FE` = keep what plays); speed in tenths, 2–40 (10 = as made, 0 = unchanged) |
 
 ### 0xF106 status reply
 
 `mode effect brightness power hh mm ss flags orientation clock_style autoplay_secs`
 
-flags: bit 0 time synced, bit 1 autoplay, bit 2 24-hour clock, bit 3 show date.
+flags: bit 0 time synced, bit 1 autoplay, bit 2 24-hour clock, bit 3 show date, bit 4 playing all animations.
+In animation mode (9) `effect` is the slot on screen (`FF` = none stored).
 
 ### 0xF109 saved-settings reply
 
@@ -111,6 +118,57 @@ Style bytes:
 
 The web UI's preview is a line-by-line port of `firmware/src/app/textfx.c`, so what it shows is what
 the panel shows.
+
+## Animations
+
+Animations are files made by the app (the web UI makes them from GIFs, videos, pictures, its frame editor
+or its generators: `webui/anim.js`). The panel stores them in flash and plays them by itself.
+
+**Storage.** 20 slots of 32 KiB. A bigger file uses the following slots as well (up to 640 KiB in all).
+The app picks free slots from the `0xF10E` reply. An upload into slots that an older animation uses
+deletes that animation.
+
+**Upload.**
+
+1. `0xF10C slot length(4) flags`: reply status 1, or 0 and a reason byte.
+2. `0xF10D offset(4) data`, the file in 4096-byte pieces, in order (the last one shorter). The panel
+   writes each piece at once (the picture goes dark for about half a second per piece; a progress bar shows
+   in between). Reply `status offset(4) reason`: status 1 = more expected, 2 = stored, 0 = refused. The
+   offset echo tells replies apart.
+3. After the last piece the panel reads the file back from flash and checks its CRC. Only then does it
+   mark it complete. A file that was not completely sent or did not check out is never used. If no piece
+   arrives for 15 s, the upload is dropped.
+
+Reasons: 3 bad request, 4 not ready (rescue mode), 5 no upload running, 6 wrong offset, 7 wrong piece
+length, 8 bad header, 9 flash write failed, 10 read-back check failed.
+
+**`0xF10E` reply:** `slots slot_kb valid(4) used(4) flags`. `valid` has a bit for each slot where an
+animation starts, `used` for each slot in use. flags bit 0 = an upload is running.
+
+**`0xF10F slot part` reply:** `slot part` and then, for part 0, `frames(2) length(3) crc(4)`; for parts 1–3,
+nine bytes of the name each. Status 0 = no animation starts there.
+
+**File format** (little-endian):
+
+```
+ 0  "OPA1"            4  w, h (32, 32)        6  frames (u16)        8  colours 1-256 (u16)
+10  flags (0), 0     12  file length (u32)   16  CRC-32 of bytes 64 .. length-1
+20  0 (8 bytes)      28  state: FF FF FF FF as sent; the panel writes "DONE" once it is stored
+32  name, UTF-8, padded with zeros (32 bytes; the panel reports the first 27)
+64  palette: colours x (r g b)
+    frames, each: delay_ms (u16), n (u16), n bytes of drawing operations
+```
+
+Operations work on a 32 × 32 grid of palette indexes, from pixel 0 (top left) on, row by row:
+
+| Byte | Meaning |
+|---|---|
+| `00cccccc` | Skip c+1 pixels (they keep the previous frame) |
+| `01cccccc v` | c+1 pixels of colour v |
+| `10cccccc v1 … vc+1` | c+1 pixels, one colour each |
+
+Pixels after the last operation keep the previous frame. The grid is all colour 0 before the first frame
+and again whenever the animation starts over. The shortest frame time the panel plays is 20 ms.
 
 ## Effects and clock faces
 
