@@ -40,8 +40,24 @@ jobs:
       version: ${{ steps.version.outputs.version }}
       firmware_changed: ${{ steps.changes.outputs.firmware }}
     steps:
+      # pacman's downloaded packages are kept between runs, so the toolchain isn't downloaded every time.
+      # A new cache each week (restored from the last one), trimmed to what's installed so it doesn't grow.
+      - name: Week of the package cache
+        id: week
+        run: echo "week=$(date -u +%G-%V)" >> "$GITHUB_OUTPUT"
+
+      - name: Package cache
+        uses: actions/cache@v6
+        with:
+          path: /var/cache/pacman/pkg
+          key: pacman-${{ steps.week.outputs.week }}
+          restore-keys: pacman-
+
       - name: Install the toolchain
-        run: pacman -Syu --noconfirm --needed nds32le-elf-gcc nds32le-elf-binutils clang lld python nodejs git
+        run: |
+          pacman -Syu --noconfirm --needed nds32le-elf-gcc nds32le-elf-binutils clang lld python nodejs git
+          pacman -Sc --noconfirm > /dev/null       # drop cached packages that aren't installed
+          du -sh /var/cache/pacman/pkg
 
       - uses: actions/checkout@v7
         with:
