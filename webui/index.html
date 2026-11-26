@@ -308,7 +308,7 @@
         <div class="fw-head">
           <div class="fw-title">
             <h3>Firmware</h3>
-            <p class="fw-status" id="fwStatus">Connect the panel to see its firmware and install updates.</p>
+            <p class="fw-status" id="fwStatus">Connect a panel to check its firmware.</p>
           </div>
           <button class="btn primary" id="fwConnect">Connect panel</button>
           <button class="btn primary" id="fwInstall" hidden>Install</button>
@@ -334,7 +334,7 @@
           <summary>Install a different file</summary>
           <div class="more-body">
             <div class="row" id="fwLocalRow" hidden><button class="btn small" id="fwLocal">Use the build on this computer</button><span class="note" id="fwLocalNote"></span></div>
-            <label class="drop slim" id="fwDrop"><input type="file" id="fwFile" accept=".bin" hidden><span>Drop a firmware file (.bin) here, or <u>choose one</u></span></label>
+            <label class="drop slim" id="fwDrop"><input type="file" id="fwFile" accept=".bin" hidden><span>Drop a .bin file here, or <u>choose one</u></span></label>
             <dl class="facts" id="fwFacts" hidden>
               <dt>File</dt><dd id="fwName"></dd>
               <dt>Size</dt><dd id="fwSize"></dd>
@@ -346,9 +346,9 @@
         <details class="more">
           <summary>Advanced</summary>
           <div class="more-body">
-            <label class="check"><input type="checkbox" id="fwTwice" checked> Install it twice: the second time the new firmware receives itself, which proves it can take updates</label>
-            <div class="row"><button class="btn small" id="fwSelfTest">Check flash writing</button><span class="note">Writes a test block and installs nothing; the panel restarts 10 s later</span></div>
-            <p class="note">If the panel misbehaves after an update, hold its button while switching it on: it starts in rescue mode, where installing still works.</p>
+            <label class="check"><input type="checkbox" id="fwTwice" checked> Install twice, to check the new firmware can update itself</label>
+            <div class="row"><button class="btn small" id="fwSelfTest">Check flash writing</button><span class="note">Writes a test block, installs nothing</span></div>
+            <p class="note">Stuck after an update? Hold the panel's button while switching it on: rescue mode can still install.</p>
           </div>
         </details>
       </article>
