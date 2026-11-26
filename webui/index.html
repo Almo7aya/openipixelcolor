@@ -92,16 +92,16 @@
       <section class="shelf" id="play-tools" aria-labelledby="h-tools">
         <div class="shelf-head"><h3 id="h-tools">Tools</h3></div>
         <div class="toolgrid">
-          <article class="card">
-            <header><h3>Equalizer</h3></header>
+          <article class="card tool-eq">
+            <header><h3>Equalizer</h3><p>Set each bar, or let the panel animate them.</p></header>
             <div class="eq" id="eq"></div>
             <div class="row">
               <span class="seg" id="eqStyle"><button data-value="0" aria-pressed="true">Green to red</button><button data-value="1">Rainbow</button><button data-value="2">Mirrored</button></span>
               <button class="btn small" id="btnEqDance">Animate by itself</button>
             </div>
           </article>
-          <article class="card">
-            <header><h3>Scoreboard</h3></header>
+          <article class="card tool-score">
+            <header><h3>Scoreboard</h3><p>Two scores, up to 99 each.</p></header>
             <div class="score">
               <div class="side"><div class="num" id="s1">0</div><div class="row"><button class="btn small" data-score="1:-1" aria-label="Left score down">−</button><button class="btn small" data-score="1:1" aria-label="Left score up">+</button></div></div>
               <div class="colon">:</div>
@@ -109,16 +109,16 @@
             </div>
             <div class="row"><button class="btn small ghost" id="btnScoreReset">Reset scores</button></div>
           </article>
-          <article class="card">
-            <header><h3>Stopwatch</h3></header>
+          <article class="card tool-stop">
+            <header><h3>Stopwatch</h3><p>Counts on the panel.</p></header>
             <div class="row">
               <button class="btn primary" data-timer="1">Start</button>
               <button class="btn" data-timer="2">Pause</button>
               <button class="btn" data-timer="0">Reset</button>
             </div>
           </article>
-          <article class="card">
-            <header><h3>Test patterns</h3><p>Check every LED, the colours and which way up the picture is.</p></header>
+          <article class="card tool-tests">
+            <header><h3>Test patterns</h3><p>Check every LED, the colours and which way is up.</p></header>
             <div class="row" id="testRow"></div>
           </article>
         </div>
