@@ -81,20 +81,26 @@ progress { width: 100%; height: 8px; accent-color: var(--ink); }
 .facts dd { margin: 0; font-family: var(--mono); font-size: 13.5px; }
 
 /* ---- preview tiles: a picture of the panel as LEDs ---- */
-.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 12px; }
+/* a tile is the panel's picture and a name: no box around it; the one playing gets a ring and a green dot */
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 20px 16px; }
 .tile {
-  position: relative; display: grid; gap: 8px; padding: 8px 8px 10px; text-align: left;
-  border: 1px solid var(--line); border-radius: var(--r-m); background: var(--surface); cursor: pointer;
-  transition: border-color .15s var(--ease);
+  position: relative; display: grid; gap: 9px; padding: 0; text-align: left; align-content: start;
+  border: 0; background: none; color: inherit; cursor: pointer;
 }
-.tile:hover { border-color: var(--line-strong); }
-.tile[aria-pressed="true"] { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
-.tile[aria-pressed="true"]::after {
-  content: ""; position: absolute; top: 14px; right: 14px; width: 8px; height: 8px; border-radius: 50%;
-  background: var(--ok); box-shadow: 0 0 0 3px rgba(18, 20, 23, .9);
+.tile .screen { border-radius: 12px; box-shadow: 0 0 0 1px var(--line); transition: box-shadow .15s var(--ease), transform .15s var(--ease); }
+.tile:hover .screen { box-shadow: 0 0 0 1px var(--line-strong); transform: translateY(-2px); }
+.tile:focus-visible { outline: none; }
+.tile:focus-visible .screen, .tile[aria-pressed="true"] .screen { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--ink); }
+.tile .name { padding: 0 2px; font-size: 13.5px; line-height: 1.3; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tile:hover .name, .tile[aria-pressed="true"] .name { color: var(--ink); }
+.tile[aria-pressed="true"] .name::before {
+  content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; background: var(--ok); vertical-align: 1px;
 }
-.tile .name { font-size: 14px; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tile .meta { font-size: 12.5px; color: var(--muted); font-family: var(--mono); }
+.tile .meta { padding: 0 2px; font-size: 12.5px; color: var(--muted); font-family: var(--mono); }
+.play-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; }
+.play-bar .chips { flex: 1; }
+.bar-opts { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.bar-opts select { width: auto; min-height: 34px; padding: 4px 8px; }
 .screen {
   position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden;
   background: radial-gradient(circle, #1b1e23 42%, transparent 46%) 0 0 / 3.125% 3.125%, #07080a;
@@ -106,7 +112,7 @@ progress { width: 100%; height: 8px; accent-color: var(--ink); }
 }
 .screen .placeholder { position: absolute; inset: 0; display: grid; place-items: center; color: var(--faint); font-size: 12.5px; }
 .tile .del {
-  position: absolute; top: 12px; left: 12px; padding: 3px 9px; border-radius: 7px; font-size: 12.5px;
+  position: absolute; top: 8px; left: 8px; padding: 3px 9px; border-radius: 7px; font-size: 12.5px;
   border: 1px solid var(--line-strong); background: rgba(12, 13, 16, .9); color: var(--muted); cursor: pointer; opacity: 0;
 }
 .tile:hover .del, .tile:focus-within .del, .tile .del.armed { opacity: 1; }

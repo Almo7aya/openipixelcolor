@@ -79,7 +79,10 @@ export function initPlay() {
   initEffects();
   initClocks();
   initTools();
-  registerSub("play", $("#playChips"), "effects", (sub) => { if (sub === "panel" && libReady()) refreshLibrary(); });
+  registerSub("play", $("#playChips"), "effects", (sub) => {
+    $$(".bar-opts").forEach((o) => { o.hidden = o.dataset.for !== sub; });     /* the options beside the tabs */
+    if (sub === "panel" && libReady()) refreshLibrary();
+  });
   on("status", (r) => {
     const mode = r[5], flags = r[12];
     $$("#effectTiles .tile").forEach((t, i) => t.setAttribute("aria-pressed", String(mode === MODE.EFFECT && i === r[6])));
@@ -87,7 +90,7 @@ export function initPlay() {
     if (document.activeElement !== $("#shuffle")) $("#shuffle").checked = !!(flags & 2);
     if (r.length >= 16 && document.activeElement !== $("#shuffleSecs")) {
       const v = String(r[15]), sel = $("#shuffleSecs");
-      if (![...sel.options].some((o) => o.value === v)) sel.append(el("option", { value: v }, `${v} seconds`));
+      if (![...sel.options].some((o) => o.value === v)) sel.append(el("option", { value: v }, `every ${v} s`));
       sel.value = v;
     }
   });
