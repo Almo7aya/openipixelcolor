@@ -35,7 +35,12 @@ export function initPwa() {
       const w = reg.installing;
       if (w) w.addEventListener("statechange", () => { if (w.state === "installed" && navigator.serviceWorker.controller) offer(w); });
     });
-    setInterval(() => reg.update().catch(() => {}), 60 * 60 * 1000);      /* look for a new version hourly */
+    /* browsers look for a new version only when the page is opened: look while it stays open too, every
+       5 minutes and whenever the tab comes back into view or the computer back online */
+    const check = () => reg.update().catch(() => {});
+    setInterval(check, 5 * 60 * 1000);
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") check(); });
+    window.addEventListener("online", check);
   }).catch(() => { /* no offline use; the page still works */ });
 }
 
