@@ -103,6 +103,25 @@ input[type=range] { accent-color: var(--ink); width: 100%; }
 .tabs button[aria-selected="true"] { color: var(--ink); background: var(--plate); border-color: var(--hair); }
 .tabs button[aria-selected="true"]::before { background: var(--green); box-shadow: 0 0 8px rgba(43,196,122,.9); }
 
+/* update toast: bottom right, over everything, the indicator lit while it has news */
+.toast {
+  position: fixed; right: 24px; bottom: 24px; z-index: 30; width: min(360px, calc(100vw - 32px));
+  display: grid; gap: 10px; padding: 14px 16px 16px; border-radius: 14px;
+  background: var(--plate); border: 1px solid var(--hair-hi);
+  box-shadow: 0 18px 50px -12px rgba(0,0,0,.85), 0 0 0 1px rgba(255,255,255,.02);
+}
+.toast p { margin: 0; color: var(--muted); font-size: 14px; }
+.toast-head { display: flex; align-items: center; gap: 10px; }
+.toast-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); box-shadow: 0 0 10px var(--blue); flex: none; }
+.toast.done .toast-dot { background: var(--green); box-shadow: 0 0 10px var(--green); }
+.toast.failed .toast-dot { background: var(--red); box-shadow: 0 0 10px var(--red); }
+.toast .btn { padding: 7px 12px; }
+.toast .btn.quiet { border-color: transparent; background: transparent; color: var(--muted); }
+.toast .btn.quiet:hover { color: var(--ink); }
+.toast a { font-size: 13px; color: var(--muted); }
+.toast a:hover { color: var(--ink); }
+@media (max-width: 480px) { .toast { right: 16px; bottom: 16px; } }
+
 details.more { border: 1px solid var(--hair); border-radius: 10px; padding: 0 14px; }
 details.more summary { cursor: pointer; padding: 10px 0; color: var(--muted); }
 details.more summary:hover { color: var(--ink); }
@@ -533,6 +552,17 @@ code { font-size: .92em; background: var(--plate); border: 1px solid var(--hair)
   </main>
 </div>
 
+<div class="toast" id="updToast" role="status" aria-live="polite" hidden>
+  <div class="toast-head"><span class="toast-dot" aria-hidden="true"></span><strong id="updTitle">Update available</strong></div>
+  <p id="updText"></p>
+  <progress id="updProg" value="0" max="1" hidden></progress>
+  <div class="row" id="updButtons">
+    <button class="btn primary" id="updNow">Update now</button>
+    <button class="btn" id="updLater">Later</button>
+    <button class="btn quiet" id="updSkip">Skip this version</button>
+  </div>
+  <a id="updNotes" href="#" target="_blank" rel="noopener" hidden>What's new in this version</a>
+</div>
 <script src="font5x7.js"></script>
 <script src="anim.js"></script>
 <script>
@@ -766,7 +796,7 @@ function releaseDevice() {
 }
 let holdDevice = false;          // a firmware install keeps the device to reconnect after the panel restarts
 function onDisconnected() {
-  chWrite = chNotify = null; waiter = null; custom = false; fwMinor = 0;
+  chWrite = chNotify = null; waiter = null; custom = false; fwMinor = 0; panelVer = "";
   clearInterval(pollTimer);
   setConnected(false);
   announce("disconnected");
@@ -810,6 +840,7 @@ async function attach() {
   await rawSend(packet(0x8001, [now.getHours(), now.getMinutes(), now.getSeconds(), 0]), 4000);
   const v = await rawSend(packet(0x8005), 4000);
   ({ custom, level: fwMinor } = fwVersionOf(v));
+  panelVer = verText(v);
   $("#fwVer").textContent = custom ? verText(v) : `Vendor firmware ${verText(v)}`;
   $("#fwVerFull").textContent = `${verText(v)}${custom ? " (openipixelcolor)" : " (vendor firmware)"}`;
   $("#btVer").textContent = `${v[6]}.${String(v[7]).padStart(2, "0")}`;
@@ -822,7 +853,6 @@ async function attach() {
   status(!custom ? "This panel runs the vendor firmware. Install openipixelcolor (Settings) to use these controls." :
          rescue ? "The panel is in rescue mode: only installing firmware works until it starts normally." : "Ready.", !custom || rescue);
   if ((!custom || rescue) && !busy) showTab("settings");
-  if (!rescue && typeof releaseHint === "function") releaseHint();
   clearInterval(pollTimer);
   pollTimer = setInterval(() => { if (!busy) refreshStatus(); }, 4000);
   announce("connected", { custom, fwMinor, rescue });
@@ -831,6 +861,7 @@ async function attach() {
 async function connect() {
   if (device) { const d = device; onDisconnected(); try { d.gatt.disconnect(); } catch (e) { /* */ } return; }
   try {
+    toastLater = false;                                 // a new connection may show the update toast again
     device = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: "LED_BLE" }, { services: [SVC] }], optionalServices: [SVC] });
     device.addEventListener("gattserverdisconnected", onDisconnected);
     status("Connecting…");
@@ -1657,18 +1688,15 @@ fwDrop.addEventListener("drop", async (e) => {
   const f = e.dataTransfer.files[0];
   if (f) loadFirmware(new Uint8Array(await f.arrayBuffer()), f.name);
 });
-/* Served by webui/serve.py on this computer: offer the local build (firmware/build/fw.ota.bin).
-   Served from GitHub Pages: the CI puts the latest release next to the page (firmware/latest.json). */
+/* Releases: the CI puts the latest one next to the hosted page (firmware/latest.json + the update file).
+   Served by webui/serve.py on this computer, the page reads the hosted copy instead (GitHub Pages allows
+   that) and also offers the local build (firmware/build/fw.ota.bin). */
+const HOSTED_PAGE = "https://almo7aya.dev/openipixelcolor/";
 const LOCAL_BUILD = "local-build/fw.ota.bin";
 const onThisComputer = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+const RELEASES = (onThisComputer ? HOSTED_PAGE : "") + "firmware/";
 let latestRelease = null;             // { version, tag, file, size, date, release }
 const newerVersion = (a, b) => versionLevel(a) > versionLevel(b);
-function releaseHint() {              // after connecting: tell when there is something newer to install
-  if (!latestRelease || !chWrite || busy) return;
-  const cur = $("#fwVerFull").textContent.split(" ")[0];
-  if (!custom) status(`This panel runs the vendor firmware. openipixelcolor ${latestRelease.version} can be installed under Settings.`, true);
-  else if (versionLevel(cur) && newerVersion(latestRelease.version, cur)) status(`Firmware ${latestRelease.version} is available. Install it under Settings.`);
-}
 if (onThisComputer) {
   fetch(LOCAL_BUILD, { method: "HEAD", cache: "no-store" }).then((r) => {
     if (!r.ok) return;
@@ -1676,22 +1704,24 @@ if (onThisComputer) {
     $("#fwLocalNote").textContent = t ? `firmware/build/fw.ota.bin, built ${new Date(t).toLocaleString()}` : "firmware/build/fw.ota.bin";
     $("#fwLocalRow").hidden = false;
   }).catch(() => { /* not served by serve.py */ });
-} else {
-  fetch("firmware/latest.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((j) => {
-    if (!j || !j.file || !versionLevel(String(j.version))) return;
-    latestRelease = j;
-    $("#fwRelNote").textContent = `openipixelcolor ${j.version}, ${new Date(j.date).toLocaleDateString()}`;
-    $("#fwRelRow").hidden = false;
-    releaseHint();
-  }).catch(() => { /* no release published yet */ });
 }
-$("#btnFwRel").addEventListener("click", async () => {
+fetch(RELEASES + "latest.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((j) => {
+  if (!j || !j.file || !versionLevel(String(j.version))) return;
+  latestRelease = Object.assign(j, { version: String(j.version) });
+  $("#fwRelNote").textContent = `openipixelcolor ${j.version}, ${new Date(j.date).toLocaleDateString()}`;
+  $("#fwRelRow").hidden = false;
+  checkForUpdate();
+}).catch(() => { /* offline, or no release published yet */ });
+/* the latest release into the Firmware section (as if the file had been chosen); true when ready */
+async function loadRelease() {
   try {
-    const r = await fetch("firmware/" + encodeURIComponent(latestRelease.file), { cache: "no-store" });
+    const r = await fetch(RELEASES + encodeURIComponent(latestRelease.file), { cache: "no-store" });
     if (!r.ok) throw new Error("The release file couldn't be downloaded. Reload the page and try again.");
     loadFirmware(new Uint8Array(await r.arrayBuffer()), `${latestRelease.file} (latest release)`);
-  } catch (e) { fwLog(e.message, true); }
-});
+    return !!fwData && fwVersion === latestRelease.version;
+  } catch (e) { installLog(e.message, true); return false; }
+}
+$("#btnFwRel").addEventListener("click", loadRelease);
 $("#btnFwLocal").addEventListener("click", async () => {
   try {
     const r = await fetch(LOCAL_BUILD, { cache: "no-store" });
@@ -1724,6 +1754,8 @@ let armed = null;
 function disarm() { clearTimeout(armed); armed = null; $("#btnInstall").textContent = "Install firmware"; }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const withTimeout = (p, ms, msg) => Promise.race([p, sleep(ms).then(() => { throw new Error(msg); })]);
+/* install messages go to the Firmware section's log and to whoever follows the install (the toast) */
+function installLog(msg, err) { fwLog(msg, err); announce("install", { msg, err: !!err }); }
 /* one install: announce, then the blocks; every reply must be exactly the expected one */
 async function otaSend(data) {
   const n = Math.ceil(data.length / CHUNK), prog = $("#fwProgress");
@@ -1733,6 +1765,7 @@ async function otaSend(data) {
     const chunk = data.slice(i * CHUNK, (i + 1) * CHUNK);
     await frame(0xC001, [i, ...u32(crc32(chunk)), ...u32(chunk.length), ...chunk], [5, 0, 1, 0xC0, 1], 30000);
     prog.value = i + 1;
+    announce("install-progress", { done: i + 1, total: n });
   }
 }
 /* after the restart: connect to the same panel again (no picker needed), for up to 90 s */
@@ -1758,35 +1791,111 @@ $("#btnInstall").addEventListener("click", async () => {
     return;
   }
   disarm();
+  runInstall(fwVersion && $("#fwTwice").checked ? 2 : 1);
+});
+/* Install what loadFirmware() prepared (the caller has shown the versions and the user said yes):
+   send, wait for the restart, connect again, check the version; rounds 2 = once more with the new
+   firmware receiving it. Resolves to { ok, error }. */
+async function runInstall(rounds) {
+  if (!chWrite || !fwData || busy) return { ok: false, error: "The panel isn't ready for an install." };
   busy = true; holdDevice = true;
-  const data = fwData, want = fwVersion, rounds = want && $("#fwTwice").checked ? 2 : 1;
+  const data = fwData, want = fwVersion;
   let sent = false;
   try {
     await chain;
     for (let round = 1; round <= rounds; round++) {
-      fwLog(round === 1 ? "Sending the firmware…" : "Installing it once more, now with the new firmware receiving it…");
+      installLog(round === 1 ? "Sending the firmware…" : "Installing it once more, now with the new firmware receiving it…");
       sent = false;
       await otaSend(data);
       sent = true;
-      fwLog("All blocks confirmed. The panel installs the firmware and restarts. Connecting again…");
+      installLog("All blocks confirmed. The panel installs the firmware and restarts. Connecting again…");
       const { v, health } = await reconnect();
       const got = verText(v);
       if (want && got !== want) throw new Error(`The panel came back with ${got} instead of ${want}: the update wasn't installed.`);
       if (health && health[5] !== 0) throw new Error(`The panel came back in rescue mode (${healthText(health)}). Install a working firmware.`);
-      fwLog(`The panel is back and runs ${got}${fwVersionOf(v).custom ? "" : " (vendor firmware)"}.`);
+      installLog(`The panel is back and runs ${got}${fwVersionOf(v).custom ? "" : " (vendor firmware)"}.`);
     }
-    fwLog(rounds === 2 ? `Done: ${want} is installed and has proved it can install updates itself.` : "Done.");
+    installLog(rounds === 2 ? `Done: ${want} is installed and has proved it can install updates itself.` : "Done.");
     busy = false; holdDevice = false;
     status("Firmware installed.");
     refreshStatus();
     announce("connected", { custom, fwMinor, rescue: false });   // sections that skipped the busy reconnects
+    return { ok: true };
   } catch (e) {
-    fwLog(sent ? e.message : `${e.message} Nothing was installed. The panel restarts on its own after 10 seconds.`, true);
+    const msg = sent ? e.message : `${e.message} Nothing was installed. The panel restarts on its own after 10 seconds.`;
+    installLog(msg, true);
     busy = false; holdDevice = false;
     if (!chWrite) { releaseDevice(); setConnected(false); }
     else announce("connected", { custom, fwMinor, rescue: false });
+    return { ok: false, error: msg };
+  }
+}
+
+/* ================================================================================================
+   Update toast: after connecting, if the panel runs an older openipixelcolor than the latest release.
+   Panels with the vendor firmware only get a hint: the page can't tell whether they have this board.
+   ================================================================================================ */
+const toastEl = $("#updToast");
+let panelVer = "", toastLater = false, toastTimer = 0;
+const skipped = () => { try { return localStorage.getItem("oipc.skipUpdate"); } catch (e) { return null; } };
+function toastShow(kind, title, text, buttons) {
+  clearTimeout(toastTimer);
+  toastEl.className = "toast " + kind;
+  $("#updTitle").textContent = title;
+  $("#updText").textContent = text;
+  $("#updButtons").hidden = !buttons;
+  $("#updSkip").hidden = kind === "failed";
+  $("#updProg").hidden = kind !== "busy";
+  toastEl.hidden = false;
+}
+function toastHide() { clearTimeout(toastTimer); toastEl.hidden = true; }
+function checkForUpdate() {
+  if (!latestRelease || !chWrite || busy || !panelVer) return;
+  if (!custom) {
+    status(`This panel runs the vendor firmware. openipixelcolor ${latestRelease.version} can be installed under Settings.`, true);
+    return;
+  }
+  if (!newerVersion(latestRelease.version, panelVer) || toastLater || skipped() === latestRelease.version) return;
+  $("#updNow").textContent = "Update now";
+  $("#updNotes").href = latestRelease.release || "#";
+  $("#updNotes").hidden = !latestRelease.release;
+  toastShow("", "Update available",
+    `Firmware ${latestRelease.version} is out; this panel has ${panelVer}. Installing takes about a minute: keep the panel switched on and close to this computer.`, true);
+}
+$("#updLater").addEventListener("click", () => { toastLater = true; toastHide(); });
+$("#updSkip").addEventListener("click", () => {
+  try { localStorage.setItem("oipc.skipUpdate", latestRelease.version); } catch (e) { /* private window */ }
+  toastHide();
+  status(`Firmware ${latestRelease.version} skipped. It stays available under Settings.`);
+});
+$("#updNow").addEventListener("click", async () => {
+  if ($("#updNow").textContent === "Open Settings") { toastHide(); showTab("settings"); return; }
+  if (busy) return;
+  const want = latestRelease.version;
+  $("#updNotes").hidden = true;
+  toastShow("busy", `Updating to ${want}`, "Downloading the firmware…", false);
+  $("#updProg").value = 0;
+  if (!(await loadRelease())) {
+    toastShow("failed", "Update failed", "The firmware couldn't be downloaded. Nothing was installed.", true);
+    $("#updNow").textContent = "Open Settings";
+    return;
+  }
+  const r = await runInstall(1);
+  if (r.ok) {
+    toastShow("done", `Updated to ${want}`, "The panel runs the new firmware.", false);
+    toastTimer = setTimeout(toastHide, 8000);
+  } else {
+    toastShow("failed", "Update failed", r.error, true);
+    $("#updNow").textContent = "Open Settings";
   }
 });
+window.addEventListener("oipc:install", (e) => { if (toastEl.classList.contains("busy") && !toastEl.hidden) $("#updText").textContent = e.detail.msg; });
+window.addEventListener("oipc:install-progress", (e) => {
+  if (toastEl.hidden || !toastEl.classList.contains("busy")) return;
+  $("#updProg").max = e.detail.total; $("#updProg").value = e.detail.done;
+});
+window.addEventListener("oipc:connected", () => { if (!busy) checkForUpdate(); });
+window.addEventListener("oipc:disconnected", () => { if (!busy && !toastEl.classList.contains("failed")) toastHide(); });
 </script>
 <script src="animations.js"></script>
 </body>
