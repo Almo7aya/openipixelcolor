@@ -6,7 +6,7 @@
 <title>openipixelcolor</title>
 <meta name="description" content="Control an iPixel Color LED panel running openipixelcolor: effects, clocks, text, animations, firmware updates.">
 <meta name="theme-color" content="#121417">
-<meta name="oipc-version" content="5e9bd5e"><!-- the CI writes the published version here (tools/ci/stamp_site.py) -->
+<meta name="oipc-version" content="c02e0ab"><!-- the CI writes the published version here (tools/ci/stamp_site.py) -->
 <link rel="icon" href="favicon.ico" sizes="32x32">
 <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -19,11 +19,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/base.css?v=5e9bd5e">
-<link rel="stylesheet" href="css/layout.css?v=5e9bd5e">
-<link rel="stylesheet" href="css/components.css?v=5e9bd5e">
-<link rel="stylesheet" href="css/views.css?v=5e9bd5e">
-<script type="module" src="js/main.js?v=5e9bd5e"></script>
+<link rel="stylesheet" href="css/base.css?v=c02e0ab">
+<link rel="stylesheet" href="css/layout.css?v=c02e0ab">
+<link rel="stylesheet" href="css/components.css?v=c02e0ab">
+<link rel="stylesheet" href="css/views.css?v=c02e0ab">
+<script type="module" src="js/main.js?v=c02e0ab"></script>
 </head>
 <body>
 <svg hidden><symbol id="i-github" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></symbol></svg>
@@ -195,7 +195,7 @@
 
       <!-- animation maker -->
       <div class="subview stack" id="create-animation">
-        <p class="muted">Bring a GIF, a video or a few pictures, draw one frame by frame, or generate one: a 3D scene, an optical illusion, a moving emoji or a formula. It's saved on the panel, which plays it by itself.</p>
+        <p class="muted">Bring a GIF, a video or a few pictures, draw one frame by frame, or generate one: a 3D scene, your own picture in 3D or with an effect, an optical illusion, a moving emoji or a formula. It's saved on the panel, which plays it by itself.</p>
         <div><span class="seg" id="aSrcSeg"><button data-value="file" aria-pressed="true">From files</button><button data-value="draw">Draw frames</button><button data-value="gen">Generate</button></span></div>
 
         <div id="aSrcFile" class="stack">
@@ -235,7 +235,9 @@
 
         <div id="aSrcGen" class="stack" hidden>
           <div class="fields">
-            <label class="field"><span>Kind</span><select id="gKind"><option value="3d">3D scene</option><option value="illusion">Optical illusion</option><option value="emoji">Emoji or letters</option><option value="formula">Formula</option></select></label>
+            <label class="field"><span>Kind</span><select id="gKind"><option value="3d">3D scene</option><option value="picture">Your picture</option><option value="illusion">Optical illusion</option><option value="emoji">Emoji or letters</option><option value="formula">Formula</option></select></label>
+            <label class="field" data-gen="picture"><span>Picture or GIF</span><input type="file" id="gPic" accept="image/*"></label>
+            <label class="field" data-gen="picture"><span>Effect</span><select id="gPicFx"></select></label>
             <label class="field" data-gen="illusion"><span>Illusion</span><select id="gIllusion"></select></label>
             <label class="field" data-gen="3d"><span>Scene</span><select id="g3Scene"></select></label>
             <label class="field" data-gen="3d"><span>Colour</span><input type="color" id="g3Color" value="#ff5fae"></label>

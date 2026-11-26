@@ -2,13 +2,13 @@
 // the panel's own flash, 127 on the extra memory chip with openipixelcolor 104 and later), each animation
 // with a moving preview, playing and deleting; then the memory, area by area (fixed by the firmware:
 // firmware/src/drv/iflash.c, app/anim.h, app/settings.c).
-import { $, el, on, kb, holdToConfirm } from "../core.js?v=5e9bd5e";
-import { CMD } from "../protocol.js?v=5e9bd5e";
-import { panel, send, act } from "../ble.js?v=5e9bd5e";
-import { libraryState, libraryPreparing, refreshLibrary, deleteAnimation, ready } from "../library.js?v=5e9bd5e";
-import { previewInto } from "../animpreview.js?v=5e9bd5e";
-import { READBACK_LEVEL } from "../readback.js?v=5e9bd5e";
-import { latest } from "../firmware.js?v=5e9bd5e";
+import { $, el, on, kb, holdToConfirm } from "../core.js?v=c02e0ab";
+import { CMD } from "../protocol.js?v=c02e0ab";
+import { panel, send, act } from "../ble.js?v=c02e0ab";
+import { libraryState, libraryPreparing, refreshLibrary, deleteAnimation, ready } from "../library.js?v=c02e0ab";
+import { previewInto } from "../animpreview.js?v=c02e0ab";
+import { READBACK_LEVEL } from "../readback.js?v=c02e0ab";
+import { latest } from "../firmware.js?v=c02e0ab";
 
 const K = 1024;
 /* the panel's own flash, in address order; `used` is filled in where it is known */

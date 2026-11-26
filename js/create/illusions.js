@@ -1,6 +1,6 @@
 // Optical illusions for the animation maker. Most are drawn here, LED by LED (3 x 3 samples each); the
 // Penrose triangle is a 3D scene (scenes3d.js). Every one loops. No DOM here.
-import { sceneFrames } from "./scenes3d.js?v=5e9bd5e";
+import { sceneFrames } from "./scenes3d.js?v=c02e0ab";
 
 const { sin, cos, abs, sqrt, floor, atan2, PI, exp, log, max, min, round } = Math;
 const TAU = 2 * PI;
