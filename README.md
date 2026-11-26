@@ -7,6 +7,10 @@ square RGB panels that advertise as `LED_BLE_…` and are normally driven by the
 The firmware is written from scratch in C for the panel's MVSilicon P2064AF2 chip (Andes NDS32 V3)
 and is installed over Bluetooth through the panel's own update path. No programmer, no soldering.
 
+**Try it: [almo7aya.github.io/openipixelcolor](https://almo7aya.github.io/openipixelcolor/)** in Chrome or
+Edge on a computer with Bluetooth. Connect the panel, open **Settings**, click **Use the latest release**,
+then **Install firmware** twice. Nothing to install on the computer.
+
 > **Warning.** Installing firmware on these panels can leave one that will not take another update.
 > Bluetooth is the only way in on a closed panel. Read [Safety](#safety) before installing anything.
 > This software comes with no warranty (see [LICENSE](LICENSE)).
@@ -47,16 +51,20 @@ tools/
   check_image.py build-time checks of the image
   gen_*.py       generators for the font, gamma and lookup tables
 docs/            HARDWARE.md (the board), PROTOCOL.md (the Bluetooth commands)
-.github/         CI: builds the firmware and runs the tests on every push
+.github/         CI: builds and tests every push; releases firmware changes; publishes the web page
 ```
+
+Branch `gh-pages` holds what GitHub Pages serves: the web UI and the latest release's update file. The CI
+writes it; don't edit it by hand.
 
 No vendor firmware, vendor code or vendor images are included, and none are needed to build.
 
 ## Requirements
 
 - A panel with the P2064AF2 board (check with `tools/ble/ble_probe.py`, below).
-- A computer with Bluetooth. Python 3.11+ with `pip install -r tools/requirements.txt`.
-- For the web UI: Chrome or Edge (Web Bluetooth).
+- A computer with Bluetooth and Chrome or Edge (Web Bluetooth). That's all for using the
+  [hosted page](https://almo7aya.github.io/openipixelcolor/).
+- For the command-line tools: Python 3.11+ with `pip install -r tools/requirements.txt`.
 - To build the firmware: an `nds32le-elf` GCC toolchain (tested with GCC 15.2 and binutils 2.45.1) and
   Python 3. Arch Linux packages it: `pacman -S nds32le-elf-gcc nds32le-elf-binutils`; elsewhere
   crosstool-NG can build one. On Windows the build runs inside WSL. Or skip building: see below.
@@ -85,15 +93,17 @@ This produces `firmware/build/fw.bin` (the raw image) and `firmware/build/fw.ota
 file to install). The build checks the image (`tools/check_image.py`) and fails if the flash driver
 leaves its cache window.
 
-No toolchain? Every push is built by [GitHub Actions](https://github.com/Almo7aya/openipixelcolor/actions/workflows/firmware.yml):
-open a run and download the `openipixelcolor-…-firmware` artifact. Tagged versions are also on the
-[Releases](https://github.com/Almo7aya/openipixelcolor/releases) page.
+No toolchain? You don't need one. Every push to `main` that changes `firmware/` is built by
+[GitHub Actions](https://github.com/Almo7aya/openipixelcolor/actions/workflows/firmware.yml) and
+published on the [Releases](https://github.com/Almo7aya/openipixelcolor/releases) page (tag
+`v<version>-<commit>`); the hosted web page always offers the newest one. Builds of other pushes and of
+pull requests are kept as artifacts of their run.
 
 ### 3. Install
 
 With the web UI (step 4 shows how to open it): connect the panel, open the **Settings** tab, click
-**Use the build on this computer** (or drop `fw.bin` or `fw.ota.bin` on the page) and
-**Install firmware** twice. The page sends the update, waits for the panel to restart, connects again by
+**Use the latest release** (on the hosted page) or **Use the build on this computer** (with
+`serve.py`), or drop `fw.bin` or `fw.ota.bin` on the page, then click **Install firmware** twice. The page sends the update, waits for the panel to restart, connects again by
 itself and checks that the panel reports the new version. Then it installs the same build once more,
 which proves the new firmware can install updates itself (see [Safety](#safety); you can turn this off
 under **More options**). This works the same on a panel that still runs the vendor firmware.
@@ -114,6 +124,9 @@ After the last chunk the panel restarts and its bootloader installs the image.
 
 ### 4. Use it
 
+Open **[almo7aya.github.io/openipixelcolor](https://almo7aya.github.io/openipixelcolor/)**, or run the page
+from your copy of the repository (needed to test changes to the page or to install your own build):
+
 ```sh
 python webui/serve.py                     # opens http://localhost:8321 in your browser
 ```
@@ -121,7 +134,7 @@ python webui/serve.py                     # opens http://localhost:8321 in your 
 Click **Connect panel**. The panel accepts one Bluetooth connection at a time, so close other
 pages or tools that are connected. The tabs are Effects, Clock, Text, Animations, Pictures (pictures and
 drawing), Extras (equalizer, scoreboard, stopwatch, test patterns) and Settings (firmware, factory
-settings). `serve.py` only serves the page (Web Bluetooth needs `localhost` or HTTPS) and offers the
+settings). `serve.py` only serves the page (Web Bluetooth needs `localhost` or HTTPS) and offers your
 latest firmware build to it; everything else happens in the browser.
 
 Command line instead:

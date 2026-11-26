@@ -489,6 +489,7 @@ code { font-size: .92em; background: var(--plate); border: 1px solid var(--hair)
     <section id="secFw">
       <canvas class="led" data-text="Firmware"></canvas>
       <p>Install new firmware over Bluetooth. Keep the panel switched on and close to this computer. It restarts by itself, and this page connects again and checks the new version.</p>
+      <div class="row" id="fwRelRow" hidden><button class="btn primary" id="btnFwRel">Use the latest release</button><span class="tmem" id="fwRelNote"></span></div>
       <div class="row" id="fwLocalRow" hidden><button class="btn" id="btnFwLocal">Use the build on this computer</button><span class="tmem" id="fwLocalNote"></span></div>
       <label class="drop" id="fwDrop"><input type="file" id="fwFile" accept=".bin" hidden>Drop a firmware file (.bin) here, or click to choose one</label>
       <dl class="fw-facts" id="fwFacts" hidden>
@@ -807,6 +808,7 @@ async function attach() {
   status(!custom ? "This panel runs the vendor firmware. Install openipixelcolor (Settings) to use these controls." :
          rescue ? "The panel is in rescue mode: only installing firmware works until it starts normally." : "Ready.", !custom || rescue);
   if ((!custom || rescue) && !busy) showTab("settings");
+  if (!rescue && typeof releaseHint === "function") releaseHint();
   clearInterval(pollTimer);
   pollTimer = setInterval(() => { if (!busy) refreshStatus(); }, 4000);
   announce("connected", { custom, fwMinor, rescue });
@@ -1641,14 +1643,41 @@ fwDrop.addEventListener("drop", async (e) => {
   const f = e.dataTransfer.files[0];
   if (f) loadFirmware(new Uint8Array(await f.arrayBuffer()), f.name);
 });
-/* webui/serve.py also serves firmware/build/fw.ota.bin: offer the latest local build */
+/* Served by webui/serve.py on this computer: offer the local build (firmware/build/fw.ota.bin).
+   Served from GitHub Pages: the CI puts the latest release next to the page (firmware/latest.json). */
 const LOCAL_BUILD = "local-build/fw.ota.bin";
-fetch(LOCAL_BUILD, { method: "HEAD", cache: "no-store" }).then((r) => {
-  if (!r.ok) return;
-  const t = r.headers.get("Last-Modified");
-  $("#fwLocalNote").textContent = t ? `firmware/build/fw.ota.bin, built ${new Date(t).toLocaleString()}` : "firmware/build/fw.ota.bin";
-  $("#fwLocalRow").hidden = false;
-}).catch(() => { /* page not served by serve.py */ });
+const onThisComputer = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+let latestRelease = null;             // { version, tag, file, size, date, release }
+const newerVersion = (a, b) => { const [x, y] = [a, b].map((s) => s.split(".").map(Number)); return x[0] > y[0] || (x[0] === y[0] && x[1] > y[1]); };
+function releaseHint() {              // after connecting: tell when there is something newer to install
+  if (!latestRelease || !chWrite || busy) return;
+  const cur = $("#fwVerFull").textContent.split(" ")[0];
+  if (!custom) status(`This panel runs the vendor firmware. openipixelcolor ${latestRelease.version} can be installed under Settings.`, true);
+  else if (/^\d+\.\d+$/.test(cur) && newerVersion(latestRelease.version, cur)) status(`Firmware ${latestRelease.version} is available. Install it under Settings.`);
+}
+if (onThisComputer) {
+  fetch(LOCAL_BUILD, { method: "HEAD", cache: "no-store" }).then((r) => {
+    if (!r.ok) return;
+    const t = r.headers.get("Last-Modified");
+    $("#fwLocalNote").textContent = t ? `firmware/build/fw.ota.bin, built ${new Date(t).toLocaleString()}` : "firmware/build/fw.ota.bin";
+    $("#fwLocalRow").hidden = false;
+  }).catch(() => { /* not served by serve.py */ });
+} else {
+  fetch("firmware/latest.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((j) => {
+    if (!j || !j.file || !/^\d+\.\d+$/.test(j.version)) return;
+    latestRelease = j;
+    $("#fwRelNote").textContent = `openipixelcolor ${j.version}, ${new Date(j.date).toLocaleDateString()}`;
+    $("#fwRelRow").hidden = false;
+    releaseHint();
+  }).catch(() => { /* no release published yet */ });
+}
+$("#btnFwRel").addEventListener("click", async () => {
+  try {
+    const r = await fetch("firmware/" + encodeURIComponent(latestRelease.file), { cache: "no-store" });
+    if (!r.ok) throw new Error("The release file couldn't be downloaded. Reload the page and try again.");
+    loadFirmware(new Uint8Array(await r.arrayBuffer()), `${latestRelease.file} (latest release)`);
+  } catch (e) { fwLog(e.message, true); }
+});
 $("#btnFwLocal").addEventListener("click", async () => {
   try {
     const r = await fetch(LOCAL_BUILD, { cache: "no-store" });
