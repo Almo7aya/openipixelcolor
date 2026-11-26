@@ -1,0 +1,4 @@
+# renders of logos.c (python make_logos.py logos.bin .): made again from the source, not kept
+ring/
+*.png
+logos.bin

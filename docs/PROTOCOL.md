@@ -27,7 +27,7 @@ Example: version query `04 00 05 80` → reply `08 00 05 80 65 00 xx yy` (openip
 
 | Cmd | Payload | Does |
 |---|---|---|
-| `0x8001` | `hh mm ss 00` | Sets the time; replies with the device type (`0x81` = 32×32) |
+| `0x8001` | `hh mm ss 00` | Sets the time; replies with the device type in byte 4, which names the matrix size (see below). Every app sends it right after connecting: the first one after 8 s of silence shows the "connected" screen |
 | `0x8003` | – | Clear: back to effects with autoplay |
 | `0x8004` | `percent` | Brightness 0–100 |
 | `0x8005` | – | Versions: reply `mcu_major mcu_minor module_major module_minor`. openipixelcolor reports its version number N (100 and up) as `N 0` (from 256 on: `255 N−255`); the vendor firmware reports 3.x, openipixelcolor builds before 100 reported 99.xx |
@@ -58,6 +58,7 @@ Example: version query `04 00 05 80` → reply `08 00 05 80 65 00 xx yy` (openip
 | `0xF107` | `1 short / 2 long` | Press the key remotely |
 | `0xF108` | `A5` | Factory settings (the `A5` key avoids accidents) |
 | `0xF109` | – | Saved-settings status, see below |
+| `0xF113` | – | Panel info (101+): reply `width(2) height(2) board device_type` |
 | `0xF10A` | `r g b speed flags h w_lo w_hi columns…` | One text strip (older single-message form) |
 | `0xF10B` | see below | Text playlist with effects |
 | `0xF10C` | `slot length(4) flags` | Animation upload: begin. flags bit 0 = play it when stored. See [Animations](#animations) |
@@ -66,6 +67,7 @@ Example: version query `04 00 05 80` → reply `08 00 05 80 65 00 xx yy` (openip
 | `0xF10F` | `slot part` | Animation details: size and checksum (part 0) or name (parts 1–3) |
 | `0xF110` | `slot` | Delete the animation that starts in `slot` (`FF` = all) |
 | `0xF111` | `slot speed` | Play an animation (`FF` = all in turn, `FE` = keep what plays); speed in tenths, 2–40 (10 = as made, 0 = unchanged) |
+| `0xF112` | `slot offset(4)` | Read 10 bytes of a stored animation back (firmware 101+) |
 
 ### 0xF106 status reply
 
@@ -73,6 +75,29 @@ Example: version query `04 00 05 80` → reply `08 00 05 80 65 00 xx yy` (openip
 
 flags: bit 0 time synced, bit 1 autoplay, bit 2 24-hour clock, bit 3 show date, bit 4 playing all animations.
 In animation mode (9) `effect` is the slot on screen (`FF` = none stored).
+
+### Matrix size
+
+iPixel Color panels come in many sizes. Each one names its model in byte 4 of the `0x8001` reply, with
+the vendor firmware and with openipixelcolor alike. The iPixel Color app's table, as open-source clients
+read it (pypixelcolor `lib/device_info.py` and others; the web UI's copy is `webui/js/size.js`):
+
+| type | size | type | size | type | size |
+|---|---|---|---|---|---|
+| `00`, `80` | 64×64 | `8A` | 64×32 | `94` | 16×16 |
+| `81` | 32×32 | `8B`, `8D` | 96×32 | `95` | 64×64 |
+| `82` | 32×16 | `8C` | 128×32 | `96` | 96×64 |
+| `83` | 64×16 | `8E` | 160×32 | `97` | 128×64 |
+| `84` | 96×16 | `8F` | 192×32 | `98` | 160×64 |
+| `85` | 64×20 | `90` | 256×32 | `99` | 192×64 |
+| `86` | 128×32 | `91` | 320×32 | `9A`–`9F` | 256–576×64 |
+| `87` | 144×16 | `92` | 384×32 | `A0` | 640×64 |
+| `88` | 192×16 | `93` | 448×32 | | |
+| `89` | 48×24 | | | | |
+
+Seen on real panels: `81`, `83`, `85`. openipixelcolor 101 and later also answer `0xF113` with the exact
+`width(2) height(2)`, the board (1 = P2064AF2) and the type byte (`firmware/src/app/board.h`). Animation files
+carry their size in the header (`w`, `h`); the panel takes only files made for its own size.
 
 ### 0xF109 saved-settings reply
 
@@ -122,7 +147,7 @@ the panel shows.
 ## Animations
 
 Animations are files made by the app (the web UI makes them from GIFs, videos, pictures, its frame editor
-or its generators: `webui/anim.js`). The panel stores them in flash and plays them by itself.
+or its generators: `webui/js/create/anim-codec.js`). The panel stores them in flash and plays them by itself.
 
 **Storage.** 20 slots of 32 KiB. A bigger file uses the following slots as well (up to 640 KiB in all).
 The app picks free slots from the `0xF10E` reply. An upload into slots that an older animation uses
@@ -147,6 +172,13 @@ animation starts, `used` for each slot in use. flags bit 0 = an upload is runnin
 
 **`0xF10F slot part` reply:** `slot part` and then, for part 0, `frames(2) length(3) crc(4)`; for parts 1–3,
 nine bytes of the name each. Status 0 = no animation starts there.
+
+**`0xF112 slot offset(4)`** (firmware 101 and later) reads a stored file back. Reply: `offset_lo` and the
+next 10 bytes of the file from `offset` (fewer at its end; the state word reads `DONE`). Status 0 = no
+animation starts in `slot`, or `offset` is past its end. `offset_lo` (the offset's low byte) tells the answer
+from a late duplicate of the previous reply. Replies are at most 16 bytes, so this is for small reads: the
+web UI reads the colours and the first frame of animations it didn't send, for a preview (whole files up to
+2 KB).
 
 **File format** (little-endian):
 

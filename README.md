@@ -1,235 +1,255 @@
-<p align="center"><img src="docs/images/logo.png" width="240" alt="The openipixelcolor logo on a 32 × 32 LED panel: an open colour ring around a pixel letter i, one pixel escaping through the gap"></p>
+<p align="center"><img src="docs/images/banner.png" width="880" alt="openipixelcolor: the logo on an LED panel (an open colour ring around a pixel letter i, one pixel escaping through the gap) and the name in LED dots. Open firmware and a web app for Bluetooth LED pixel panels."></p>
 
-<h1 align="center">openipixelcolor</h1>
+<p align="center">
+  <a href="https://github.com/Almo7aya/openipixelcolor/actions/workflows/firmware.yml"><img src="https://github.com/Almo7aya/openipixelcolor/actions/workflows/firmware.yml/badge.svg" alt="Firmware build"></a>
+  <a href="https://github.com/Almo7aya/openipixelcolor/releases/latest"><img src="https://img.shields.io/github/v/release/Almo7aya/openipixelcolor?label=firmware&color=45d483" alt="Latest firmware release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--2.0-blue" alt="License: GPL-2.0"></a>
+  <a href="https://almo7aya.dev/openipixelcolor/"><img src="https://img.shields.io/badge/web%20app-open-6ea8ff" alt="Web app"></a>
+  <a href="#supported-devices"><img src="https://img.shields.io/badge/devices-iPixel%20Color-d55181" alt="For iPixel Color devices"></a>
+</p>
 
-<p align="center"><a href="https://github.com/Almo7aya/openipixelcolor/actions/workflows/firmware.yml"><img src="https://github.com/Almo7aya/openipixelcolor/actions/workflows/firmware.yml/badge.svg" alt="Firmware build"></a></p>
+<p align="center"><b>Open-source firmware and a browser app for iPixel Color LED pixel panels.</b><br>
+Install it over Bluetooth, from your browser: no programmer, no soldering, nothing to install on the computer.</p>
 
-Open-source firmware and a browser control page for 32 × 32 Bluetooth LED pixel panels: the cheap
-square RGB panels that advertise as `LED_BLE_…` and are normally driven by the iPixel Color phone app.
-The firmware is written from scratch in C for the panel's MVSilicon P2064AF2 chip (Andes NDS32 V3)
-and is installed over Bluetooth through the panel's own update path. No programmer, no soldering.
+<p align="center">
+  <a href="https://almo7aya.dev/openipixelcolor/"><b>Open the web app</b></a> &nbsp;|&nbsp;
+  <a href="#quick-start">Quick start</a> &nbsp;|&nbsp;
+  <a href="https://github.com/Almo7aya/openipixelcolor/releases">Releases</a> &nbsp;|&nbsp;
+  <a href="docs/PROTOCOL.md">Protocol</a> &nbsp;|&nbsp;
+  <a href="CONTRIBUTING.md">Contributing</a>
+</p>
 
-**Try it: [almo7aya.dev/openipixelcolor](https://almo7aya.dev/openipixelcolor/)** in Chrome or
-Edge on a computer with Bluetooth. Connect the panel, open **Settings**, click **Use the latest release**,
-then **Install firmware** twice. Nothing to install on the computer. Later, whenever a panel with
-openipixelcolor connects and a newer release is out, the page offers it: **Update now** installs it right
-from the notice (or **Later**, or **Skip this version**).
+---
 
-> **Warning.** Installing firmware on these panels can leave one that will not take another update.
-> Bluetooth is the only way in on a closed panel. Read [Safety](#safety) before installing anything.
-> This software comes with no warranty (see [LICENSE](LICENSE)).
+openipixelcolor is made specifically for **iPixel Color devices**: the Bluetooth RGB LED pixel panels that
+are sold under many brands, advertise as `LED_BLE_…` and are normally controlled with the iPixel Color phone
+app. It replaces the panel's firmware with one written from scratch in C, and comes with a web app that
+controls the panel straight from Chrome or Edge over Web Bluetooth.
 
-<p align="center"><img src="docs/images/screens.png" width="720" alt="Three panel screens: starting up (the logo and the version), the first start (HELLO, a Bluetooth sign, CONNECT) and installing firmware (the logo's ring two thirds filled with colour, 62 in the middle)"></p>
+> [!WARNING]
+> Installing firmware on these panels can leave one that will not take another update: Bluetooth is the only
+> way in on a closed panel. Read [Safety](#safety) before installing anything. This software comes with
+> **no warranty** (see [LICENSE](LICENSE)).
 
-## What it does
+<p align="center"><img src="docs/images/screens.png" width="880" alt="Four panel screens: starting up (the colour ring logo around a pixel i), the first start (the small logo, the name scrolling below), installing firmware (the ring two thirds filled with colour, 61 in the middle) and saving an animation (the small ring filling, an arrow dropping in, 45%)"></p>
 
-- **Its own screens:** the logo draws itself when the panel starts (below), a welcome screen asks you
-  to connect on the very first start, and while new firmware arrives the logo's ring fills with colour
-  as pixels stream in through its gap (dark only for the moments each block is written).
+## Contents
 
-  <img src="docs/images/boot.gif" width="200" alt="The boot animation: the colour ring draws itself around the letter i, a pixel flies out of the gap, the version appears">
+- [Features](#features)
+- [Supported devices](#supported-devices)
+- [Quick start](#quick-start)
+- [The web app](#the-web-app)
+- [Command-line tools](#command-line-tools)
+- [Building from source](#building-from-source)
+- [Safety](#safety)
+- [Project layout](#project-layout)
+- [Contributing](#contributing)
+- [License](#license)
 
-- **20 animations:** plasma, fire, matrix rain, starfield, game of life, fireworks, ripples,
-  sparkles, rainbow swirl, tunnel, snake, pong, bouncing balls, equalizer, aurora, lava lamp,
-  rainstorm, DNA helix, warp speed, radar. Autoplay with an adjustable interval.
-- **10 clock faces:** digital, analog, binary, big digits, plasma, flip, nixie, rings, sky (the
-  sun and moon move with the time), pong. 12/24 h, optional date.
-- **Text engine:** a playlist of up to 4 messages, 23 entry/exit effects, 11 hold effects,
-  9 colour modes, shadow/outline/glow/rails, animated backgrounds, live `{time}` `{date}` tokens.
-  Any language: the web UI draws the text with your computer's fonts (Arabic shaping and
-  right-to-left included) and sends it as a picture strip.
-- **Your own animations, stored on the panel:** bring a GIF, an animated WebP or PNG, a video or a
-  series of pictures; draw one frame by frame; or generate one (animated emoji, or a formula for every
-  LED). The web UI shrinks the frames to 32 × 32, reduces the colours and packs them. The panel keeps up to
-  20 animations (640 KiB) and plays them by itself, one or all in turn, also after a power cycle.
-- **Pictures and drawing:** send any image (resized to 32 × 32) or draw pixel by pixel.
-- **Scoreboard, stopwatch, rhythm bars, test patterns.**
-- **Remembers everything** across power cycles: settings, the last picture and the text are saved
-  to flash a few seconds after the last change, in a wear-friendly log.
-- **Compatible with the vendor app's basic commands** (brightness, clock, pixels, …) and with
-  pypixelcolor. See [docs/PROTOCOL.md](docs/PROTOCOL.md).
+## Features
 
-## What's in the repository
+- **20 effects:** plasma, fire, matrix rain, starfield, game of life, fireworks, ripples, sparkles, rainbow
+  swirl, tunnel, snake, pong, bouncing balls, equalizer, aurora, lava lamp, rainstorm, DNA helix, warp
+  speed, radar. Shuffle through them at an interval you choose.
+- **10 clock faces:** digital, analog, binary, big digits, plasma, flip, nixie, rings, day and night sky,
+  pong. 12 or 24 hours, date optional.
+- **Text:** a playlist of up to 4 messages with 23 ways in and out, 11 effects while shown, 9 colour modes,
+  shadow, outline and glow, animated backgrounds and live `{time}` `{date}` values. Any language: the web app
+  draws the text with your computer's fonts, Arabic and right-to-left included.
+- **Your own animations, stored on the panel:** from a GIF, an animated WebP or PNG, a video or a few
+  pictures, drawn frame by frame, or generated (animated emoji, or a formula for every LED). Up to 20 of
+  them (640 KB), played by the panel itself, also after it was switched off.
+- **Pictures and drawing**, with live painting straight onto the panel.
+- **Scoreboard, stopwatch, equalizer bars and test patterns.**
+- **Its own screens:** the logo draws itself at start-up, a welcome screen on the very first start, and
+  screens for an app connecting, a firmware update and an animation being saved.
+- **Remembers everything** across power cycles, in a wear-friendly log in flash.
+- **Updates itself** from the web app, with an update notice when a new release is out.
+- **Compatible with the stock app's basic commands** and with [pypixelcolor](https://github.com/lucagoc/pypixelcolor).
 
-```
-firmware/        the firmware (C + a little assembly), Makefile, build scripts
-webui/           browser control page (Web Bluetooth; Chrome or Edge): controls, animations, firmware install
-  anim.js        animation file encoder/decoder (the decoder mirrors the firmware's player)
-tools/
-  ble/           Bluetooth tools: scan, probe, install, safe update check, command-line control
-  sim/           PC simulator: runs the firmware's app code, renders frames, runs flash and animation tests
-  ci/            checks the CI runs (web UI scripts)
-  fwcodec.py     encodes a built image into an update file (and back)
-  check_image.py build-time checks of the image
-  gen_*.py       generators for the font, gamma and lookup tables
-docs/            HARDWARE.md (the board), PROTOCOL.md (the Bluetooth commands)
-.github/         CI: builds and tests every push; releases firmware changes; publishes the web page
-```
+<p align="center"><img src="docs/images/boot.gif" width="220" alt="The boot animation: the colour ring draws itself, the letter i rises, a pixel escapes through the gap; the logo moves up and open, ipixel, color and the version step in below"></p>
 
-Branch `gh-pages` holds what GitHub Pages serves: the web UI and the latest release's update file. The CI
-writes it; don't edit it by hand.
+## Supported devices
 
-No vendor firmware, vendor code or vendor images are included, and none are needed to build.
+iPixel Color panels come in many matrix sizes. Each one names its model when an app connects, and the web app
+reads it (see [Matrix size](docs/PROTOCOL.md#matrix-size) for the full table).
 
-## Requirements
+| Device | Firmware | Web app |
+|---|---|---|
+| iPixel Color 32 × 32 panel with the MVSilicon P2064AF2 board | **Supported** (v100 and later) | Everything |
+| Other iPixel Color sizes, 16 × 16 up to 640 × 64 | Not yet: each needs its board ported ([help wanted](CONTRIBUTING.md)) | Connects, detects the size; the controls need openipixelcolor on the panel |
+| Panels for other apps | No | No |
 
-- A panel with the P2064AF2 board (check with `tools/ble/ble_probe.py`, below).
-- A computer with Bluetooth and Chrome or Edge (Web Bluetooth). That's all for using the
-  [hosted page](https://almo7aya.dev/openipixelcolor/).
-- For the command-line tools: Python 3.11+ with `pip install -r tools/requirements.txt`.
-- To build the firmware: an `nds32le-elf` GCC toolchain (tested with GCC 15.2 and binutils 2.45.1) and
-  Python 3. Arch Linux packages it: `pacman -S nds32le-elf-gcc nds32le-elf-binutils`; elsewhere
-  crosstool-NG can build one. On Windows the build runs inside WSL. Or skip building: see below.
-- To build the simulator: any host C compiler (gcc or clang).
+To check a panel: open the web app, connect, and look under **Device → Panel**, or run
+`python tools/ble/ble_probe.py <ADDRESS>` (read-only). The stock firmware reports version 3.x; openipixelcolor
+reports its release number (100, 101, …).
 
-## Getting started
+## Quick start
 
-### 1. Find your panel
+1. Open **[almo7aya.dev/openipixelcolor](https://almo7aya.dev/openipixelcolor/)** in Chrome or Edge on a
+   computer (or Android phone) with Bluetooth.
+2. Switch the panel on and click **Connect panel**. The panel takes one connection at a time, so close the
+   phone app first.
+3. Open **Device**, click **Use the latest release**, then **Install firmware** twice.
+
+The page sends the firmware, waits for the panel to restart, connects again by itself and checks the new
+version. Then it installs it once more, which proves the new firmware can install updates itself. This takes
+about two minutes and works the same on a panel that still runs the stock firmware. From then on, the page
+offers each new release when the panel connects.
+
+## The web app
+
+<table>
+<tr><td><b>Play</b></td><td>Effects and clock faces as moving previews, the animations stored on the panel, and tools</td></tr>
+<tr><td><b>Text</b></td><td>The message playlist, with a preview drawn by the firmware's own text engine</td></tr>
+<tr><td><b>Create</b></td><td>The animation maker, pictures and drawing, at the panel's size</td></tr>
+<tr><td><b>Device</b></td><td>Firmware install, storage (with previews and clean-up), rotation, panel details, factory reset</td></tr>
+</table>
+
+Beside them is the panel itself: a live preview of what it shows right now, drawn by the firmware's own code
+compiled to WebAssembly (`webui/panel.wasm`), with power and brightness. The app is plain HTML, CSS and ES
+modules with no build step, hosted on GitHub Pages from the `gh-pages` branch (written by the CI).
+
+To run it from your copy of the repository, for example to try changes or install your own build:
 
 ```sh
-python tools/ble/ble_scan_all.py          # look for LED_BLE_… with svc=fa00
-python tools/ble/ble_probe.py <ADDRESS>   # read-only: shows the firmware version
+python webui/serve.py          # opens http://localhost:8321 (Web Bluetooth needs localhost or HTTPS)
 ```
 
-The vendor firmware reports version 3.x; openipixelcolor reports its version number (100, 101, …).
+## Command-line tools
 
-### 2. Build
+Python 3.11+ with `pip install -r tools/requirements.txt`:
 
 ```sh
-cd firmware
-./build.sh            # Linux / WSL; toolchain on PATH or in $NDS32_TOOLCHAIN
-.\build.ps1           # Windows: runs build.sh in WSL ($env:OIPC_WSL_DISTRO, default "Arch")
+python tools/ble/ble_scan_all.py                         # find panels: LED_BLE_… with service fa00
+python tools/ble/ble_probe.py <ADDRESS>                  # read-only: firmware version and state
+python tools/ble/panelctl.py <ADDRESS> effect aurora
+python tools/ble/panelctl.py <ADDRESS> clock 8           # sky clock, also sets the time
+python tools/ble/panelctl.py <ADDRESS> text "Hello" --rainbow
+python tools/ble/panelctl.py <ADDRESS> image photo.png
+python tools/ble/panelctl.py -h                          # every command
 ```
 
-This produces `firmware/build/fw.bin` (the raw image) and `firmware/build/fw.ota.bin` (the update
-file to install). The build checks the image (`tools/check_image.py`) and fails if the flash driver
-leaves its cache window.
-
-No toolchain? You don't need one. Every push to `main` that changes `firmware/` is built by
-[GitHub Actions](https://github.com/Almo7aya/openipixelcolor/actions/workflows/firmware.yml) and
-published on the [Releases](https://github.com/Almo7aya/openipixelcolor/releases) page as the next
-version: v100, v101, v102, … (one number, one more with every firmware release; the number is built into the
-firmware and shown on the panel when it starts). The hosted web page always offers the newest one. Builds of other pushes and of
-pull requests are kept as artifacts of their run.
-
-### 3. Install
-
-With the web UI (step 4 shows how to open it): connect the panel, open the **Settings** tab, click
-**Use the latest release** (on the hosted page) or **Use the build on this computer** (with
-`serve.py`), or drop `fw.bin` or `fw.ota.bin` on the page, then click **Install firmware** twice. The page sends the update, waits for the panel to restart, connects again by
-itself and checks that the panel reports the new version. Then it installs the same build once more,
-which proves the new firmware can install updates itself (see [Safety](#safety); you can turn this off
-under **More options**). This works the same on a panel that still runs the vendor firmware.
-
-From the command line instead (dry run first; it only checks the version):
+Installing from the command line (a dry run first; it only checks the version):
 
 ```sh
 python tools/ble/ota_flash_guarded.py <ADDRESS> firmware/build/fw.ota.bin --expect <version>
 python tools/ble/ota_flash_guarded.py <ADDRESS> firmware/build/fw.ota.bin --expect <version> --go
-python tools/ble/ble_probe.py <ADDRESS>   # the version reply now starts with 64 (100) or more
 ```
 
-`--expect` is the version the panel reports right now (for example `3.17` for the vendor firmware, or
-`101` when updating openipixelcolor 101). The tool stops if the panel reports anything else, and stops at
-the first unexpected reply.
+`--expect` is the version the panel reports now (for example `3.17` for the stock firmware, or `101`). The
+tool stops if the panel reports anything else, and at the first unexpected reply.
 
-After the last chunk the panel restarts and its bootloader installs the image.
+## Building from source
 
-### 4. Use it
+You don't need to: every push to `main` that changes `firmware/` is built by
+[GitHub Actions](https://github.com/Almo7aya/openipixelcolor/actions/workflows/firmware.yml) and published as
+the next [release](https://github.com/Almo7aya/openipixelcolor/releases) (v100, v101, …: one number, shown on
+the panel when it starts), and the web app always offers the newest one.
 
-Open **[almo7aya.dev/openipixelcolor](https://almo7aya.dev/openipixelcolor/)**, or run the page
-from your copy of the repository (needed to test changes to the page or to install your own build):
+**Firmware.** An `nds32le-elf` GCC toolchain (tested with GCC 15.2 and binutils 2.45.1) and Python 3. Arch
+Linux packages it (`pacman -S nds32le-elf-gcc nds32le-elf-binutils`); elsewhere crosstool-NG builds one.
 
 ```sh
-python webui/serve.py                     # opens http://localhost:8321 in your browser
+cd firmware
+./build.sh            # Linux / WSL; the toolchain on PATH or in $NDS32_TOOLCHAIN
+.\build.ps1           # Windows: runs build.sh in WSL ($env:OIPC_WSL_DISTRO, default "Arch")
 ```
 
-Click **Connect panel**. The panel accepts one Bluetooth connection at a time, so close other
-pages or tools that are connected. The tabs are Effects, Clock, Text, Animations, Pictures (pictures and
-drawing), Extras (equalizer, scoreboard, stopwatch, test patterns) and Settings (firmware, factory
-settings). `serve.py` only serves the page (Web Bluetooth needs `localhost` or HTTPS) and offers your
-latest firmware build to it; everything else happens in the browser.
+This makes `firmware/build/fw.bin` (the image) and `firmware/build/fw.ota.bin` (the update file). The build
+checks the image (`tools/check_image.py`). Install it with the web app run by `serve.py` (**Use the build on
+this computer**) or the tool above.
 
-Command line instead:
-
-```sh
-python tools/ble/panelctl.py <ADDRESS> effect aurora
-python tools/ble/panelctl.py <ADDRESS> clock 8          # sky clock, also syncs the time
-python tools/ble/panelctl.py <ADDRESS> text "Hello" --rainbow
-python tools/ble/panelctl.py <ADDRESS> image photo.png
-python tools/ble/panelctl.py <ADDRESS> status
-```
-
-`python tools/ble/panelctl.py -h` lists every command.
-
-## Safety
-
-The panel has no accessible programming port, so the firmware itself is the only way to install the
-next firmware. If a build cannot receive updates, the panel stays on that build. openipixelcolor is
-built so this is hard to get wrong:
-
-- The Bluetooth link and the update receiver start before anything else (display, effects, saved
-  settings), so a bug in those cannot block updates.
-- **Rescue mode:** hold the panel's button while powering it on. Only Bluetooth and the update
-  receiver run. The panel also enters rescue mode by itself when it keeps crashing within 10 s of
-  starting (from the 4th such start in a row). Check the mode with `ble_probe.py`.
-- Crashes restart the panel instead of hanging; the cause is reported by `ble_probe.py`.
-- The flash driver can only write the update staging area and above. The bootloader and the
-  running firmware cannot be overwritten.
-- An image is only handed to the bootloader after its CRC matches and the staged copy has been read
-  back from flash and checked.
-- Saved settings are never applied after a crash restart, so a bad saved value cannot cause a
-  crash loop.
-
-**Before installing a build you changed**, and again right after installing it, run the safe update
-check (**Settings → More options → Check flash writing** in the web UI, or the tool below). It sends one chunk with a deliberately
-wrong overall CRC, so the panel erases and writes the staging area, then rejects the update and installs
-nothing (it answers with status `00`, which is expected, and restarts about 10 s later):
-
-```sh
-python tools/ble/ota_flash_probe.py <ADDRESS> --bytes 12288
-```
-
-Then prove the new build can update itself: install the same file once more (the web UI does this by
-default, or `--expect <new version>` on the command line). This succeeds only if the staged copy reads
-back correctly, so a build that cannot write flash fails here, not later. If the check or the reinstall fails, install a known-good
-build at once, while the link still works.
-Changes to `firmware/src/drv/iflash.c`, `firmware/src/app/ota.c`, `firmware/src/start.S`,
-`firmware/link.ld` or the start-up order in `firmware/src/main.c` are the risky ones; test them most
-carefully.
-
-Going back to the vendor firmware works through the same update path (tested: openipixelcolor →
-vendor 3.17 → openipixelcolor, all from the web UI), but needs a vendor update file, which this
-project does not provide.
-
-## Simulator
-
-The app code (`firmware/src/app`) does not touch hardware, so it also runs on a PC:
+**Simulator.** The app code (`firmware/src/app`) doesn't touch hardware, so it runs on a PC with any C
+compiler, and the CI runs its tests on every push:
 
 ```sh
 gcc -O2 -std=gnu11 -Ifirmware/src/app tools/sim/sim.c \
     firmware/src/app/{gfx,effects,fx_more,modes,clockface,tables,font5x7,settings,textfx,anim,screens}.c -o sim
-./sim settings                      # power-cycle tests of the settings storage on emulated flash
-node tools/sim/anim_vectors.js vec  # test animations made by the web UI's encoder (needs Node.js)
-./sim anim vec                      # upload, store, play (pixel-exact against the web UI's decoder), damage
-./sim                               # renders every effect, clock face and text effect to frames.bin
-python tools/sim/make_sheet.py frames.bin sheet.png
-./sim screens                       # the logo, boot, welcome and update screens to screens.bin
-python tools/sim/make_readme_images.py screens.bin docs/images   # the pictures in this README
+./sim settings                      # power-cycle tests of the saved settings on emulated flash
+node tools/sim/anim_vectors.js vec  # test animations made by the web app's encoder
+./sim anim vec                      # upload, store, play pixel-exact, read back, damage
+./sim                               # every effect, clock face and text effect to frames.bin
+./sim screens                       # the logo and every screen to screens.bin
+./sim previews                      # every effect and clock face to previews.bin
 ```
+
+| Generated file | Made by |
+|---|---|
+| `webui/panel.wasm` (the live preview) | `python tools/wasm/build.py` (clang and wasm-ld from LLVM) |
+| `webui/previews/` (effect and clock tiles) | `python tools/sim/make_previews.py previews.bin webui/previews` |
+| `docs/images/screens.png`, `boot.gif` | `python tools/sim/make_readme_images.py screens.bin docs/images` |
+| `docs/images/banner.png`, `webui/icons/`, `webui/favicon.ico` | `python tools/make_brand.py screens.bin logo` |
+
+## Safety
+
+The panel has no accessible programming port, so the running firmware is the only way to install the next
+one. If a build cannot receive updates, the panel stays on that build. openipixelcolor is built so this is
+hard to get wrong:
+
+- The Bluetooth link and the update receiver start before anything else, so a bug in the display, effects
+  or saved settings cannot block updates.
+- **Rescue mode:** hold the panel's button while switching it on, and only Bluetooth and the update receiver
+  run. The panel also enters rescue mode by itself when it keeps crashing right after starting.
+- Crashes restart the panel instead of hanging, and the cause is reported (`ble_probe.py`, **Device → Panel**).
+- The flash driver can only write the update area and above: the bootloader and the running firmware
+  cannot be overwritten.
+- An update is handed to the bootloader only after its checksum matches and the stored copy has been read
+  back and checked.
+- Saved settings are never applied after a crash restart, so a bad saved value cannot cause a crash loop.
+
+**Before installing a build you changed**, and right after, run the flash check (**Device → More options →
+Check flash writing**, or `python tools/ble/ota_flash_probe.py <ADDRESS> --bytes 12288`). It writes one block
+with a deliberately wrong checksum: the panel writes it, rejects it and installs nothing (status `00` is the
+expected answer), and restarts about 10 s later. Then install the same file once more (the web app does this
+by default): it succeeds only if the new build can write flash. If either step fails, install a known-good
+build at once, while the link still works. The risky files are `firmware/src/drv/iflash.c`,
+`firmware/src/app/ota.c`, `firmware/src/start.S`, `firmware/link.ld` and the start-up order in
+`firmware/src/main.c`.
+
+Going back to the stock firmware works through the same update path (tested: openipixelcolor → stock 3.17 →
+openipixelcolor), but needs a stock update file, which this project does not provide.
+
+## Project layout
+
+```
+firmware/         the firmware: C and a little assembly, Makefile, build scripts
+  src/app/board.h   the panel this build is for: size, board, model
+webui/            the web app: plain ES modules, no build step
+  js/main.js        start-up, and a map of the modules
+tools/
+  ble/            Bluetooth tools: scan, probe, install, flash check, command-line control
+  sim/            PC simulator and its tests, picture generators
+  wasm/           builds webui/panel.wasm from firmware/src/app
+  ci/             checks the CI runs on the web app
+docs/             PROTOCOL.md (the Bluetooth commands), HARDWARE.md (the board)
+design/logos/     the logo's design prototype
+.github/          CI: build and test every push, release firmware changes, publish the web app
+```
+
+No stock firmware, vendor code or vendor images are included, and none are needed to build.
 
 ## Contributing
 
-Issues and pull requests are welcome, especially hardware findings (see the guesses in
-[docs/HARDWARE.md](docs/HARDWARE.md)), new effects and clock faces. New effects go in
-`firmware/src/app/fx_more.c` and the table in `effects.c`; add the name to the web UI's `EFFECTS`
-list and `tools/ble/panelctl.py`. Please run the simulator tests and check the frames before sending
-a change, and say whether you tested it on a panel.
+Issues and pull requests are welcome: bug reports, hardware findings, new effects and clock faces, and above
+all ports to other iPixel Color boards and sizes. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-MIT, see [LICENSE](LICENSE). The update protocol and the bootloader's image-header format are
-implemented only so that openipixelcolor can be installed on, and removed from, panels people own.
+openipixelcolor is free software: you can redistribute it and/or modify it under the terms of the
+[GNU General Public License, version 2](LICENSE), as published by the Free Software Foundation. It is
+distributed in the hope that it will be useful, but **without any warranty**; without even the implied warranty
+of merchantability or fitness for a particular purpose.
+
+Copyright © 2026 the openipixelcolor contributors.
+
+The update protocol and the bootloader's image format are implemented only so that openipixelcolor can be
+installed on, and removed from, panels people own.
 
 openipixelcolor is an independent project. It is not affiliated with or endorsed by the makers of the
-iPixel Color app or of the panels.
+iPixel Color app or of the panels; "iPixel Color" is used only to say which devices this works with.
+
+## Acknowledgements
+
+The table of iPixel Color models and their sizes comes from the work of other open-source projects that talk to
+these panels, among them [pypixelcolor](https://github.com/lucagoc/pypixelcolor).

@@ -2,6 +2,7 @@
  * docs/PROTOCOL.md "Animations"). Hardware independent (storage via app_port.h): the PC simulator runs it. */
 #pragma once
 #include <stdint.h>
+#include "board.h"
 
 /* 20 slots of 32 KiB at the top of the update staging area, below the settings sectors (0x1FB000+).
  * An animation larger than one slot uses the following slots too. A firmware update only reaches this
@@ -12,16 +13,17 @@
 #define ANIM_SLOTS      20u
 #define ANIM_ALL        0xFFu          /* "slot" meaning: every stored animation in turn */
 #define ANIM_KEEP       0xFEu          /* 0xF111: change the speed only */
-#define ANIM_W          32u
-#define ANIM_H          32u
+#define ANIM_W          ((unsigned)BOARD_W)   /* a file must be made for this panel's size (header w, h) */
+#define ANIM_H          ((unsigned)BOARD_H)
 
-/* commands (0xF10C-0xF110 handled by anim_cmd, 0xF111 play by modes.c) */
+/* commands (0xF10C-0xF110 and 0xF112 handled by anim_cmd, 0xF111 play by modes.c) */
 #define ANIM_CMD_BEGIN  0xF10Cu
 #define ANIM_CMD_DATA   0xF10Du
 #define ANIM_CMD_LIST   0xF10Eu
 #define ANIM_CMD_INFO   0xF10Fu
 #define ANIM_CMD_DELETE 0xF110u
 #define ANIM_CMD_PLAY   0xF111u
+#define ANIM_CMD_READ   0xF112u
 
 #define ANIM_PLAY_REQ   0x100          /* anim_cmd result flag: replied, and the slot in the low byte should play */
 
@@ -30,7 +32,7 @@ int      anim_cmd(uint16_t cmd, const uint8_t *p, unsigned len, uint32_t now);  
 void     anim_abort_upload(void);                           /* a firmware update starts */
 void     anim_tick(uint32_t now);                           /* upload timeout */
 int      anim_uploading(void);
-void     anim_draw_upload(void);                            /* progress screen while an upload runs */
+int      anim_draw_saving(uint32_t now, int playing);       /* saving screen during an upload, then "saved"; 1 = drew */
 
 int      anim_valid(unsigned slot);                         /* complete animation there (ANIM_ALL: any) */
 void     anim_start(unsigned slot, uint32_t now);           /* slot or ANIM_ALL */

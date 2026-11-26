@@ -2,9 +2,9 @@
 
     ./sim screens                                  # writes screens.bin
     python tools/sim/make_readme_images.py screens.bin docs/images
+    python tools/make_brand.py screens.bin logo     # the banner, the web UI's logo and the favicons
 
-logo.png     the logo on an LED panel (transparent around the panel)
-screens.png  boot, first start and firmware update side by side, with captions
+screens.png  starting up, first start, installing firmware and saving side by side, with captions
 boot.gif     the boot animation
 Needs Pillow (pip install pillow).
 """
@@ -73,12 +73,12 @@ def main():
     os.makedirs(out, exist_ok=True)
     f = read_frames(src)
 
-    led_panel(f["logo"][0], 14, 26).save(os.path.join(out, "logo.png"), optimize=True)
-
-    shots = [(f["boot"][-1], "Starting up"), (f["welcome"][130], "First start"), (f["update"][31], "Installing firmware")]
+    # frames are 40 ms apart: the logo complete, the name scrolling, 62 % of an update, 45 % of a save
+    shots = [(f["boot"][33], "Starting up"), (f["welcome"][38], "First start"), (f["update"][77], "Installing firmware"),
+             (f["saving"][36], "Saving an animation")]
     tiles = [led_panel(px, 9, 16) for px, _ in shots]
     w, gap, cap = tiles[0].width, 40, 56
-    sheet = Image.new("RGBA", (3 * w + 2 * gap, w + cap), (0, 0, 0, 0))
+    sheet = Image.new("RGBA", (len(tiles) * w + (len(tiles) - 1) * gap, w + cap), (0, 0, 0, 0))
     dr = ImageDraw.Draw(sheet)
     fnt = font(26, bold=True)
     for k, (tile, (_, label)) in enumerate(zip(tiles, shots)):

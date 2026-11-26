@@ -1,0 +1,157 @@
+/* What only one place uses: text messages, the editors, tools, firmware steps. */
+
+/* ---- shared by the views ---- */
+.subview { display: grid; gap: 18px; }
+.stack { display: grid; gap: 16px; }
+.empty { padding: 28px 20px; border: 1px dashed var(--line-strong); border-radius: var(--r-m); color: var(--muted); text-align: center; }
+.drop u { text-underline-offset: 3px; color: var(--ink); }
+code { font-family: var(--mono); font-size: .9em; padding: 1px 5px; border-radius: 5px; background: var(--sunken); border: 1px solid var(--line); }
+.facts dd.bad { color: #ff8f92; }
+.result progress { flex-basis: 100%; }
+.toast progress { height: 6px; }
+.dev-controls { display: grid; gap: 14px; }
+.dev-controls .btn { justify-self: start; }
+@media (max-width: 860px) {
+  .dev-controls { gap: 8px; }
+  .dev-controls .dev-extra, .device .preview .note { display: none; }
+  .device > .banner { grid-column: 1 / -1; }
+}
+
+/* ---- Text ---- */
+.msg-editor { display: grid; gap: 16px; }
+.msgs { display: grid; gap: 10px; }
+.msg { border: 1px solid var(--line); border-radius: var(--r-l); background: var(--surface); }
+.msg[aria-expanded="true"] { border-color: var(--line-strong); }
+.msg-head { display: flex; align-items: center; gap: 4px; padding: 6px 10px 6px 6px; }
+.msg-head .open { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 6px 12px;
+  border: 0; border-radius: var(--r-s); background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.msg-head .open:hover { background: var(--raised); }
+.msg-head .n { font-family: var(--mono); color: var(--faint); font-size: 13px; }
+.msg-head .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.msg-head .t:empty::before { content: "(empty)"; color: var(--faint); }
+.msg-body { display: grid; gap: 16px; padding: 4px 18px 18px; }
+.msg[aria-expanded="false"] .msg-body { display: none; }
+.msg-body input.big { min-height: 48px; font-size: 18px; }
+.fx3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 640px) { .fx3 { grid-template-columns: minmax(0, 1fr); } }
+.colours { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+.colours .field { flex: 1; min-width: 180px; }
+.presets { display: flex; flex-wrap: wrap; gap: 8px; }
+.sendbar { position: sticky; bottom: 16px; display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: var(--r-m);
+  background: rgba(31, 35, 40, .96); border: 1px solid var(--line-strong); backdrop-filter: blur(6px); }
+@media (max-width: 860px) { .sendbar { bottom: calc(84px + env(safe-area-inset-bottom)); } }
+
+/* ---- Create: animation maker and drawing ---- */
+.editor { display: grid; grid-template-columns: 400px minmax(0, 1fr); gap: 20px; align-items: start; }
+@container content (max-width: 700px) { .editor { grid-template-columns: minmax(0, 1fr); } .editor .canvas32 { max-width: 440px; } }
+.tools .seg { justify-self: start; }
+.canvas32 { display: block; width: 100%; aspect-ratio: 1; border-radius: 10px; background: #07080a; touch-action: none; cursor: crosshair; }
+.tools { display: grid; gap: 12px; align-content: start; }
+.palette { display: flex; flex-wrap: wrap; gap: 6px; }
+.palette button { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--line-strong); cursor: pointer; }
+.palette button[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--ink); }
+.strip { display: flex; gap: 6px; overflow-x: auto; padding: 4px 2px 8px; }
+.strip button { flex: none; display: grid; gap: 2px; justify-items: center; padding: 4px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--surface); font: 11px var(--mono); color: var(--muted); }
+.strip button[aria-selected="true"] { border-color: var(--ink); color: var(--ink); }
+.strip canvas { width: 44px; height: 44px; image-rendering: pixelated; border-radius: 3px; background: #07080a; }
+.btnrow { display: flex; flex-wrap: wrap; gap: 6px; }
+.btnrow .btn { min-height: 34px; padding: 5px 11px; font-size: 13.5px; }
+.result { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px 16px; border-radius: var(--r-m); background: var(--sunken); border: 1px solid var(--line); }
+.result .facts-line { flex: 1; min-width: 200px; font-size: 14px; color: var(--muted); }
+.result .facts-line.err { color: #ff8f92; }
+
+/* ---- Play: tools ---- */
+.eq { display: grid; grid-template-columns: repeat(11, 1fr); gap: 6px; height: 150px; }
+.eq input { writing-mode: vertical-lr; direction: rtl; width: 100%; height: 100%; }
+.score { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; max-width: 420px; }
+.score .side { display: grid; justify-items: center; gap: 8px; }
+.score .num { font: 600 46px/1 var(--mono); }
+.score .colon { font-size: 34px; color: var(--muted); padding-bottom: 46px; }
+.toolgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+
+/* ---- Device: firmware steps ---- */
+.steps { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.steps li { display: flex; align-items: center; gap: 10px; color: var(--faint); font-size: 14px; }
+.steps li::before { content: ""; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--line-strong); flex: none; }
+.steps li[data-state="active"] { color: var(--ink); }
+.steps li[data-state="active"]::before { border-color: var(--ink); background: var(--ink); animation: blink 1s infinite; }
+.steps li[data-state="done"] { color: var(--muted); }
+.steps li[data-state="done"]::before { border-color: var(--ok); background: var(--ok); }
+.steps li[data-state="error"] { color: #ff8f92; }
+.steps li[data-state="error"]::before { border-color: var(--danger); background: var(--danger); }
+.log { margin: 0; padding: 0; list-style: none; font-size: 13px; color: var(--muted); max-height: 140px; overflow: auto; }
+.log li.err { color: #ff8f92; }
+.hold { position: relative; overflow: hidden; }
+.hold .fill { position: absolute; inset: 0; background: rgba(242, 85, 90, .35); transform: scaleX(0); transform-origin: left; pointer-events: none; }
+/* ---- Device: storage ----
+   Memory areas: the data-viz reference palette's dark steps, in its fixed order (validated on the card
+   surface: CVD and contrast pass). Animations are violet in both the slot strip and the memory map. */
+.storage {
+  --m-boot: #3987e5; --m-fw: #d95926; --m-ota: #199e70; --m-anim: #9085e9; --m-saved: #d55181; --m-rec: #0ca30c;
+  --m-free: repeating-linear-gradient(135deg, #3b4049 0 2px, #22262b 2px 6px);
+  gap: 18px;
+}
+.st-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.st-free { color: var(--muted); font-size: 14px; }
+.st-free .big { color: var(--ink); font-size: 26px; font-weight: 600; letter-spacing: -.01em; margin-right: 4px; }
+
+.slots { display: grid; grid-template-columns: repeat(20, minmax(0, 1fr)); gap: 3px; }
+.slots .free { height: 48px; border-radius: 6px; border: 1px dashed var(--line-strong); }
+.slots .run {
+  display: flex; align-items: center; gap: 9px; min-width: 0; height: 48px; padding: 4px 10px 4px 4px; border: 0; border-radius: 6px;
+  background: color-mix(in oklab, var(--m-anim) 18%, var(--surface));
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--m-anim) 70%, var(--surface)), inset 3px 0 0 var(--m-anim);
+  color: var(--ink); font-size: 13px; font-weight: 500; text-align: left; cursor: pointer;
+  transition: background .15s var(--ease);
+}
+.slots .run:hover { background: color-mix(in oklab, var(--m-anim) 28%, var(--surface)); }
+.slots .run .screen { height: 100%; flex: none; border-radius: 4px; }
+.slots .run .label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.slots .run.hl, .slots .run:focus-visible { box-shadow: inset 0 0 0 1px var(--m-anim), inset 3px 0 0 var(--m-anim), 0 0 0 2px var(--surface), 0 0 0 4px var(--ink); }
+.slots .run .screen { margin-left: 2px; }
+@media (max-width: 640px) { .slots { grid-template-columns: repeat(10, minmax(0, 1fr)); row-gap: 6px; } .slots .run .label { display: none; } }
+
+.stlist { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.stlist li { display: flex; align-items: center; gap: 14px; padding: 6px 10px 6px 6px; border-radius: var(--r-m);
+  background: var(--sunken); border: 1px solid transparent; }
+.stlist li.hl { border-color: var(--line-strong); }
+.stlist .screen { width: 52px; flex: none; border-radius: 6px; }
+/* below ~3 px an LED, the dot mask only darkens: small previews show plain pixels */
+.stlist .screen canvas, .slots .screen canvas { -webkit-mask: none; mask: none; }
+.stlist .screen.none::after { content: "?"; position: absolute; inset: 0; display: grid; place-items: center; color: var(--faint); font: 600 18px var(--mono); }
+.stlist .grow { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.stlist .name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stlist .meta { font-size: 12.5px; color: var(--muted); }
+
+.memmap { display: grid; gap: 12px; padding-top: 16px; border-top: 1px solid var(--line); }
+.memmap h4 { font-size: 15px; }
+.membar { display: flex; gap: 2px; height: 28px; }
+.membar .part { position: relative; min-width: 4px; border-radius: 4px; overflow: hidden; display: flex; align-items: center; }
+.membar .used { position: absolute; inset: 0 auto 0 0; }
+.membar .amount { position: relative; padding: 0 8px; color: #fff; font-size: 12.5px; font-weight: 500; white-space: nowrap; }
+.m-boot { background: var(--m-boot); }
+.m-fw { background: var(--m-fw); }
+.m-ota { background: var(--m-ota); }
+.m-anim { background: var(--m-anim); }
+.m-free { background: var(--m-free); }
+.m-saved { background: var(--m-saved); }
+.m-rec { background: var(--m-rec); }
+/* areas where the used part is known: a lighter step of the same colour for the rest */
+.membar .part.split.m-fw { background: color-mix(in oklab, var(--m-fw) 38%, var(--surface)); }
+.membar .part.split.m-anim { background: color-mix(in oklab, var(--m-anim) 38%, var(--surface)); }
+.membar .m-fw .used { background: var(--m-fw); }
+.membar .m-anim .used { background: var(--m-anim); }
+.memlegend { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; font-size: 14px; }
+.memlegend li { display: grid; grid-template-columns: 12px minmax(0, 200px) 64px minmax(0, 1fr); align-items: baseline; gap: 12px; }
+.memlegend .key { width: 12px; height: 12px; border-radius: 3px; align-self: center; }
+.memlegend .sz { font-family: var(--mono); font-size: 13px; text-align: right; }
+.memlegend .dt { color: var(--muted); font-size: 13.5px; }
+@media (max-width: 640px) {
+  .memlegend li { grid-template-columns: 12px minmax(0, 1fr) auto; row-gap: 0; }
+  .memlegend .dt { grid-column: 2 / -1; }
+}
+
+.rotate { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.rotate .btn[aria-pressed="true"] { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
+@media (max-width: 520px) { .rotate { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The ring</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; padding: 28px; background: #0d0f12; color: #e8e6e1; font: 15px/1.5 "Segoe UI", system-ui, sans-serif; }
+  h1 { margin: 0 0 6px; font-size: 24px; }
+  p { margin: 0 0 24px; color: #8e96a3; max-width: 72ch; }
+  .row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; max-width: 1200px; }
+  figure { margin: 0; }
+  img { display: block; width: 100%; border-radius: 12px; image-rendering: pixelated; }
+  figcaption { margin-top: 8px; color: #e8e6e1; font-size: 15px; }
+  figcaption span { display: block; color: #8e96a3; font-size: 13.5px; }
+  .sheet { margin-top: 32px; max-width: 1200px; width: 100%; height: auto; border-radius: 0; }
+  @media (max-width: 800px) { .row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+</style>
+</head>
+<body>
+<h1>The ring</h1>
+<p>The first logo, rebuilt: an open colour ring, the colours of the panel, around a pixel "i", with one pixel escaping through the gap. Text is at least 7 px tall, words step in one at a time, and everything moves with easing at 25 frames a second.</p>
+<div class="row">
+  <figure><img src="ring/boot.gif" alt=""><figcaption>Boot<span>The ring draws itself, the "i" rises, the pixel escapes; the logo moves up and the name and version step through below.</span></figcaption></figure>
+  <figure><img src="ring/first-start.gif" alt=""><figcaption>First start<span>The logo stays and "open ipixel color" scrolls ("color" in the ring's colours); between passes the "i" flips into the Bluetooth sign.</span></figcaption></figure>
+  <figure><img src="ring/firmware-update.gif" alt=""><figcaption>Firmware update<span>The ring fills with colour as the firmware arrives, pixels stream in through the gap; a light runs round it and a tick when done.</span></figcaption></figure>
+  <figure><img src="ring/bluetooth.gif" alt=""><figcaption>Connected<span>The loose pixel flies back in through the gap, a light ring pulses out, and the "i" becomes the Bluetooth sign.</span></figcaption></figure>
+  <figure><img src="ring/saving.gif" alt=""><figcaption>Saving<span>The small ring fills as an animation arrives, an arrow keeps dropping into it, the percentage below; then a tick and "saved".</span></figcaption></figure>
+  <figure><img src="../../docs/images/banner.png" alt="" style="image-rendering:auto"><figcaption>README banner<span>docs/images/banner.png</span></figcaption></figure>
+</div>
+<img class="sheet" src="ring/sheet.png" alt="Still frames of every screen">
+</body>
+</html>

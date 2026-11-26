@@ -2,8 +2,10 @@
 #pragma once
 #include <stdint.h>
 
-#define GFX_W 32
-#define GFX_H 32
+#include "board.h"
+
+#define GFX_W BOARD_W
+#define GFX_H BOARD_H
 
 typedef uint8_t fb_t[GFX_H][GFX_W][3];
 typedef uint32_t rgb_t;                         /* 0xRRGGBB */

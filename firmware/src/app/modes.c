@@ -306,12 +306,26 @@ static void draw_splash(uint32_t now)
     if (t > SCREENS_BOOT_MS) enter_saved_mode(now);
 }
 
+/* an app connected (proto.c: the first packet after a quiet spell is its time sync): screens_connected()
+ * over whatever plays, for a moment. Not over the boot screen. */
+static struct { uint8_t show; uint32_t at; } conn;
+void modes_connected(uint32_t now)
+{
+    if (S.mode == MODE_SPLASH) return;
+    conn.show = 1;
+    conn.at = now;
+}
+
 void modes_render(fb_t *fb, uint32_t now)
 {
     gfx_target(fb);
     anim_tick(now);
     if (!S.power) { gfx_fill(0); return; }
-    if (anim_uploading()) { anim_draw_upload(); return; }
+    if (anim_draw_saving(now, S.mode == MODE_ANIM)) return;
+    if (conn.show) {
+        if (now - conn.at < SCREENS_CONNECTED_MS) { screens_connected(now - conn.at); return; }
+        conn.show = 0;
+    }
     switch (S.mode) {
     case MODE_EFFECT:
         if (S.autoplay && now - S.effect_since >= S.autoplay_s * 1000u) start_effect(S.effect + 1u, now);
@@ -319,7 +333,7 @@ void modes_render(fb_t *fb, uint32_t now)
         break;
     case MODE_CLOCK:  clock_draw(S.clock_style, now, S.fmt24, S.show_date); break;
     case MODE_TEXT:   draw_text(now); break;
-    case MODE_CANVAS: for (int y = 0; y < 32; y++) for (int x = 0; x < 32; x++)
+    case MODE_CANVAS: for (int y = 0; y < GFX_H; y++) for (int x = 0; x < GFX_W; x++)
                           for (int c = 0; c < 3; c++) (*fb)[y][x][c] = canvas[y][x][c];
                       break;
     case MODE_RHYTHM:
@@ -488,9 +502,9 @@ int modes_handle_cmd(uint16_t cmd, const uint8_t *p, unsigned len, uint32_t now)
         if (r == 2) { S.text_kind = 1; modes_set(MODE_TEXT, 0, now); }
         return 1; }
     case 0xF103:                                       /* full frame 32x32 RGB */
-        if (len != 4u + 32u * 32u * 3u) return 0;
-        for (int y = 0; y < 32; y++) for (int x = 0; x < 32; x++)
-            for (int c = 0; c < 3; c++) canvas[y][x][c] = p[4 + (y * 32 + x) * 3 + c];
+        if (len != 4u + GFX_W * GFX_H * 3u) return 0;
+        for (int y = 0; y < GFX_H; y++) for (int x = 0; x < GFX_W; x++)
+            for (int c = 0; c < 3; c++) canvas[y][x][c] = p[4 + (y * GFX_W + x) * 3 + c];
         modes_set(MODE_CANVAS, 0, now);
         return 1;
     case 0xF104:                                       /* autoplay: on seconds_lo seconds_hi */
@@ -503,7 +517,7 @@ int modes_handle_cmd(uint16_t cmd, const uint8_t *p, unsigned len, uint32_t now)
     case 0xF105:                                       /* pixels: n x (x y r g b) */
         if (len < 9 || (len - 4u) % 5u) return 0;
         for (unsigned i = 4; i + 5 <= len; i += 5)
-            if (p[i] < 32 && p[i + 1] < 32) {
+            if (p[i] < GFX_W && p[i + 1] < GFX_H) {
                 canvas[p[i + 1]][p[i]][0] = p[i + 2]; canvas[p[i + 1]][p[i]][1] = p[i + 3]; canvas[p[i + 1]][p[i]][2] = p[i + 4];
             }
         if (S.mode != MODE_CANVAS) modes_set(MODE_CANVAS, 0, now);

@@ -1,6 +1,7 @@
 /* Animation store and player.
  *
- * File format "OPA1" (little-endian, made by webui/anim.js; the same file is what is stored in flash):
+ * File format "OPA1" (little-endian, made by webui/js/create/anim-codec.js; the same file is what is stored
+ * in flash):
  *    0  u32 magic "OPA1"          4  u8 w, u8 h (32, 32)       6  u16 frames
  *    8  u16 colours (1..256)     10  u8 flags (0), u8 0       12  u32 length of the whole file
  *   16  u32 CRC-32 of bytes [64, length)                      20  u32 0, u32 0
@@ -24,6 +25,7 @@
  */
 #include "anim.h"
 #include "gfx.h"
+#include "screens.h"
 #include "app_port.h"
 
 #define MAGIC        0x3141504Fu        /* "OPA1" */
@@ -66,6 +68,8 @@ static struct {
     uint32_t off, due, since;
     uint8_t  idx[NPX];
 } pl = { .slot = 0xFF };
+
+static struct { uint8_t show; uint32_t at, len; } saved;   /* the "saved" screen after an upload */
 
 /* source buffers for flash writes must be in RAM, never in flash */
 static uint32_t ram_done = STATE_DONE;
@@ -204,6 +208,7 @@ static int piece(uint32_t off, const uint8_t *d, unsigned n, uint32_t now)
     if (crc32(slot_ptr(up.slot) + HDR, up.len - HDR) != up.crc) return R_VERIFY;
     if (app_flash_program(slot_addr(up.slot) + H_STATE, &ram_done, 4) != 0) return R_FLASH;
     set_dir(up.slot, up.len, up.crc, up.frames, up.ncol, (const uint8_t *)up.name);
+    if (up.flags & 1u) { saved.show = 1; saved.at = now; saved.len = up.len; }     /* "saved" before it plays */
     return R_DONE;
 }
 
@@ -245,9 +250,28 @@ static void reply_info(unsigned s, unsigned part)
     app_reply(ANIM_CMD_INFO, ok ? 1u : 0u, x, sizeof x);
 }
 
+/* 0xF112 slot off(4) -> off_lo + 10 bytes of the stored file from off (fewer at the end). Replies are at most
+ * 16 bytes, so this is slow (~10 bytes a round trip): the web UI reads the colours and the first frame of
+ * animations it didn't send itself, for a preview. off_lo tells a late duplicate reply from the answer. */
+static void reply_read(unsigned s, uint32_t off)
+{
+    uint8_t x[11] = { (uint8_t)off };
+    int ok = ready && s < ANIM_SLOTS && dir[s].len && off < dir[s].len;
+    if (ok) {
+        if (off == 0) app_flash_forget();                   /* the slot may have been rewritten since it was read */
+        const uint8_t *src = slot_ptr(s) + off;             /* a file's slots are consecutive */
+        uint32_t n = dir[s].len - off < 10u ? dir[s].len - off : 10u;
+        for (uint32_t i = 0; i < n; i++) x[1 + i] = src[i];
+    }
+    app_reply(ANIM_CMD_READ, ok ? 1u : 0u, x, sizeof x);
+}
+
 int anim_cmd(uint16_t cmd, const uint8_t *p, unsigned len, uint32_t now)
 {
     switch (cmd) {
+    case ANIM_CMD_READ:                                     /* slot off(4) */
+        reply_read(len >= 5 ? p[4] : 0xFFu, len >= 9 ? rd32(p + 5) : 0);
+        return 2;
     case ANIM_CMD_BEGIN: {                                  /* slot len(4) flags (bit 0: play when done) */
         uint8_t r = (uint8_t)(len < 10 ? R_ARG : begin(p[4], rd32(p + 5), p[9], now));
         app_reply(cmd, r == R_OK ? 1u : 0u, &r, 1);
@@ -378,19 +402,18 @@ void anim_draw(uint32_t now, unsigned speed10)
     }
 }
 
-void anim_draw_upload(void)
+/* The saving screen (screens.c) while an upload runs; after one that plays when done, "saved" for a moment,
+ * then the animation starts from its first frame. Returns 1 when it drew. */
+int anim_draw_saving(uint32_t now, int playing)
 {
-    uint32_t pct = up.len ? up.next * 100u / up.len : 0;          /* len <= 640 KiB: no overflow */
-    char num[5];
-    unsigned n = 0;
-    if (pct >= 100u) num[n++] = '1';
-    if (pct >= 10u) num[n++] = (char)('0' + (pct / 10u) % 10u);
-    num[n++] = (char)('0' + pct % 10u);
-    num[n++] = '%';
-    num[n] = 0;
-    gfx_fill(0);
-    gfx_text((32 - gfx_text_width("SAVE")) / 2, 4, "SAVE", RGB(120, 170, 255));
-    gfx_rect(2, 15, 28, 5, RGB(70, 80, 100), 0);
-    if (pct) gfx_rect(3, 16, (int)(pct * 26u / 100u) ? (int)(pct * 26u / 100u) : 1, 3, RGB(90, 220, 140), 1);
-    gfx_tiny_text((32 - gfx_tiny_width(num)) / 2, 23, num, RGB(200, 200, 210));
+    if (up.active) { screens_saving(now, up.next, up.len, -1); return 1; }
+    if (!saved.show) return 0;
+    uint32_t d = now - saved.at;
+    if (!playing || d >= SCREENS_SAVED_MS) {
+        saved.show = 0;
+        if (playing) anim_start(pl.all ? ANIM_ALL : pl.slot, now);
+        return 0;
+    }
+    screens_saving(now, saved.len, saved.len, (int)d);
+    return 1;
 }

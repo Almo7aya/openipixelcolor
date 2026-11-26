@@ -1,11 +1,13 @@
-// Test animations for "sim anim": encoded by the web UI's encoder (webui/anim.js), plus what its decoder
-// says the panel must show. The simulator plays the files through the firmware's player and compares.
-//   node tools/sim/anim_vectors.js <out-dir>
+// Test animations for "sim anim": encoded by the web UI's encoder (webui/js/create/anim-codec.js), plus what
+// its decoder says the panel must show. The simulator plays the files through the firmware's player and
+// compares.   node tools/sim/anim_vectors.js <out-dir>
 // Writes <name>.opa (the file), <name>.rgb (every frame, 32*32*3 each) and <name>.del (u16 delays).
 "use strict";
-const fs = require("fs"), path = require("path");
-const OPA = require("../../webui/anim.js");
+const fs = require("fs"), path = require("path"), { pathToFileURL } = require("url");
 
+(async () => {
+const codec = path.join(__dirname, "..", "..", "webui", "js", "create", "anim-codec.js");
+const OPA = (await import(pathToFileURL(codec).href)).default;
 const out = process.argv[2] || ".";
 fs.mkdirSync(out, { recursive: true });
 
@@ -49,3 +51,4 @@ for (const [name, frames] of Object.entries(sets)) {
   }
   console.log(`${name}: ${frames.length} frames -> ${enc.frames} stored (${enc.merged} merged), ${enc.colors} colours, ${enc.size} bytes${note}`);
 }
+})().catch((e) => { console.error(e); process.exit(1); });

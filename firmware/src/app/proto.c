@@ -14,7 +14,7 @@
 #include "../hal/timer.h"
 #include "../lib/printf.h"
 
-#define DEVICE_TYPE_32X32 0x81u
+#include "board.h"
 
 static uint8_t  bt_ver_major, bt_ver_minor;
 static uint32_t ota_deadline;          /* 0 = disarmed; 10 s inactivity reset after update commands, as the vendor firmware */
@@ -37,16 +37,25 @@ static void arm_ota_timer(void) { ota_deadline = millis() + 10000u; if (!ota_dea
 static uint32_t rd32(const uint8_t *p) { return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24); }
 static void wr32(uint8_t *p, uint32_t v) { p[0] = (uint8_t)v; p[1] = (uint8_t)(v >> 8); p[2] = (uint8_t)(v >> 16); p[3] = (uint8_t)(v >> 24); }
 
+/* The companion module doesn't say when an app connects, but every app sends 0x8001 (time sync) first, and
+ * a connected app keeps talking (the web UI polls every 4 s). So 0x8001 after 8 s of silence = connected. */
+#define QUIET_MS 8000u
+static uint32_t last_rx;
+
 void proto_handle(const uint8_t *pkt, unsigned len)
 {
     uint16_t cmd = link_cmd(pkt);
+    uint32_t now = millis();
+    int fresh = n_packets == 0 || now - last_rx > QUIET_MS;
+    last_rx = now;
     n_packets++;
 
     switch (cmd) {
-    case 0x8001: {                                     /* device info + time sync (pypixelcolor sends it on connect) */
-        if (len >= 7) modes_set_time(pkt[4], pkt[5], pkt[6], millis());
-        uint8_t x[5] = { 0, 0, 0, 0, 1 };              /* vendor reply: 0a 00 01 80 81 <u32 setting> 01 */
-        link_reply(0x8001, DEVICE_TYPE_32X32, x, sizeof x);
+    case 0x8001: {                                     /* device info + time sync (every app sends it on connect) */
+        if (len >= 7) modes_set_time(pkt[4], pkt[5], pkt[6], now);
+        if (fresh && fw_mode() == FW_MODE_NORMAL) modes_connected(now);
+        uint8_t x[5] = { 0, 0, 0, 0, 1 };              /* vendor reply: 0a 00 01 80 <type> <u32 setting> 01 */
+        link_reply(0x8001, BOARD_DEVICE_TYPE, x, sizeof x);
         break; }
     case 0x8005: {                                     /* versions: 08 00 05 80 mcu_maj mcu_min bt_maj bt_min */
         uint8_t x[3] = { (uint8_t)FW_VER_MINOR, bt_ver_major, bt_ver_minor };   /* the version number: fwinfo.h */
@@ -91,6 +100,11 @@ void proto_handle(const uint8_t *pkt, unsigned len)
         wr32(x + 3, fw_last_exc_ipc());
         wr32(x + 7, millis() / 1000u);
         link_reply(FW_CMD_DIAG, 1, x, sizeof x);
+        break; }
+    case FW_CMD_PANEL_INFO: {                          /* openipixelcolor: the matrix size and board (board.h) */
+        uint8_t x[6] = { (uint8_t)BOARD_W, (uint8_t)(BOARD_W >> 8), (uint8_t)BOARD_H, (uint8_t)(BOARD_H >> 8),
+                         (uint8_t)BOARD_ID, (uint8_t)BOARD_DEVICE_TYPE };
+        link_reply(FW_CMD_PANEL_INFO, 1, x, sizeof x);
         break; }
     case 0xF109: {                                     /* openipixelcolor: saved-settings status (see settings.c) */
         uint8_t x[8];

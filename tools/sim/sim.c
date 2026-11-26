@@ -145,7 +145,7 @@ static int settings_test(void)
 
     printf("1. first boot on old flash content\n");
     reboot(1);
-    idle(2500);
+    idle(SCREENS_BOOT_MS + 700);
     status(st);
     CHECK(st[0] == MODE_WELCOME && st[2] == 80 && st[8] == 2, "first start: welcome screen, 80 %, orientation 2");
     sinfo(si);
@@ -165,7 +165,7 @@ static int settings_test(void)
     printf("3. power cycle\n");
     reboot(1);
     CHECK(last_bright == 55 && last_orient == 1, "brightness 55 and orientation 1 applied at boot");
-    idle(2500);
+    idle(SCREENS_BOOT_MS + 700);
     status(st);
     CHECK(st[0] == MODE_CLOCK && st[9] == 3 && !(st[7] & 4) && !(st[7] & 8), "back on clock face 3, 12 h, no date");
 
@@ -215,7 +215,7 @@ static int settings_test(void)
     idle(5000);
     CHECK(fl_erases == e1 + 1, "picture written once after 8 s of quiet");
     reboot(1);
-    idle(2500);
+    idle(SCREENS_BOOT_MS + 700);
     status(st);
     CHECK(st[0] == MODE_CANVAS && memcmp(before, modes_canvas(), sizeof before) == 0, "after power cycle: same picture on screen");
 
@@ -231,7 +231,7 @@ static int settings_test(void)
     uint8_t a5 = 0xA5; cmd(0xF108, &a5, 1);
     idle(3600);
     reboot(1);
-    idle(2500);
+    idle(SCREENS_BOOT_MS + 700);
     status(st);
     CHECK(last_bright == 80 && st[0] == MODE_EFFECT && st[8] == 2, "F108 A5: factory settings after power cycle");
     uint8_t bad = 0x11;
@@ -283,7 +283,7 @@ static int settings_test(void)
         idle(5000);
         CHECK(fl_erases > e0, "strip written to flash after the quiet time");
         reboot(1);
-        idle(2500);
+        idle(SCREENS_BOOT_MS + 700);
         status(st);
         tb = modes_textbits(&len);
         CHECK(st[0] == MODE_TEXT && tb && len == 188 && memcmp(tb, keep, 188) == 0, "after power cycle: same strip, text mode");
@@ -314,7 +314,7 @@ static int settings_test(void)
         uint8_t keep[400]; memcpy(keep, tb, len); unsigned klen = len;
         idle(5000);
         reboot(1);
-        idle(2500);
+        idle(SCREENS_BOOT_MS + 700);
         status(st);
         tb = modes_textbits(&len);
         CHECK(st[0] == MODE_TEXT && tb && len == klen && memcmp(tb, keep, len) == 0, "after power cycle: same playlist, text mode");
@@ -324,7 +324,7 @@ static int settings_test(void)
     return nfail ? 1 : 0;
 }
 
-/* ---- "sim anim <dir>": animation upload, storage and player against files made by webui/anim.js --------- */
+/* ---- "sim anim <dir>": animation upload, storage and player against files made by webui/js/create/anim-codec.js */
 typedef struct { uint8_t *opa, *rgb; uint16_t *del; uint32_t len; unsigned frames; } vec_t;
 
 static uint8_t *slurp(const char *dir, const char *name, const char *ext, uint32_t *len)
@@ -443,7 +443,39 @@ static int anim_test(const char *dir)
     CHECK(last_reply[2] == 1 && memcmp(last_reply + 5, "bounce \xE2\x9C", 9) == 0, "info part 1: name bytes 0-8");
     status(st);
     CHECK(st[0] == MODE_ANIM && st[1] == 0, "play-when-done: animation mode, slot 0 on screen");
+    {                                                   /* first "saved" for a moment, then it plays from the start */
+        uint32_t end = now + SCREENS_SAVED_MS;
+        int shown = 0;
+        while (now < end) {
+            now += 25;
+            modes_render(&fb, now);
+            if (now == end - 25)                        /* "saved" in green in the band */
+                for (int y = 24; y < 31; y++) for (int x = 0; x < 32; x++) if (fb[y][x][1] > 200 && fb[y][x][0] < 120) shown = 1;
+        }
+        CHECK(shown, "\"saved\" shows before it plays");
+    }
     CHECK(play_matches(&A, "bounce") == 0, "every frame on time and pixel-exact (2 rounds)");
+    {                                                   /* read back (0xF112): the file as stored, "DONE" in the state word */
+        int same = 1;
+        uint8_t rq[5] = { 0 };
+        for (uint32_t off = 0; off < A.len && same; off += 10) {
+            put32(rq + 1, off);
+            cmd(ANIM_CMD_READ, rq, 5);
+            if (last_reply[2] != 1 || last_reply[3] != (uint8_t)off) { same = 0; break; }
+            for (uint32_t i = 0; i < 10 && off + i < A.len; i++) {
+                uint32_t k = off + i;
+                uint8_t want = (k >= 28 && k < 32) ? (uint8_t)"DONE"[k - 28] : A.opa[k];
+                if (last_reply[4 + i] != want) same = 0;
+            }
+        }
+        CHECK(same, "read back: the stored file, byte for byte");
+        put32(rq + 1, A.len);
+        cmd(ANIM_CMD_READ, rq, 5);
+        CHECK(last_reply[2] == 0, "read back past the end: refused");
+        rq[0] = 1; put32(rq + 1, 0);
+        cmd(ANIM_CMD_READ, rq, 5);
+        CHECK(last_reply[2] == 0, "read back from a slot without a file start: refused");
+    }
 
     printf("3. a bigger one across several slots, at half speed\n");
     r = upload(3, B.opa, B.len, 0, -1);
@@ -467,7 +499,7 @@ static int anim_test(const char *dir)
     printf("4. power cycle\n");
     idle(4000);
     reboot(1);
-    idle(2500);
+    idle(SCREENS_BOOT_MS + 700);
     status(st);
     anim_list(&valid, &used);
     CHECK(valid == ((1u << 0) | (1u << 3)), "both still there after the boot scan");
@@ -568,7 +600,7 @@ static int anim_test(const char *dir)
     return nfail ? 1 : 0;
 }
 
-/* ---- "sim screens": the logo, boot, welcome and update screens -> screens.bin (make_readme_images.py) ---- */
+/* ---- "sim screens": the logo and every screen -> screens.bin (make_readme_images.py, make_brand.py) ---- */
 static void snap(FILE *f, const char *label)
 {
     char name[32] = { 0 };
@@ -582,20 +614,59 @@ static int screens_out(void)
     FILE *f = fopen("screens.bin", "wb");
     if (!f) return 1;
     gfx_target(&fb);
-    gfx_fill(0);
-    screens_logo(32, 256, 0, 256, 255);
+    screens_logo();
     snap(f, "logo");
     for (uint32_t t = 0; t <= SCREENS_BOOT_MS; t += 40) { screens_boot(t); snap(f, "boot"); }
-    for (uint32_t t = 0; t < 8000; t += 40) { screens_welcome(t); snap(f, "welcome"); }
-    for (uint32_t p = 0; p <= 100; p += 2) { screens_update(&fb, p * 40u, p * 1000u, 100000u); snap(f, "update"); }
+    for (uint32_t t = 0; t < 5440; t += 40) { screens_welcome(t); snap(f, "welcome"); }
+    for (uint32_t t = 0; t <= 5000; t += 40) { screens_update(&fb, t, t * 20u, 100000u); snap(f, "update"); }
+    for (uint32_t t = 0; t < SCREENS_CONNECTED_MS; t += 40) { screens_connected(t); snap(f, "connected"); }
+    for (uint32_t t = 0; t < 3200; t += 40) { screens_saving(t, t, 3200, -1); snap(f, "saving"); }
+    for (uint32_t t = 0; t < SCREENS_SAVED_MS; t += 40) { screens_saving(3200 + t, 3200, 3200, (int)t); snap(f, "saving"); }
     fclose(f);
     printf("screens written\n");
+    return 0;
+}
+
+/* ---- "sim previews": short loops of every effect and clock face -> previews.bin (make_previews.py) ---- */
+static int previews_out(void)
+{
+    FILE *f = fopen("previews.bin", "wb");
+    if (!f) return 1;
+    quiet = 1;
+    modes_init(now);
+    uint8_t off[3] = { 0, 20, 0 };
+    cmd(0xF104, off, 3);                                         /* autoplay off */
+    for (unsigned e = 0; e < effect_count; e++) {
+        uint8_t m[2] = { MODE_EFFECT, (uint8_t)e };
+        cmd(0xF101, m, 2);
+        for (uint32_t t = 0; t < 1500; t += 25) { now += 25; modes_render(&fb, now); }   /* let it settle */
+        char label[32];
+        snprintf(label, sizeof label, "effect %02u", e);
+        for (int k = 0; k < 36; k++) {
+            for (int s = 0; s < 3; s++) { now += 25; modes_render(&fb, now); }
+            snap(f, label);
+        }
+    }
+    for (uint8_t st = 0; st < CLOCK_STYLES; st++) {
+        modes_set_time(10, 8, 30, now);
+        uint8_t c[7] = { st, 1, 1, 26, 11, 22, 7 };
+        cmd(0x0106, c, 7);
+        char label[32];
+        snprintf(label, sizeof label, "clock %02u", st);
+        for (int k = 0; k < 36; k++) {
+            for (int s = 0; s < 4; s++) { now += 25; modes_render(&fb, now); }
+            snap(f, label);
+        }
+    }
+    fclose(f);
+    printf("previews written\n");
     return 0;
 }
 
 int main(int argc, char **argv)
 {
     if (argc > 1 && strcmp(argv[1], "screens") == 0) return screens_out();
+    if (argc > 1 && strcmp(argv[1], "previews") == 0) return previews_out();
     if (argc > 1 && strcmp(argv[1], "settings") == 0) return settings_test();
     if (argc > 2 && strcmp(argv[1], "anim") == 0) return anim_test(argv[2]);
     out = fopen("frames.bin", "wb");

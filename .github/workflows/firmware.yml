@@ -41,7 +41,7 @@ jobs:
       firmware_changed: ${{ steps.changes.outputs.firmware }}
     steps:
       - name: Install the toolchain
-        run: pacman -Syu --noconfirm --needed nds32le-elf-gcc nds32le-elf-binutils python nodejs git
+        run: pacman -Syu --noconfirm --needed nds32le-elf-gcc nds32le-elf-binutils clang lld python nodejs git
 
       - uses: actions/checkout@v7
         with:
@@ -86,6 +86,18 @@ jobs:
       - name: Check the web UI
         run: node tools/ci/check_webui.js
 
+      # the panel preview runs the firmware's display code in the browser: built from this commit's sources
+      - name: Build the panel preview (WebAssembly)
+        run: |
+          mkdir -p web
+          python tools/wasm/build.py --out web/panel.wasm
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: panel-wasm
+          path: web/
+          if-no-files-found: error
+
       - name: Collect the firmware files
         env:
           v: ${{ steps.version.outputs.version }}
@@ -123,6 +135,11 @@ jobs:
           name: openipixelcolor-firmware
           path: dist
 
+      - uses: actions/download-artifact@v7
+        with:
+          name: panel-wasm
+          path: web
+
       - name: Publish a release
         if: env.RELEASE == 'true'
         run: |
@@ -133,7 +150,7 @@ jobs:
           {
             echo "Firmware $VERSION built from ${GITHUB_SHA::7}."
             echo
-            echo "Install it from the web page: $page (Chrome or Edge, Settings tab, **Use the latest release**)."
+            echo "Install it from the web page: $page (Chrome or Edge, **Device**, **Use the latest release**)."
             echo "\`openipixelcolor-$VERSION.ota.bin\` is the update file, \`openipixelcolor-$VERSION.bin\` the raw image."
             echo
             echo "Firmware changes:"
@@ -161,8 +178,11 @@ jobs:
 
       - name: Assemble the site
         run: |
+          mkdir -p site
+          cp -r webui/. site/
+          rm -f site/serve.py
+          cp web/panel.wasm site/panel.wasm          # built from this commit, not the copy in the repository
           mkdir -p site/firmware
-          cp webui/index.html webui/*.js site/
           touch site/.nojekyll
           f=$(ls fw/*.ota.bin 2>/dev/null | head -n 1 || true)
           if [ -n "$f" ]; then
