@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>openipixelcolor</title>
+<script>
+  /* Web Bluetooth only works on HTTPS (or this computer): a plain http:// address goes to the https:// one */
+  if (location.protocol === "http:" && !/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname))
+    location.replace("https://" + location.host + location.pathname + location.search + location.hash);
+</script>
 <style>
 :root {
   --alu: #111316;      /* page: dark anodised enclosure */

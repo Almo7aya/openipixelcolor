@@ -7,7 +7,7 @@ square RGB panels that advertise as `LED_BLE_…` and are normally driven by the
 The firmware is written from scratch in C for the panel's MVSilicon P2064AF2 chip (Andes NDS32 V3)
 and is installed over Bluetooth through the panel's own update path. No programmer, no soldering.
 
-**Try it: [almo7aya.github.io/openipixelcolor](https://almo7aya.github.io/openipixelcolor/)** in Chrome or
+**Try it: [almo7aya.dev/openipixelcolor](https://almo7aya.dev/openipixelcolor/)** in Chrome or
 Edge on a computer with Bluetooth. Connect the panel, open **Settings**, click **Use the latest release**,
 then **Install firmware** twice. Nothing to install on the computer.
 
@@ -63,7 +63,7 @@ No vendor firmware, vendor code or vendor images are included, and none are need
 
 - A panel with the P2064AF2 board (check with `tools/ble/ble_probe.py`, below).
 - A computer with Bluetooth and Chrome or Edge (Web Bluetooth). That's all for using the
-  [hosted page](https://almo7aya.github.io/openipixelcolor/).
+  [hosted page](https://almo7aya.dev/openipixelcolor/).
 - For the command-line tools: Python 3.11+ with `pip install -r tools/requirements.txt`.
 - To build the firmware: an `nds32le-elf` GCC toolchain (tested with GCC 15.2 and binutils 2.45.1) and
   Python 3. Arch Linux packages it: `pacman -S nds32le-elf-gcc nds32le-elf-binutils`; elsewhere
@@ -124,7 +124,7 @@ After the last chunk the panel restarts and its bootloader installs the image.
 
 ### 4. Use it
 
-Open **[almo7aya.github.io/openipixelcolor](https://almo7aya.github.io/openipixelcolor/)**, or run the page
+Open **[almo7aya.dev/openipixelcolor](https://almo7aya.dev/openipixelcolor/)**, or run the page
 from your copy of the repository (needed to test changes to the page or to install your own build):
 
 ```sh

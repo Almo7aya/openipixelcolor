@@ -18,7 +18,8 @@ on:
         default: false
 
 permissions:
-  contents: write
+  contents: write          # releases, the gh-pages branch
+  pages: read              # the page's address for the release notes
 
 jobs:
   build:
@@ -118,7 +119,8 @@ jobs:
         run: |
           tag="v$VERSION-${GITHUB_SHA::7}"
           prev=$(gh release list --limit 1 --json tagName -q '.[0].tagName' || true)
-          page="https://${GITHUB_REPOSITORY_OWNER,,}.github.io/${GITHUB_REPOSITORY#*/}/"
+          page=$(gh api "repos/$GITHUB_REPOSITORY/pages" -q .html_url 2>/dev/null || echo "https://${GITHUB_REPOSITORY_OWNER,,}.github.io/${GITHUB_REPOSITORY#*/}/")
+          page="https://${page#*://}"                 # Web Bluetooth needs HTTPS
           {
             echo "Firmware $VERSION built from ${GITHUB_SHA::7}."
             echo
