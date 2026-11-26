@@ -5,13 +5,28 @@ import { pix, drawMirror, claimMirror, mirrorNote } from "../mirror.js";
 import { panel } from "../ble.js";
 import { size } from "../size.js";
 import { toast, toastError } from "../toast.js";
-import { uploadAnimation, ready as libReady, goToLibrary } from "../library.js";
+import { uploadAnimation, ready as libReady, goToLibrary, libraryState } from "../library.js";
 import OPA from "./anim-codec.js";
 import { readFiles, fitFrames, thumbOf, MAX_SOURCE_FRAMES } from "./import.js";
 import { PixelCanvas, PALETTE } from "./pixelcanvas.js";
 import { FORMULAS, MOTIONS, formulaFrames, emojiFrames } from "./generators.js";
+import { SCENE_LIST, BACKDROPS, sceneFrames, sceneColor } from "./scenes3d.js";
 
 const A = { src: "file", fileSrc: null, lastFiles: null, enc: null, encFrames: null, nameAuto: true, uploading: false };
+
+/* 3D scenes take a moment to draw: drawn in the background (with progress), kept for as long as nothing
+   that changes the picture changes */
+const R3 = { key: "", frames: null, drawing: "" };
+const key3d = () => JSON.stringify([$("#g3Scene").value, $("#g3Color").value, $("#g3Bg").value, $("#gSecs").value, $("#gFps").value, size.w, size.h]);
+function draw3d(key) {
+  if (R3.drawing === key) return;
+  R3.drawing = key;
+  sceneFrames({ scene: $("#g3Scene").value, color: $("#g3Color").value, bg: $("#g3Bg").value, secs: Number($("#gSecs").value),
+    fps: Number($("#gFps").value), w: size.w, h: size.h, ss: 3,
+    onFrame: (i, n) => { if (R3.drawing === key) facts(`Drawing the 3D scene… ${Math.round(i * 100 / n)}%`); } })
+    .then((frames) => { if (R3.drawing !== key) return; Object.assign(R3, { key, frames, drawing: "" }); encodeNow(true); })
+    .catch((e) => { if (R3.drawing === key) { R3.drawing = ""; facts(e.message, true); } });
+}
 
 /* ---- preview on the panel preview, with the file's own frame times ---- */
 const pv = { frames: null, i: 0, timer: 0, on: false };
@@ -141,8 +156,9 @@ async function importFiles(list) {
 }
 const fileFrames = () => (A.fileSrc ? fitFrames(A.fileSrc.frames, { step: Number($("#aStep").value), fit: $("#aFit").value, smooth: $("#aSmooth").value === "1", bg: $("#aBg").value, w: size.w, h: size.h }) : null);
 function genFrames() {
-  const secs = Number($("#gSecs").value), fps = Number($("#gFps").value);
-  return $("#gKind").value === "emoji"
+  const secs = Number($("#gSecs").value), fps = Number($("#gFps").value), kind = $("#gKind").value;
+  if (kind === "3d") return R3.key === key3d() ? R3.frames : null;     /* encodeNow() starts the drawing */
+  return kind === "emoji"
     ? emojiFrames({ text: $("#gText").value, motion: $("#gMotion").value, ink: $("#gInk").value, bg: $("#gBg").value, secs, fps, w: size.w, h: size.h })
     : formulaFrames($("#gFormula").value, secs, fps, size.w, size.h);
 }
@@ -154,8 +170,10 @@ function currentFrames() {
 function defaultName() {
   if (A.src === "file") return A.fileSrc ? A.fileSrc.name : "";
   if (A.src === "draw") return "Drawing";
-  return $("#gKind").value === "emoji" ? `${$("#gText").value.trim()} ${$("#gMotion").selectedOptions[0].textContent.toLowerCase()}`
-                                       : $("#gPreset").selectedOptions[0].textContent;
+  const kind = $("#gKind").value;
+  return kind === "3d" ? $("#g3Scene").selectedOptions[0].textContent
+       : kind === "emoji" ? `${$("#gText").value.trim()} ${$("#gMotion").selectedOptions[0].textContent.toLowerCase()}`
+       : $("#gPreset").selectedOptions[0].textContent;
 }
 
 /* ---- encode, facts, save ---- */
@@ -163,14 +181,21 @@ let encTimer = 0;
 const schedule = (play) => { clearTimeout(encTimer); encTimer = setTimeout(() => encodeNow(play), 220); };
 function facts(msg, err) { const f = $("#aFacts"); f.textContent = msg; f.classList.toggle("err", !!err); }
 function buttons() { $("#aSave").disabled = !A.enc || !A.enc.fits || A.uploading; $("#aPreview").disabled = !A.encFrames; }
+/* what the panel can hold: 4 MB with the extra memory chip (openipixelcolor 104), else 640 KB */
+const capacity = () => { const st = libraryState(); return st ? st.slots * st.slotKb * 1024 : OPA.MAX_BYTES; };
 function encodeNow(play) {
   if (A.nameAuto) $("#aName").value = defaultName().slice(0, 40);
+  if (A.src === "gen" && $("#gKind").value === "3d" && R3.key !== key3d()) {   /* not drawn yet: draw, then come back */
+    A.enc = A.encFrames = null; buttons();
+    draw3d(key3d());
+    return;
+  }
   let frames;
   try { frames = currentFrames(); } catch (e) { A.enc = A.encFrames = null; facts(e.message, true); buttons(); return; }
   if (!frames || !frames.length) { A.enc = A.encFrames = null; facts("Nothing made yet."); buttons(); return; }
   const tempo = Number($("#aTempo").value);
   try {
-    A.enc = OPA.encode(frames.map((f) => ({ rgb: f.rgb, delay: f.delay / tempo })), { name: $("#aName").value, maxColors: Number($("#aColors").value), w: size.w, h: size.h });
+    A.enc = OPA.encode(frames.map((f) => ({ rgb: f.rgb, delay: f.delay / tempo })), { name: $("#aName").value, maxColors: Number($("#aColors").value), w: size.w, h: size.h, maxBytes: capacity() });
     A.encFrames = OPA.decode(A.enc.bytes);
   } catch (e) { A.enc = A.encFrames = null; facts(e.message, true); buttons(); return; }
   const secs = A.encFrames.reduce((a, f) => a + f.delay, 0) / 1000;
@@ -228,6 +253,11 @@ export function initAnimate() {
   fillSelect($("#gPreset"), FORMULAS.map(([n], i) => [i, n]));
   fillSelect($("#gMotion"), MOTIONS);
   $("#gFormula").value = FORMULAS[0][1];
+  fillSelect($("#g3Scene"), SCENE_LIST);
+  fillSelect($("#g3Bg"), BACKDROPS);
+  $("#g3Color").value = sceneColor($("#g3Scene").value);
+  $("#g3Scene").addEventListener("change", (e) => { $("#g3Color").value = sceneColor(e.target.value); A.nameAuto = true; schedule(true); });
+  for (const id of ["#g3Color", "#g3Bg"]) $(id).addEventListener("change", () => schedule(true));
   const genKind = () => { const k = $("#gKind").value; $$("[data-gen]").forEach((e) => { e.hidden = e.dataset.gen !== k; }); };
   $("#gKind").addEventListener("change", () => { genKind(); A.nameAuto = true; schedule(true); });
   $("#gPreset").addEventListener("change", (e) => { $("#gFormula").value = FORMULAS[Number(e.target.value)][1]; A.nameAuto = true; schedule(true); });

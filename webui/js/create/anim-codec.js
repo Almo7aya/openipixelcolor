@@ -137,8 +137,9 @@ function nameBytes(name) {
   return enc.subarray(0, n);
 }
 
-/* frames: [{ rgb: Uint8Array(w*h*3), delay: ms }], opts { w, h (default 32 x 32), name, maxColors }
-   -> { bytes, colors, frames, size } (throws if too big) */
+/* frames: [{ rgb: Uint8Array(w*h*3), delay: ms }], opts { w, h (default 32 x 32), name, maxColors, maxBytes
+   (what the panel can hold; default 640 KB, the store without the extra memory chip) }
+   -> { bytes, colors, frames, size, fits } */
 function encode(frames, opts = {}) {
   if (!frames.length) throw new Error("No frames.");
   if (frames.length > MAX_FRAMES) throw new Error("Too many frames.");
@@ -175,7 +176,7 @@ function encode(frames, opts = {}) {
     out.set(list, o); o += list.length;
   });
   dv.setUint32(16, crc32(out, HDR, size), true);
-  return { bytes: out, colors: palette.length, frames: ops.length, merged, size, fits: size <= MAX_BYTES };
+  return { bytes: out, colors: palette.length, frames: ops.length, merged, size, fits: size <= (opts.maxBytes || MAX_BYTES) };
 }
 
 /* the firmware's player, step for step -> [{ rgb, delay }] with .w and .h (throws on a damaged file) */
