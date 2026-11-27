@@ -1,7 +1,7 @@
 name: Support for another panel
 description: An iPixel Color panel that openipixelcolor doesn't run on yet. The web app fills in what it knows.
 title: "Support for the … panel"
-labels: ["enhancement"]
+labels: ["panel-support"]
 body:
   - type: markdown
     attributes:
