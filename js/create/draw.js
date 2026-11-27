@@ -1,13 +1,13 @@
 // Draw: a canvas the panel's size. With live painting on, the first stroke puts the whole drawing on the
 // panel (0xF103) and every stroke after that sends only the changed LEDs (0xF105, up to 47 per packet).
 // The drawing is kept in this browser, one per panel size.
-import { $, el, on, store, segmented } from "../core.js?v=7f0cc15";
-import { CMD, MODE } from "../protocol.js?v=7f0cc15";
-import { panel, send, act } from "../ble.js?v=7f0cc15";
-import { pix, drawMirror, claimMirror, mirrorNote } from "../mirror.js?v=7f0cc15";
-import { size } from "../size.js?v=7f0cc15";
-import { toast, toastError } from "../toast.js?v=7f0cc15";
-import { PixelCanvas, PALETTE } from "./pixelcanvas.js?v=7f0cc15";
+import { $, el, on, store, segmented } from "../core.js?v=57d8ff9";
+import { CMD, MODE } from "../protocol.js?v=57d8ff9";
+import { panel, send, act } from "../ble.js?v=57d8ff9";
+import { pix, drawMirror, claimMirror, mirrorNote } from "../mirror.js?v=57d8ff9";
+import { size } from "../size.js?v=57d8ff9";
+import { toast, toastError } from "../toast.js?v=57d8ff9";
+import { PixelCanvas, PALETTE } from "./pixelcanvas.js?v=57d8ff9";
 
 let frame = new Uint8Array(32 * 32 * 3), w = 32, h = 32;
 const undo = [];

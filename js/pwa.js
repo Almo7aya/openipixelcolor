@@ -2,9 +2,9 @@
 // version of the web app is ready (never in the middle of a firmware install), and "Install as an app"
 // where the browser offers it. On this computer (version "dev") there is no service worker: what you edit
 // is what you get.
-import { $ } from "./core.js?v=7f0cc15";
-import { panel } from "./ble.js?v=7f0cc15";
-import { toast, toastError } from "./toast.js?v=7f0cc15";
+import { $ } from "./core.js?v=57d8ff9";
+import { panel } from "./ble.js?v=57d8ff9";
+import { toast, toastError } from "./toast.js?v=57d8ff9";
 
 const VERSION = document.querySelector('meta[name="oipc-version"]')?.content || "dev";
 

@@ -1,6 +1,6 @@
 // Destinations (Play, Text, Create, Device) and their sub-views, kept in the address: #play/clocks.
 // Older addresses (#effects, #clock, #animations, #pictures, #extras, #settings) still lead somewhere.
-import { $, $$, on, store, emit, reducedMotion } from "./core.js?v=7f0cc15";
+import { $, $$, on, store, emit, reducedMotion } from "./core.js?v=57d8ff9";
 
 const OLD = { effects: "play", clock: "play/clocks", animations: "create/animation", pictures: "create/picture",
               extras: "play/tools", settings: "device" };
