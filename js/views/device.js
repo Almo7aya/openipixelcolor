@@ -1,10 +1,10 @@
 // The Device destination (the firmware install itself is firmware.js): rotation, panel details, and the
 // factory reset, which needs the button held down for a moment.
-import { $, $$, on, holdToConfirm } from "../core.js?v=d0fb26c";
-import { CMD } from "../protocol.js?v=d0fb26c";
-import { panel, send, act, healthOf } from "../ble.js?v=d0fb26c";
-import { toast, toastError } from "../toast.js?v=d0fb26c";
-import { size, sizeText } from "../size.js?v=d0fb26c";
+import { $, $$, on, holdToConfirm } from "../core.js?v=f294bea";
+import { CMD } from "../protocol.js?v=f294bea";
+import { panel, send, act, healthOf } from "../ble.js?v=f294bea";
+import { toast, toastError } from "../toast.js?v=f294bea";
+import { size, sizeText } from "../size.js?v=f294bea";
 
 function details() {
   const on = !!panel.chWrite;

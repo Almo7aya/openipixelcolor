@@ -1,12 +1,12 @@
 // The device column (and the top strip on phones): connection, the panel preview (virtual.js draws what
 // the panel shows), power, brightness. The activity log under it is log.js.
-import { $, on, emit } from "./core.js?v=d0fb26c";
-import { CMD, MODE } from "./protocol.js?v=d0fb26c";
-import { panel, supported, connect, send, act } from "./ble.js?v=d0fb26c";
-import { EFFECTS, CLOCKS, MODES } from "./catalog.js?v=d0fb26c";
-import { drawDotText } from "./led.js?v=d0fb26c";
-import { initMirror } from "./mirror.js?v=d0fb26c";
-import { sizeText } from "./size.js?v=d0fb26c";
+import { $, on, emit } from "./core.js?v=f294bea";
+import { CMD, MODE } from "./protocol.js?v=f294bea";
+import { panel, supported, connect, send, act } from "./ble.js?v=f294bea";
+import { EFFECTS, CLOCKS, MODES } from "./catalog.js?v=f294bea";
+import { drawDotText } from "./led.js?v=f294bea";
+import { initMirror } from "./mirror.js?v=f294bea";
+import { sizeText } from "./size.js?v=f294bea";
 
 let animName = (slot) => `slot ${slot + 1}`;
 export const setAnimNamer = (fn) => { animName = fn; };

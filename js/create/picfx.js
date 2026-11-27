@@ -1,7 +1,7 @@
 // Your picture (or GIF, its own animation keeps running) in 3D and 2D: on a turning card, a cube, a coin,
 // a ball, a carousel; or with glitches, ripples, a kaleidoscope, flying pixels, manga speed lines, an old TV...
 // The picture comes in as frames of RGB (fitFrames in import.js, at a few times the panel's size). No DOM.
-import { sceneFrames, kit } from "./scenes3d.js?v=d0fb26c";
+import { sceneFrames, kit } from "./scenes3d.js?v=f294bea";
 
 const { sin, cos, abs, sqrt, floor, atan2, PI, exp, max, min, round } = Math;
 const TAU = 2 * PI;
