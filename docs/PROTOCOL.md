@@ -218,7 +218,9 @@ Effects (`0x8008`, `0xF101 0 n`): 0 plasma, 1 fire, 2 matrix, 3 starfield, 4 gam
 27 sunburst, 28 spirograph, 29 3D cube, 30 synthwave, 31 terrain flyover, 32 plasma globe, 33 tartan,
 34 ocean, 35 falling sand, 36 Langton's ants, 37 flock, 38 galaxy, 39 snowfall, 40 aquarium, 41 fireflies,
 42 maze, 43 sorting, 44 pendulum wave, 45 brick breaker, 46 meadow (20 on: openipixelcolor 103 and later),
-47–54 THE FINALS intro, live, cash-out, spin, chrome, CRT, neon, shatter (fan-made; 104 and later).
+47–54 THE FINALS intro, live, cash-out, spin, chrome, CRT, neon, shatter (fan-made; 104 and later),
+55–64 synthwave: neon mountains, neon drive, palm beach, neon city, laser tunnel, vector mountains,
+vaporwave, VHS, laser show, cassette (106 and later).
 
 Clock faces (`0x0106`): 0 digital, 1 analog, 2 binary, 3 big digits, 4 plasma, 5 flip, 6 nixie,
 7 rings, 8 sky (sun and moon follow the time), 9 pong, 10 words, 11 Berlin clock, 12 Fibonacci,

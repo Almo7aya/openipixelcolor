@@ -1,4 +1,4 @@
-// Names of what the firmware can show, in its own order (firmware/src/app/effects.c, clockface.c,
+// Names of what the firmware can show, in its own order (firmware/src/app/effects.c, fx_*.c, clockface.c,
 // clockface2.c and clockface3.c). New ones go at the end: the panel saves the number.
 export const EFFECTS = ["Plasma", "Fire", "Matrix rain", "Starfield", "Game of Life", "Fireworks", "Ripples", "Sparkles",
   "Rainbow swirl", "Tunnel", "Snake", "Pong", "Bouncing balls", "Equalizer",
@@ -9,7 +9,10 @@ export const EFFECTS = ["Plasma", "Fire", "Matrix rain", "Starfield", "Game of L
   "Maze", "Sorting", "Pendulum wave", "Brick breaker", "Meadow",
   /* fan-made, not by or with Embark Studios, who own THE FINALS (firmware/src/app/fx_finals.c) */
   "THE FINALS intro", "THE FINALS live", "THE FINALS cash-out", "THE FINALS spin", "THE FINALS chrome",
-  "THE FINALS CRT", "THE FINALS neon", "THE FINALS shatter"];
+  "THE FINALS CRT", "THE FINALS neon", "THE FINALS shatter",
+  /* synthwave (firmware/src/app/fx_synth.c) */
+  "Neon mountains", "Neon drive", "Palm beach", "Neon city", "Laser tunnel", "Vector mountains", "Vaporwave",
+  "VHS", "Laser show", "Cassette"];
 export const CLOCKS = ["Digital with date", "Analog", "Binary", "Big digits", "Digits on plasma",
   "Flip cards", "Nixie tubes", "Rings", "Day and night sky", "Pong clock",
   "Words", "Berlin clock", "Fibonacci", "Morphing digits", "Hourglass", "Falling bricks", "Matrix digits",

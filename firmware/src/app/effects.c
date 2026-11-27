@@ -5,6 +5,7 @@
 #include "fx_demo.h"
 #include "fx_sim.h"
 #include "fx_finals.h"
+#include "fx_synth.h"
 #include "gfx.h"
 #include "tables.h"
 
@@ -537,5 +538,16 @@ const effect_t effects[] = {
     { "finals-crt",     fin_em_init,    fin_crt_frame     },
     { "finals-neon",    fin_em_init,    fin_neon_frame    },
     { "finals-shatter", fin_em_init,    fin_shatter_frame },
+    /* fx_synth.c (55..64): synthwave */
+    { "neon-mountains", fx_nop_init,    syn_mountains_frame },
+    { "neon-drive",     fx_nop_init,    syn_drive_frame     },
+    { "palm-beach",     fx_nop_init,    syn_beach_frame     },
+    { "neon-city",      fx_nop_init,    syn_city_frame      },
+    { "laser-tunnel",   fx_nop_init,    syn_tunnel_frame    },
+    { "vector-mtns",    fx_nop_init,    syn_vector_frame    },
+    { "vaporwave",      fx_nop_init,    syn_vapor_frame     },
+    { "vhs",            fx_nop_init,    syn_vhs_frame       },
+    { "laser-show",     fx_nop_init,    syn_laser_frame     },
+    { "cassette",       fx_nop_init,    syn_cassette_frame  },
 };
 const unsigned effect_count = sizeof effects / sizeof effects[0];

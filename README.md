@@ -53,14 +53,15 @@ controls the panel straight from Chrome or Edge over Web Bluetooth.
 
 ## Features
 
-- **55 effects:** plasma, fire, matrix rain, starfield, game of life, fireworks, ripples, sparkles, rainbow
+- **65 effects:** plasma, fire, matrix rain, starfield, game of life, fireworks, ripples, sparkles, rainbow
   swirl, tunnel, snake, pong, bouncing balls, equalizer, aurora, lava lamp, rainstorm, DNA helix, warp
   speed, radar; demoscene classics (rotozoom, twister, copper bars, shadebobs, kaleidoscope, Julia fractal,
   moiré, sunburst, spirograph, 3D cube, synthwave, terrain flyover, plasma globe, tartan); little worlds
   and simulations (ocean, falling sand, Langton's ants, a flock of boids, galaxy, snowfall, aquarium,
   fireflies, a maze that builds and solves itself, sorting algorithms, pendulum wave, brick breaker,
-  meadow); and eight fan-made THE FINALS logo animations (intro, live, cash-out, spin, chrome, CRT, neon,
-  shatter). Shuffle through them at an interval you choose.
+  meadow); eight fan-made THE FINALS logo animations (intro, live, cash-out, spin, chrome, CRT, neon,
+  shatter); and synthwave (neon mountains, neon drive, palm beach, neon city, laser tunnel, vector
+  mountains, vaporwave, VHS, laser show, cassette). Shuffle through them at an interval you choose.
 - **43 clock faces:** digital, analog, binary, big digits, plasma, flip, nixie, rings, day and night sky,
   pong, words, Berlin clock, Fibonacci, morphing digits, hourglass, falling bricks, matrix, fire, LCD
   watch, neon sign, dice, moon phase, orbit, progress (day, week, month, year), colour code, Roman
@@ -182,7 +183,7 @@ compiler, and the CI runs its tests on every push:
 
 ```sh
 gcc -O2 -std=gnu11 -Ifirmware/src/app tools/sim/sim.c \
-    firmware/src/app/{gfx,effects,fx_more,fx_demo,fx_sim,fx_finals,emblem,modes,clockface,clockface2,clockface3,tables,font5x7,settings,textfx,anim,screens}.c -o sim
+    firmware/src/app/{gfx,effects,fx_more,fx_demo,fx_sim,fx_finals,fx_synth,emblem,modes,clockface,clockface2,clockface3,tables,font5x7,settings,textfx,anim,screens}.c -o sim
 ./sim settings                      # power-cycle tests of the saved settings on emulated flash
 node tools/sim/anim_vectors.js vec  # test animations made by the web app's encoder
 ./sim anim vec                      # upload, store, play pixel-exact, read back, damage
