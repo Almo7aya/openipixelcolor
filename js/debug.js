@@ -1,14 +1,14 @@
 // The hidden debug menu: hold Ctrl and Shift (Cmd and Shift on a Mac) and click the logo five times. It shows
 // what the page knows about the panel, previews the dialogs and notices without their effects, and has a few
 // tools for testing. Nothing in it sends anything to the panel.
-import { $$, el, on } from "./core.js?v=ed0e7b5";
-import { panel, supported } from "./ble.js?v=ed0e7b5";
-import { size, sizeText } from "./size.js?v=ed0e7b5";
-import { healthText } from "./protocol.js?v=ed0e7b5";
-import { toast, toastError } from "./toast.js?v=ed0e7b5";
-import { log, logEverything, loggingEverything } from "./log.js?v=ed0e7b5";
-import { dialog, dlgButton, dlgFacts, dlgSection } from "./dialog.js?v=ed0e7b5";
-import { latest, fwDebug } from "./firmware.js?v=ed0e7b5";
+import { $$, el, on } from "./core.js?v=8f6fef3";
+import { panel, supported } from "./ble.js?v=8f6fef3";
+import { size, sizeText } from "./size.js?v=8f6fef3";
+import { healthText } from "./protocol.js?v=8f6fef3";
+import { toast, toastError } from "./toast.js?v=8f6fef3";
+import { log, logEverything, loggingEverything } from "./log.js?v=8f6fef3";
+import { dialog, dlgButton, dlgFacts, dlgSection } from "./dialog.js?v=8f6fef3";
+import { latest, fwDebug } from "./firmware.js?v=8f6fef3";
 
 const CLICKS = 5, WITHIN = 1500;                       /* five clicks, each within 1.5 s of the last */
 let liveFacts = null;                                  /* the facts in the open menu, kept up to date */

@@ -1,8 +1,8 @@
 // Live preview of the text playlist on the panel preview: the firmware's timeline and effects
 // (firmware/src/app/textfx.c) ported line by line, so what it shows is what the panel shows.
-import { pix, setPix, drawMirror, claimMirror, mirrorNote } from "../mirror.js?v=ed0e7b5";
-import { glyph, glyphSpan } from "../led.js?v=ed0e7b5";
-import { is32, sizeText } from "../size.js?v=ed0e7b5";
+import { pix, setPix, drawMirror, claimMirror, mirrorNote } from "../mirror.js?v=8f6fef3";
+import { glyph, glyphSpan } from "../led.js?v=8f6fef3";
+import { is32, sizeText } from "../size.js?v=8f6fef3";
 
 const p2 = (n) => String(n).padStart(2, "0");
 export function expandTokens(t) {

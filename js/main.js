@@ -13,23 +13,23 @@
 //   toast.js, dialog.js        notices; the dialog over the page (a panel that isn't supported, firmware updates)
 //   debug.js                   the hidden debug menu (Ctrl + Shift + five clicks on the logo)
 //   pwa.js (+sw.js)            the installed app: offline use, "new version ready", install button
-import { $, on } from "./core.js?v=ed0e7b5";
-import { initNav, registerSub, startNav } from "./nav.js?v=ed0e7b5";
-import { mirrorOwner } from "./mirror.js?v=ed0e7b5";
-import { initVirtual, showLive } from "./virtual.js?v=ed0e7b5";
-import { initDevice } from "./device.js?v=ed0e7b5";
-import { initPlay } from "./play.js?v=ed0e7b5";
-import { initLibrary } from "./library.js?v=ed0e7b5";
-import { initText } from "./views/text.js?v=ed0e7b5";
-import { initAnimate } from "./create/animate.js?v=ed0e7b5";
-import { initPicture } from "./create/picture.js?v=ed0e7b5";
-import { initDraw } from "./create/draw.js?v=ed0e7b5";
-import { initFirmware } from "./firmware.js?v=ed0e7b5";
-import { initDeviceView } from "./views/device.js?v=ed0e7b5";
-import { initStorage } from "./views/storage.js?v=ed0e7b5";
-import { initPwa } from "./pwa.js?v=ed0e7b5";
-import { initLog } from "./log.js?v=ed0e7b5";
-import { initDebug } from "./debug.js?v=ed0e7b5";
+import { $, on } from "./core.js?v=8f6fef3";
+import { initNav, registerSub, startNav } from "./nav.js?v=8f6fef3";
+import { mirrorOwner } from "./mirror.js?v=8f6fef3";
+import { initVirtual, showLive } from "./virtual.js?v=8f6fef3";
+import { initDevice } from "./device.js?v=8f6fef3";
+import { initPlay } from "./play.js?v=8f6fef3";
+import { initLibrary } from "./library.js?v=8f6fef3";
+import { initText } from "./views/text.js?v=8f6fef3";
+import { initAnimate } from "./create/animate.js?v=8f6fef3";
+import { initPicture } from "./create/picture.js?v=8f6fef3";
+import { initDraw } from "./create/draw.js?v=8f6fef3";
+import { initFirmware } from "./firmware.js?v=8f6fef3";
+import { initDeviceView } from "./views/device.js?v=8f6fef3";
+import { initStorage } from "./views/storage.js?v=8f6fef3";
+import { initPwa } from "./pwa.js?v=8f6fef3";
+import { initLog } from "./log.js?v=8f6fef3";
+import { initDebug } from "./debug.js?v=8f6fef3";
 
 initLog();                                             /* first: it records what the others do */
 initNav();

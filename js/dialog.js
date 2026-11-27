@@ -7,7 +7,7 @@
 //   tone: "info" or "warn"; icon: a key of ICONS; text: one or more paragraphs; body: nodes (dlgFacts,
 //   dlgSection, links); actions: dlgButton()s, the main one last; after: a minor action under them;
 //   focus: the button to focus; wide: room for more (the debug menu).
-import { el } from "./core.js?v=ed0e7b5";
+import { el } from "./core.js?v=8f6fef3";
 
 const ICONS = {
   update: '<path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14"/>',

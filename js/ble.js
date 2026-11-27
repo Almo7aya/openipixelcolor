@@ -1,10 +1,10 @@
 // Web Bluetooth link to the panel: connect, send packets, match replies, poll the status, reconnect after a
 // restart. Other modules read `panel` and listen for: connected, disconnected, state, status, saved.
-import { emit, sleep } from "./core.js?v=ed0e7b5";
-import { CMD, packet, fwVersionOf, healthText, savedText } from "./protocol.js?v=ed0e7b5";
-import { toastError } from "./toast.js?v=ed0e7b5";
-import { setSize, typeSize } from "./size.js?v=ed0e7b5";
-import { logPacket, logReply } from "./log.js?v=ed0e7b5";
+import { emit, sleep } from "./core.js?v=8f6fef3";
+import { CMD, packet, fwVersionOf, healthText, savedText } from "./protocol.js?v=8f6fef3";
+import { toastError } from "./toast.js?v=8f6fef3";
+import { setSize, typeSize } from "./size.js?v=8f6fef3";
+import { logPacket, logReply } from "./log.js?v=8f6fef3";
 
 const SVC = 0x00fa, WR = 0xfa02, NT = 0xfa03;
 export const supported = !!navigator.bluetooth;
