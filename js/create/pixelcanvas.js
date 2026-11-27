@@ -1,7 +1,7 @@
 // A w x h drawing surface (the panel's size): pen, eraser, fill, colour picker, strokes joined so fast moves
 // leave no gaps. Used by the animation frame editor and by Draw. The frame is a Uint8Array of w*h*3 owned
 // by the caller; resize() changes the grid (the caller hands in a frame of the new size).
-import { hexRgb, rgbHex } from "../core.js?v=62301d0";
+import { hexRgb, rgbHex } from "../core.js?v=ed0e7b5";
 
 export class PixelCanvas {
   constructor(canvas, { onPaint = () => {}, onPick = () => {}, onion = () => null, w = 32, h = 32 } = {}) {

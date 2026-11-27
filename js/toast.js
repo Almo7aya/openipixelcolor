@@ -2,8 +2,8 @@
 // notice goes away by itself: confirmations after 3.5 s, errors after 10 s (they're also in the activity log),
 // never while the pointer is on it or it has the focus. timeout 0 keeps one until it's closed.
 // toast() returns { update(text), close(), node }.
-import { $, el } from "./core.js?v=62301d0";
-import { log } from "./log.js?v=62301d0";
+import { $, el } from "./core.js?v=ed0e7b5";
+import { log } from "./log.js?v=ed0e7b5";
 
 export function toast(text, { kind = "info", title = "", action = null, timeout } = {}) {
   const box = $("#toasts");

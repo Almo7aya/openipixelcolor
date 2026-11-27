@@ -1,5 +1,5 @@
 // The panel's 5x7 font (same table as the firmware) and LED-dot drawing for the wordmark.
-import { FONT5X7 } from "./font5x7.js?v=62301d0";
+import { FONT5X7 } from "./font5x7.js?v=ed0e7b5";
 
 export function glyph(ch) {
   let c = ch.charCodeAt(0);
