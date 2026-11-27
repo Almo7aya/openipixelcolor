@@ -7,6 +7,7 @@
   background: var(--raised); color: var(--ink); cursor: pointer; white-space: nowrap;
   transition: border-color .15s var(--ease), background .15s var(--ease);
 }
+a.btn { text-decoration: none; }
 .btn:hover { border-color: var(--line-strong); }
 .btn:active { transform: translateY(1px); }
 .btn.primary { background: var(--ink); border-color: var(--ink); color: var(--on-ink); font-weight: 600; }
@@ -206,3 +207,55 @@ progress { width: 100%; height: 8px; accent-color: var(--ink); }
 .toast a { font-size: 13px; color: var(--muted); }
 @keyframes toast-in { from { opacity: 0; transform: translateY(6px); } }
 @media (max-width: 860px) { .toasts { right: 16px; bottom: calc(84px + env(safe-area-inset-bottom)); } }
+
+/* ---- dialog over the page (dialog.js): a panel that isn't supported, firmware updates ---- */
+.dlg {
+  width: min(420px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); margin: auto; padding: 32px 24px 24px;
+  border: 1px solid var(--line-strong); border-radius: var(--r-l); background: var(--raised); color: var(--ink);
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .9); overflow: auto; overscroll-behavior: contain; text-align: center;
+}
+.dlg::backdrop { background: rgba(8, 9, 11, .7); }
+html:has(dialog.dlg[open]), html:has(dialog.dlg[open]) body { overflow: hidden; }   /* the page stays put behind it */
+html:has(dialog.dlg[open]) { scrollbar-gutter: stable; }
+.dlg-x {
+  position: absolute; top: 8px; right: 8px; width: 34px; height: 34px; display: grid; place-items: center;
+  border: 0; border-radius: var(--r-s); background: transparent; color: var(--muted); font-size: 22px; line-height: 1; cursor: pointer;
+}
+.dlg-x:hover { color: var(--ink); background: var(--surface); }
+.dlg-icon {
+  width: 52px; height: 52px; margin: 0 auto 18px; display: grid; place-items: center; border-radius: 50%;
+  background: rgba(110, 168, 255, .13); color: var(--link);
+}
+.dlg.warn .dlg-icon { background: rgba(244, 183, 64, .13); color: var(--warn); }
+.dlg-icon svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.dlg h2 { font-size: 20px; line-height: 1.3; text-wrap: balance; }
+.dlg-text { display: grid; gap: 8px; margin-top: 8px; color: var(--muted); font-size: 14.5px; text-wrap: pretty; }
+.dlg-text p { margin: 0; }
+.dlg-facts { margin: 20px 0 0; padding: 2px 14px; border-radius: var(--r-m); background: var(--sunken); border: 1px solid var(--line); text-align: left; }
+.dlg-facts div { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 10px 0; }
+.dlg-facts div + div { border-top: 1px solid var(--line); }
+.dlg-facts dt { color: var(--muted); white-space: nowrap; }
+.dlg-facts dd { margin: 0; font-weight: 600; text-align: right; }
+.dlg-facts dd.warn { color: var(--warn); }
+.dlg-note { margin: 14px 0 0; font-size: 14px; color: var(--muted); text-wrap: pretty; }
+.dlg-note a { color: var(--link); }
+.dlg-actions { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 10px; margin-top: 24px; }
+.dlg-actions .btn svg { width: 16px; height: 16px; flex: none; fill: currentColor; }
+.dlg-after { margin-top: 10px; }
+.dlg-after .btn { color: var(--muted); }
+.dlg.wide { width: min(540px, calc(100vw - 32px)); }
+.dlg-section { margin-top: 22px; text-align: left; }
+.dlg-section h3 { margin-bottom: 10px; font-size: 14px; font-weight: 600; color: var(--muted); }
+.dlg-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.dlg-grid .btn { min-width: 0; }
+.dlg-switch { display: flex; margin-bottom: 12px; font-size: 14.5px; }
+.dlg-section .dlg-note { margin-top: 10px; text-align: left; }
+.dlg-section .dlg-note:empty { display: none; }
+@media (max-width: 420px) {
+  .dlg { padding: 28px 18px 18px; }
+  .dlg-actions { grid-auto-flow: row; }
+  .dlg-actions .btn.primary { order: -1; }            /* stacked: the main action on top */
+  .dlg-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@keyframes dlg-in { from { opacity: 0; transform: translateY(8px) scale(.98); } }
+@media (prefers-reduced-motion: no-preference) { .dlg[open] { animation: dlg-in .2s var(--ease); } }

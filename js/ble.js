@@ -1,10 +1,10 @@
 // Web Bluetooth link to the panel: connect, send packets, match replies, poll the status, reconnect after a
 // restart. Other modules read `panel` and listen for: connected, disconnected, state, status, saved.
-import { emit, sleep } from "./core.js?v=123ecfd";
-import { CMD, packet, fwVersionOf, healthText, savedText } from "./protocol.js?v=123ecfd";
-import { toastError } from "./toast.js?v=123ecfd";
-import { setSize, typeSize } from "./size.js?v=123ecfd";
-import { logPacket } from "./log.js?v=123ecfd";
+import { emit, sleep } from "./core.js?v=62301d0";
+import { CMD, packet, fwVersionOf, healthText, savedText } from "./protocol.js?v=62301d0";
+import { toastError } from "./toast.js?v=62301d0";
+import { setSize, typeSize } from "./size.js?v=62301d0";
+import { logPacket, logReply } from "./log.js?v=62301d0";
 
 const SVC = 0x00fa, WR = 0xfa02, NT = 0xfa03;
 export const supported = !!navigator.bluetooth;
@@ -29,6 +29,7 @@ const setState = (s) => { panel.state = s; emit("state", s); };
 function onNotify(ev) {
   const dv = ev.target.value;
   const v = new Uint8Array(dv.buffer.slice(dv.byteOffset, dv.byteOffset + dv.byteLength));
+  logReply(v);
   if (waiter && v.length >= 4 && (v[2] | (v[3] << 8)) === waiter.cmd && (!waiter.match || waiter.match(v))) waiter.take(v);
 }
 export function rawSend(bytes, timeout, match) {

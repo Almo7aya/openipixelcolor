@@ -10,23 +10,26 @@
 //   views/text.js (+preview)   Text
 //   create/*.js                Create: animation maker, picture, drawing
 //   firmware.js, views/*.js    Device: firmware install and update notice, storage, rotation, details, reset
+//   toast.js, dialog.js        notices; the dialog over the page (a panel that isn't supported, firmware updates)
+//   debug.js                   the hidden debug menu (Ctrl + Shift + five clicks on the logo)
 //   pwa.js (+sw.js)            the installed app: offline use, "new version ready", install button
-import { $, on } from "./core.js?v=123ecfd";
-import { initNav, registerSub, startNav } from "./nav.js?v=123ecfd";
-import { mirrorOwner } from "./mirror.js?v=123ecfd";
-import { initVirtual, showLive } from "./virtual.js?v=123ecfd";
-import { initDevice } from "./device.js?v=123ecfd";
-import { initPlay } from "./play.js?v=123ecfd";
-import { initLibrary } from "./library.js?v=123ecfd";
-import { initText } from "./views/text.js?v=123ecfd";
-import { initAnimate } from "./create/animate.js?v=123ecfd";
-import { initPicture } from "./create/picture.js?v=123ecfd";
-import { initDraw } from "./create/draw.js?v=123ecfd";
-import { initFirmware } from "./firmware.js?v=123ecfd";
-import { initDeviceView } from "./views/device.js?v=123ecfd";
-import { initStorage } from "./views/storage.js?v=123ecfd";
-import { initPwa } from "./pwa.js?v=123ecfd";
-import { initLog } from "./log.js?v=123ecfd";
+import { $, on } from "./core.js?v=62301d0";
+import { initNav, registerSub, startNav } from "./nav.js?v=62301d0";
+import { mirrorOwner } from "./mirror.js?v=62301d0";
+import { initVirtual, showLive } from "./virtual.js?v=62301d0";
+import { initDevice } from "./device.js?v=62301d0";
+import { initPlay } from "./play.js?v=62301d0";
+import { initLibrary } from "./library.js?v=62301d0";
+import { initText } from "./views/text.js?v=62301d0";
+import { initAnimate } from "./create/animate.js?v=62301d0";
+import { initPicture } from "./create/picture.js?v=62301d0";
+import { initDraw } from "./create/draw.js?v=62301d0";
+import { initFirmware } from "./firmware.js?v=62301d0";
+import { initDeviceView } from "./views/device.js?v=62301d0";
+import { initStorage } from "./views/storage.js?v=62301d0";
+import { initPwa } from "./pwa.js?v=62301d0";
+import { initLog } from "./log.js?v=62301d0";
+import { initDebug } from "./debug.js?v=62301d0";
 
 initLog();                                             /* first: it records what the others do */
 initNav();
@@ -43,6 +46,7 @@ initFirmware();
 initDeviceView();
 initStorage();
 initPwa();
+initDebug();
 
 /* the preview shows the panel, except while a view shows something not sent yet; leaving that view
    brings the panel back (the views' own "view" handlers run first and take the preview when it's theirs) */

@@ -1,11 +1,11 @@
 // Text: a playlist of up to 4 messages (cmd 0xF10B, firmware/src/app/textfx.h). One card per message; the
 // open card holds the editor. Any script works: the browser draws the text and sends it as a picture strip.
-import { $, $$, el, on, emit, store, fillSelect, hexRgb } from "../core.js?v=123ecfd";
-import { CMD } from "../protocol.js?v=123ecfd";
-import { panel, send, act } from "../ble.js?v=123ecfd";
-import { toast, toastError } from "../toast.js?v=123ecfd";
-import { EFFECTS, fxIndex } from "../catalog.js?v=123ecfd";
-import { startTextPreview } from "./textpreview.js?v=123ecfd";
+import { $, $$, el, on, emit, store, fillSelect, hexRgb } from "../core.js?v=62301d0";
+import { CMD } from "../protocol.js?v=62301d0";
+import { panel, send, act } from "../ble.js?v=62301d0";
+import { toast, toastError } from "../toast.js?v=62301d0";
+import { EFFECTS, fxIndex } from "../catalog.js?v=62301d0";
+import { startTextPreview } from "./textpreview.js?v=62301d0";
 
 const FX_NAMES = ["None (just appears)", "Scroll left", "Scroll right", "Scroll up", "Scroll down", "Typewriter", "Wipe",
   "Opening", "Closing", "Blinds", "Dissolve", "Mesh", "Slice", "Drop", "Grow up", "Grow down", "Zoom", "Fade",

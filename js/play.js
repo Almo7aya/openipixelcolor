@@ -1,12 +1,12 @@
 // Play, one page of sections: effects and clock faces as animated preview tiles (drawn by the firmware's
 // own code in the simulator, tools/sim/make_previews.py) with shuffle and clock options, the animations
 // stored on the panel (library.js), and the tools.
-import { $, $$, el, on, store, reducedMotion } from "./core.js?v=123ecfd";
-import { CMD, MODE } from "./protocol.js?v=123ecfd";
-import { panel, send, act } from "./ble.js?v=123ecfd";
-import { EFFECTS, CLOCKS, TESTS, previewOf } from "./catalog.js?v=123ecfd";
-import { toastError } from "./toast.js?v=123ecfd";
-import { go } from "./nav.js?v=123ecfd";
+import { $, $$, el, on, store, reducedMotion } from "./core.js?v=62301d0";
+import { CMD, MODE } from "./protocol.js?v=62301d0";
+import { panel, send, act } from "./ble.js?v=62301d0";
+import { EFFECTS, CLOCKS, TESTS, previewOf } from "./catalog.js?v=62301d0";
+import { toastError } from "./toast.js?v=62301d0";
+import { go } from "./nav.js?v=62301d0";
 
 const pic = (name) => name + (reducedMotion() ? ".png" : ".gif");
 
