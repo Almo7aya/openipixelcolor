@@ -61,10 +61,13 @@ controls the panel straight from Chrome or Edge over Web Bluetooth.
   fireflies, a maze that builds and solves itself, sorting algorithms, pendulum wave, brick breaker,
   meadow); and eight fan-made THE FINALS logo animations (intro, live, cash-out, spin, chrome, CRT, neon,
   shatter). Shuffle through them at an interval you choose.
-- **26 clock faces:** digital, analog, binary, big digits, plasma, flip, nixie, rings, day and night sky,
+- **43 clock faces:** digital, analog, binary, big digits, plasma, flip, nixie, rings, day and night sky,
   pong, words, Berlin clock, Fibonacci, morphing digits, hourglass, falling bricks, matrix, fire, LCD
   watch, neon sign, dice, moon phase, orbit, progress (day, week, month, year), colour code, Roman
-  numerals. 12 or 24 hours, date optional.
+  numerals; digits built from falling blocks, count the squares (TIX style), abacus, oscilloscope, a
+  clock of 24 clocks whose hands draw the digits, station clock (the second hand waits at the top),
+  cuckoo clock, VFD, flip-dot, terminal, odometer, an hour candle, decimal time, radar, ticker, a
+  melting clock and 3D digits. 12 or 24 hours, date optional.
 - **Text:** a playlist of up to 4 messages with 23 ways in and out, 11 effects while shown, 9 colour modes,
   shadow, outline and glow, animated backgrounds and live `{time}` `{date}` values. Any language: the web app
   draws the text with your computer's fonts, Arabic and right-to-left included.
@@ -179,7 +182,7 @@ compiler, and the CI runs its tests on every push:
 
 ```sh
 gcc -O2 -std=gnu11 -Ifirmware/src/app tools/sim/sim.c \
-    firmware/src/app/{gfx,effects,fx_more,fx_demo,fx_sim,fx_finals,emblem,modes,clockface,clockface2,tables,font5x7,settings,textfx,anim,screens}.c -o sim
+    firmware/src/app/{gfx,effects,fx_more,fx_demo,fx_sim,fx_finals,emblem,modes,clockface,clockface2,clockface3,tables,font5x7,settings,textfx,anim,screens}.c -o sim
 ./sim settings                      # power-cycle tests of the saved settings on emulated flash
 node tools/sim/anim_vectors.js vec  # test animations made by the web app's encoder
 ./sim anim vec                      # upload, store, play pixel-exact, read back, damage

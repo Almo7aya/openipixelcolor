@@ -11,8 +11,9 @@ import { go } from "./nav.js";
 const pic = (name) => name + (reducedMotion() ? ".png" : ".gif");
 
 /* what came with which version (an older panel would show another one, so it gets a notice instead):
-   effects from 20 and clock faces from 10 with openipixelcolor 103, effects from 47 with 104 */
-const SINCE = { effect: [[47, 104], [20, 103]], clock: [[10, 103]] };
+   effects from 20 and clock faces from 10 with openipixelcolor 103, effects from 47 with 104, clock faces
+   from 26 with 105 */
+const SINCE = { effect: [[47, 104], [20, 103]], clock: [[26, 105], [10, 103]] };
 function tooOld(kind, i) {
   const need = (SINCE[kind].find(([first]) => i >= first) || [0, 0])[1];
   if (!panel.custom || !need || panel.level >= need) return false;

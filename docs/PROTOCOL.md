@@ -224,7 +224,10 @@ Clock faces (`0x0106`): 0 digital, 1 analog, 2 binary, 3 big digits, 4 plasma, 5
 7 rings, 8 sky (sun and moon follow the time), 9 pong, 10 words, 11 Berlin clock, 12 Fibonacci,
 13 morphing digits, 14 hourglass, 15 falling bricks, 16 matrix digits, 17 fire digits, 18 LCD watch,
 19 neon sign, 20 dice, 21 moon phase, 22 orbit, 23 progress, 24 colour code, 25 Roman numerals
-(10 on: openipixelcolor 103 and later; older versions show face `style % 10`).
+(10 on: openipixelcolor 103 and later; older versions show face `style % 10`), 26 falling blocks,
+27 count the squares, 28 abacus, 29 oscilloscope, 30 clock of clocks, 31 station clock, 32 cuckoo clock,
+33 VFD, 34 flip-dot, 35 terminal, 36 odometer, 37 candle, 38 decimal time, 39 radar, 40 ticker,
+41 melting clock, 42 3D digits (26 on: 105 and later; 103 and 104 show face `style % 26`).
 
 ## Firmware update
 

@@ -1,11 +1,13 @@
 /* Time keeping (synced over BLE, runs on the 1 ms tick) and clock faces. */
 #include "clockface.h"
 #include "clockface2.h"
+#include "clockface3.h"
 #include "gfx.h"
 #include "tables.h"
 #include "effects.h"
 
-_Static_assert(CLOCK_STYLES == 10 + CLOCK2_STYLES, "clockface.h and clockface2.h disagree on the number of faces");
+_Static_assert(CLOCK3_FIRST == 10 + CLOCK2_STYLES && CLOCK_STYLES == CLOCK3_FIRST + CLOCK3_STYLES,
+               "clockface.h, clockface2.h and clockface3.h disagree on the number of faces");
 
 static uint32_t base_sec = 12u * 3600u, base_ms;   /* unsynced clocks start at 12:00:00 */
 static uint8_t  synced;
@@ -356,6 +358,9 @@ void clock_draw(unsigned style, uint32_t now, int fmt24, int show_date)
     case 7:  draw_rings(hh, &tm, now); break;
     case 8:  draw_sky(hh, &tm, now); break;
     case 9:  draw_pong(hh, &tm); break;
-    default: clock2_draw(style % CLOCK_STYLES - 10u, &tm, hh, fmt24, show_date, now, ms); break;   /* clockface2.c */
+    default:
+        if (style % CLOCK_STYLES < CLOCK3_FIRST) clock2_draw(style % CLOCK_STYLES - 10u, &tm, hh, fmt24, show_date, now, ms);
+        else clock3_draw(style % CLOCK_STYLES - CLOCK3_FIRST, &tm, hh, fmt24, show_date, now, ms);
+        break;
     }
 }
