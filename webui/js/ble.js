@@ -4,7 +4,7 @@ import { emit, sleep } from "./core.js";
 import { CMD, packet, fwVersionOf, healthText, savedText } from "./protocol.js";
 import { toastError } from "./toast.js";
 import { setSize, typeSize } from "./size.js";
-import { logPacket } from "./log.js";
+import { logPacket, logReply } from "./log.js";
 
 const SVC = 0x00fa, WR = 0xfa02, NT = 0xfa03;
 export const supported = !!navigator.bluetooth;
@@ -29,6 +29,7 @@ const setState = (s) => { panel.state = s; emit("state", s); };
 function onNotify(ev) {
   const dv = ev.target.value;
   const v = new Uint8Array(dv.buffer.slice(dv.byteOffset, dv.byteOffset + dv.byteLength));
+  logReply(v);
   if (waiter && v.length >= 4 && (v[2] | (v[3] << 8)) === waiter.cmd && (!waiter.match || waiter.match(v))) waiter.take(v);
 }
 export function rawSend(bytes, timeout, match) {

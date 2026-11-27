@@ -10,6 +10,8 @@
 //   views/text.js (+preview)   Text
 //   create/*.js                Create: animation maker, picture, drawing
 //   firmware.js, views/*.js    Device: firmware install and update notice, storage, rotation, details, reset
+//   toast.js, dialog.js        notices; the dialog over the page (a panel that isn't supported, firmware updates)
+//   debug.js                   the hidden debug menu (Ctrl + Shift + five clicks on the logo)
 //   pwa.js (+sw.js)            the installed app: offline use, "new version ready", install button
 import { $, on } from "./core.js";
 import { initNav, registerSub, startNav } from "./nav.js";
@@ -27,6 +29,7 @@ import { initDeviceView } from "./views/device.js";
 import { initStorage } from "./views/storage.js";
 import { initPwa } from "./pwa.js";
 import { initLog } from "./log.js";
+import { initDebug } from "./debug.js";
 
 initLog();                                             /* first: it records what the others do */
 initNav();
@@ -43,6 +46,7 @@ initFirmware();
 initDeviceView();
 initStorage();
 initPwa();
+initDebug();
 
 /* the preview shows the panel, except while a view shows something not sent yet; leaving that view
    brings the panel back (the views' own "view" handlers run first and take the preview when it's theirs) */

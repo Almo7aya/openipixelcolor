@@ -9,6 +9,10 @@ const MAX = 200;
 const NAMES = Object.fromEntries(Object.entries(CMD).map(([k, v]) => [v, k.toLowerCase().replace(/_/g, " ")]));
 const QUIET = new Set([CMD.STATUS, CMD.SAVED, CMD.ANIM_INFO, CMD.ANIM_READ, CMD.ANIM_DATA, CMD.OTA_CHUNK, CMD.DIAG]);
 let list = null, pending = [], last = null;
+/* from the debug menu, for this page only: also the quiet commands, and every reply from the panel */
+let everything = false;
+export const logEverything = (on) => { everything = !!on; };
+export const loggingEverything = () => everything;
 
 const stamp = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
 function add(li) {
@@ -27,7 +31,7 @@ export function log(text, kind = "info") {
    2 s (drawing, the brightness slider, a text in pieces) updates its line: "×5" and the latest bytes. */
 export function logPacket(bytes) {
   const cmd = bytes[2] | (bytes[3] << 8), t = performance.now();
-  if (QUIET.has(cmd)) return;
+  if (QUIET.has(cmd) && !everything) return;
   const args = [...bytes.subarray(4, 12)].join(" ");                  /* as numbers: brightness 65 reads "65" */
   const text = `→ ${NAMES[cmd] || "0x" + cmd.toString(16)}${args ? " " + args : ""}${bytes.length > 12 ? " …" : ""}`;
   if (last && last.cmd === cmd && t - last.t < 2000 && last.li.isConnected) {
@@ -39,6 +43,14 @@ export function logPacket(bytes) {
   const li = el("li", { class: "send" }, el("time", {}, stamp()), el("span", {}, text));
   add(li);
   last = { cmd, t, n: 1, li };
+}
+/* a reply from the panel (only when logging everything): its command and the first 12 bytes after it */
+export function logReply(bytes) {
+  if (!everything || bytes.length < 4) return;
+  const cmd = bytes[2] | (bytes[3] << 8);
+  last = null;
+  add(el("li", { class: "recv" }, el("time", {}, stamp()),
+    el("span", {}, `← ${NAMES[cmd] || "0x" + cmd.toString(16)} ${[...bytes.subarray(4, 16)].join(" ")}${bytes.length > 16 ? " …" : ""}`)));
 }
 
 export function initLog() {

@@ -7,7 +7,48 @@ import { $, $$, el, on, emit, store, kb } from "./core.js";
 import { CMD, packet, u32, crc32, sameBytes, fwVersionOf, healthText, versionLevel, newerVersion,
          fwEncode, fwDecode, hasImageHeader, OTA_CHUNK } from "./protocol.js";
 import { panel, rawSend, send, idle, reconnect, disconnect, refreshStatus, connect, supported } from "./ble.js";
+import { size, sizeText } from "./size.js";
 import { toast, toastError } from "./toast.js";
+import { dialog, dlgButton, dlgFacts } from "./dialog.js";
+
+/* openipixelcolor runs on one board: the 32 x 32 panel (model byte 0x81 in the time reply) whose stock
+   firmware reports 3.x. Another panel could take the update and then never start again (there is no
+   programming port), so the page installs nothing on it. A panel that runs openipixelcolor is that board. */
+const OUR_MODEL = 0x81;
+const canInstall = () => panel.custom || (panel.type === OUR_MODEL && /^3\./.test(panel.version));
+/* what the page knows about the connected panel: size (when the model is known), model byte, versions */
+const panelInfo = () => ({
+  size: size.known ? sizeText() : "", model: panel.type != null ? `0x${panel.type.toString(16).padStart(2, "0")}` : "",
+  firmware: panel.version, bt: panel.btVersion,
+});
+const panelText = (p) => `${p.size || (p.model ? `Model ${p.model}, size unknown` : "Unknown model")}, stock firmware ${p.firmware}`;
+/* a new issue from .github/ISSUE_TEMPLATE/new-panel.yml, with what the page knows about the panel filled in
+   (the form's field ids are the query keys); nothing that identifies the panel or its owner */
+function reportLink(p) {
+  const title = p.size ? `Support for the ${p.size} panel (stock firmware ${p.firmware})`
+    : `Support for another panel (model ${p.model || "unknown"}, stock firmware ${p.firmware})`;
+  return "https://github.com/Almo7aya/openipixelcolor/issues/new?" + new URLSearchParams({ template: "new-panel.yml",
+    title, size: p.size, model: p.model, firmware: p.firmware, bt: p.bt });
+}
+function notSupportedDialog(p, onClose) {
+  const close = dlgButton("Close", () => d.close());
+  const d = dialog({
+    tone: "warn",
+    icon: "warn",
+    title: "This panel isn't supported yet",
+    text: "We'd be happy to add support for it. Until then, installing is turned off to keep the panel safe.",
+    body: [dlgFacts([p.size ? ["Size", p.size] : ["Model", p.model || "Unknown"], ["Firmware", `Stock ${p.firmware}`]])],
+    actions: [close, dlgButton("Report on GitHub", () => d.close(), { primary: true, href: reportLink(p), icon: "i-github" })],
+    focus: close,
+    onClose,
+  });
+}
+/* shown once per connection when such a panel connects, and from Details on the Device card */
+let nopeShown = false;
+function showNotSupported() {
+  nopeShown = true;
+  notSupportedDialog(panelInfo());
+}
 
 /* Releases: the CI puts the latest one next to the hosted page (firmware/latest.json + the update file).
    Served by webui/serve.py on this computer, the page reads the hosted copy instead (GitHub Pages allows
@@ -80,15 +121,20 @@ function log(msg, err) {
 }
 
 /* ---- sending ---- */
-async function frame(cmd, payload, expect, timeout = 20000) {
-  const r = await rawSend(packet(cmd, payload), timeout);
+function expectAnswer(r, expect) {
   if (expect && !sameBytes([...r.slice(0, expect.length)], expect)) throw new Error(`Unexpected answer ${[...r].map((b) => b.toString(16).padStart(2, "0")).join(" ")}`);
   return r;
 }
-async function otaSend(data) {
+async function frame(cmd, payload, expect, timeout = 20000) {
+  return expectAnswer(await rawSend(packet(cmd, payload), timeout), expect);
+}
+/* st.heard: the panel answered the first update command, so it restarts 10 s after the last one */
+async function otaSend(data, st) {
   const n = Math.ceil(data.length / OTA_CHUNK), prog = $("#fwProg");
   prog.hidden = false; prog.max = n; prog.value = 0;
-  await frame(CMD.OTA_BEGIN, [n, ...u32(crc32(data)), ...u32(data.length)], [5, 0, 0, 0xC0, 1], 10000);
+  const r = await rawSend(packet(CMD.OTA_BEGIN, [n, ...u32(crc32(data)), ...u32(data.length)]), 10000);
+  st.heard = true;
+  expectAnswer(r, [5, 0, 0, 0xC0, 1]);
   for (let i = 0; i < n; i++) {
     const chunk = data.slice(i * OTA_CHUNK, (i + 1) * OTA_CHUNK);
     await frame(CMD.OTA_CHUNK, [i, ...u32(crc32(chunk)), ...u32(chunk.length), ...chunk], [5, 0, 1, 0xC0, 1], 30000);
@@ -116,10 +162,11 @@ async function guard(onOff) {
    it. Resolves to { ok, error }. */
 export async function runInstall(rounds) {
   if (!panel.chWrite || !fw.data || panel.busy) return { ok: false, error: "The panel isn't ready for an install." };
+  if (!canInstall()) return { ok: false, error: `This panel isn't supported yet (${panelText(panelInfo())}). Nothing was installed.` };
   panel.busy = true; panel.holdDevice = true;
   render();
   await guard(true);
-  const data = fw.data, want = fw.version;
+  const data = fw.data, want = fw.version, st = { heard: false };
   let sent = false;
   try {
     await idle();
@@ -128,8 +175,8 @@ export async function runInstall(rounds) {
       step("check", "done");
       step("send", "active");
       log(round === 1 ? "Sending…" : "Installing again, with the new firmware receiving it…");
-      sent = false;
-      await otaSend(data);
+      sent = false; st.heard = false;
+      await otaSend(data, st);
       sent = true;
       step("send", "done"); step("restart", "active");
       log("Sent. The panel is installing and restarting…");
@@ -147,7 +194,7 @@ export async function runInstall(rounds) {
     emit("connected", { custom: panel.custom, level: panel.level, rescue: panel.rescue, version: panel.version });
     return { ok: true };
   } catch (e) {
-    const msg = sent ? e.message : `${e.message} Nothing was installed; the panel restarts in 10 s.`;
+    const msg = sent ? e.message : `${e.message} Nothing was installed${st.heard ? "; the panel restarts in 10 s" : ""}.`;
     const active = $("#fwSteps li[data-state='active']");
     if (active) active.dataset.state = "error";
     log(msg, true);
@@ -178,6 +225,7 @@ function render() {
   let status, label = "", primary = true;
   if (!on) status = "Connect a panel to check its firmware.";
   else if (panel.busy) status = "Installing. Keep the panel on and nearby.";
+  else if (!canInstall()) status = "This panel isn't supported yet.";
   else if (fw.source === "file") {
     status = fw.data ? `Ready: ${fw.name}.` : "This file can't be installed.";
     label = fw.data ? `Install ${fw.version ? `openipixelcolor ${fw.version}` : "this file"}` : "";
@@ -187,13 +235,16 @@ function render() {
   else { status = "Up to date."; label = `Reinstall ${latest.version}`; primary = false; }
   $("#fwStatus").textContent = status;
   $("#fwStatus").classList.toggle("ok", on && status === "Up to date.");
+  const unsupported = on && !panel.busy && !canInstall();
+  $("#fwStatus").classList.toggle("bad", unsupported);
+  $("#fwWhy").hidden = !unsupported;
   btn.hidden = !on || !label;
   btn.disabled = panel.busy;
   btn.textContent = armed ? "Click again to install" : label;
   btn.classList.toggle("primary", primary || !!armed);
 }
 async function onInstall() {
-  if (!panel.chWrite || panel.busy) return;
+  if (!panel.chWrite || panel.busy || !canInstall()) return;
   if (!armed) {
     if (fw.source === "release") {                     /* the release is fetched when it's needed */
       try { if (!latest || !(await chooseRelease())) throw new Error("The release download didn't check out. Reload and try again."); }
@@ -230,56 +281,101 @@ async function selfTest() {
   panel.busy = false; render();
 }
 
-/* ---- update notice: after connecting, when the panel runs an older openipixelcolor than the release.
-   Panels with the vendor firmware get a hint only: the page can't tell whether they have this board. ---- */
+/* ---- update notice, in the dialog over the page: after connecting, when the panel runs an older
+   openipixelcolor than the release. Update now goes to Device, where the install shows its steps. Panels
+   with the stock firmware get a hint only (a toast), and only when they look like this board (canInstall);
+   other panels get the "not supported" dialog. ---- */
 let notice = null, later = false, vendorHinted = false;
+async function updateFromNotice(want) {
+  emit("navigate", "device");
+  requestAnimationFrame(() => $(".card.fw").scrollIntoView({ block: "start", behavior: "smooth" }));
+  let ok = false;
+  try { ok = await chooseRelease(); } catch (e) { /* below */ }
+  if (!ok) {
+    const msg = "Couldn't download the update. Nothing was installed. Reload the page and try again.";
+    log(msg, true); toastError(msg);
+    return;
+  }
+  const r = await runInstall(1);
+  if (r.ok) toast(`Updated to ${want}.`, { kind: "ok" });
+  else toastError(r.error);
+}
+/* the update dialog; onUpdate / onSkip run as it closes, then onClose(how): "update", "skip" or "close" */
+function updateDialog({ have, want, release, onUpdate, onSkip, onClose }) {
+  let how = "close";
+  const d = dialog({
+    tone: "info",
+    icon: "update",
+    title: `openipixelcolor ${want} is ready`,
+    text: "The update takes about a minute and the panel restarts by itself. Keep it on and nearby until it's done.",
+    body: [
+      dlgFacts([["On the panel", have], ["Latest release", want]]),
+      release ? el("p", { class: "dlg-note" }, el("a", { href: release, target: "_blank", rel: "noopener" }, `What's new in ${want}`)) : null,
+    ],
+    actions: [
+      dlgButton("Later", () => d.close()),
+      dlgButton("Update now", () => { if (panel.busy) return; how = "update"; d.close(); onUpdate(); }, { primary: true }),
+    ],
+    after: dlgButton("Skip this version", () => { how = "skip"; d.close(); onSkip(); }, { quiet: true }),
+    onClose: () => { if (onClose) onClose(how); },
+  });
+  return d;
+}
+const stockHint = (version) => toast(`openipixelcolor ${version} can be installed under Device.`,
+  { title: "This panel runs the stock firmware", timeout: 12000, action: { label: "Open Device", fn: () => emit("navigate", "device") } });
 function showUpdate() {
   if (!latest || !panel.chWrite || panel.busy || notice) return;
   if (!panel.custom) {
-    if (!vendorHinted) toast(`openipixelcolor ${latest.version} can be installed under Device.`,
-      { title: "This panel runs the stock firmware", timeout: 12000, action: { label: "Open Device", fn: () => emit("navigate", "device") } });
+    if (vendorHinted || !canInstall()) return;
+    stockHint(latest.version);
     vendorHinted = true;
     return;
   }
   if (!newerVersion(latest.version, panel.version) || later || store.get("skipUpdate", "") === latest.version) return;
-  const t = toast(`This panel has ${panel.version}. Takes about a minute.`,
-    { kind: "update", title: `Update available: ${latest.version}`, timeout: 0 });
-  notice = t;
-  const prog = el("progress", { value: 0, max: 1, hidden: true });
-  const now = el("button", { class: "btn small primary" }, "Update now");
-  const wait = el("button", { class: "btn small" }, "Later");
-  const skip = el("button", { class: "btn small ghost" }, "Skip this version");
-  const row = el("div", { class: "row" }, now, wait, skip);
-  const notes = latest.release ? el("a", { href: latest.release, target: "_blank", rel: "noopener" }, "What's new in this version") : null;
-  t.node.append(prog, row);
-  if (notes) t.node.append(notes);
-  const close = () => { t.close(); notice = null; };
-  t.node.querySelector(".x").addEventListener("click", () => { later = true; notice = null; });
-  wait.addEventListener("click", () => { later = true; close(); });
-  skip.addEventListener("click", () => { store.set("skipUpdate", latest.version); close(); toast(`Skipped ${latest.version}. You can still install it under Device.`); });
-  now.addEventListener("click", async () => {
-    if (panel.busy) return;
-    const want = latest.version, title = t.node.querySelector(".toast-msg strong");
-    row.hidden = true; if (notes) notes.hidden = true;
-    title.textContent = `Updating to ${want}`;
-    t.update("Downloading…");
-    prog.hidden = false;
-    const follow = (d) => { if (notice === t) t.update(d.msg); };
-    const moving = (d) => { prog.max = d.total; prog.value = d.done; };
-    on("install", follow); on("install-progress", moving);
-    let ok = false;
-    try { ok = await chooseRelease(); } catch (e) { /* shown below */ }
-    const r = ok ? await runInstall(1) : { ok: false, error: "Couldn't download it. Nothing was installed." };
-    prog.hidden = true;
-    if (r.ok) { title.textContent = `Updated to ${want}`; t.update("All done."); setTimeout(close, 8000); }
-    else {
-      t.node.classList.replace("update", "err");
-      title.textContent = "Update failed"; t.update(r.error);
-      row.replaceChildren(el("button", { class: "btn small", onclick: () => { close(); emit("navigate", "device"); } }, "Open Device"));
-      row.hidden = false;
-    }
+  const want = latest.version;
+  notice = updateDialog({
+    have: panel.version, want, release: latest.release,
+    onUpdate: () => updateFromNotice(want),
+    onSkip: () => { store.set("skipUpdate", want); toast(`Skipped ${want}. You can still install it under Device.`); },
+    onClose: (how) => { if (how !== "update") later = true; notice = null; },
   });
 }
+
+/* the release list: firmware/latest.json next to the hosted page */
+async function loadLatest() {
+  const r = await fetch(RELEASES + "latest.json", { cache: "no-store" });
+  const j = r.ok ? await r.json() : null;
+  if (!j || !j.file || !versionLevel(String(j.version))) return latest;
+  latest = Object.assign(j, { version: String(j.version) });
+  render();
+  emit("release", latest);
+  return latest;
+}
+
+/* ---- for the debug menu (debug.js): the dialogs and notices as previews, with sample data when the
+   connected panel doesn't show them; previews never install anything ---- */
+const SAMPLE_PANEL = { size: "48 × 24", model: "0x89", firmware: "23.11", bt: "1.05" };
+export const fwDebug = {
+  canInstall,
+  panelInfo,
+  checkRelease: loadLatest,
+  previewUpdate(onClose) {
+    const want = latest ? latest.version : "106";
+    const have = panel.custom && newerVersion(want, panel.version) ? panel.version : String(Math.max(100, Number(want) - 1));
+    updateDialog({
+      have, want, release: latest && latest.release,
+      onUpdate: () => toast("Preview only: nothing was installed."),
+      onSkip: () => toast("Preview only: the version wasn't skipped."),
+      onClose,
+    });
+  },
+  previewNotSupported(onClose) {
+    notSupportedDialog(panel.chWrite && !canInstall() ? panelInfo() : SAMPLE_PANEL, onClose);
+  },
+  previewStockHint() { stockHint(latest ? latest.version : "106"); },
+  /* Later, Skip this version, the stock firmware hint and the "not supported" dialog show again */
+  resetNotices() { later = false; vendorHinted = false; nopeShown = false; store.del("skipUpdate"); },
+};
 
 export function initFirmware() {
   const drop = $("#fwDrop");
@@ -297,6 +393,7 @@ export function initFirmware() {
     } catch (e) { log(e.message, true); }
   });
   $("#fwInstall").addEventListener("click", onInstall);
+  $("#fwWhy").addEventListener("click", showNotSupported);
   $("#fwSelfTest").addEventListener("click", selfTest);
   $("#fwConnect").addEventListener("click", () => connect());
   $("#fwConnect").disabled = !supported;
@@ -310,16 +407,15 @@ export function initFirmware() {
       $("#fwOther").open = true;                       /* working on the firmware: show it */
     }).catch(() => { /* not served by serve.py */ });
   }
-  fetch(RELEASES + "latest.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((j) => {
-    if (!j || !j.file || !versionLevel(String(j.version))) return;
-    latest = Object.assign(j, { version: String(j.version) });
-    render();
-    emit("release", latest);
-    showUpdate();
-  }).catch(() => { /* offline, or no release published yet */ });
+  loadLatest().then((l) => { if (l) showUpdate(); }).catch(() => { /* offline, or no release published yet */ });
 
-  on("connected", () => { render(); if (!panel.busy) showUpdate(); });
-  on("disconnected", () => { if (!panel.busy) disarm(); else render(); });
+  on("connected", () => {
+    render();
+    if (!panel.chWrite || panel.busy) return;
+    if (!canInstall()) { if (!nopeShown) showNotSupported(); }
+    else showUpdate();
+  });
+  on("disconnected", () => { nopeShown = false; if (!panel.busy) disarm(); else render(); });
   on("state", render);
   render();
 }

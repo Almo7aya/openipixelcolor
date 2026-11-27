@@ -1,0 +1,68 @@
+name: Support for another panel
+description: An iPixel Color panel that openipixelcolor doesn't run on yet. The web app fills in what it knows.
+title: "Support for the … panel"
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for telling us about your panel. It isn't supported yet, and we'd be happy to add it: these details show what it needs.
+
+        **Please don't install openipixelcolor, or a build you changed, on this panel until it's supported.** It may have another chip or wiring, and a firmware that doesn't start can't be undone: these panels have no programming port.
+
+        Fill in what you can. Leave out the panel's Bluetooth address.
+  - type: input
+    id: size
+    attributes:
+      label: Size
+      description: Width × height in LEDs.
+      placeholder: 48 × 24
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: Model byte
+      description: In the web app under Device → Panel → Matrix ("type 0x..").
+      placeholder: "0x89"
+  - type: input
+    id: firmware
+    attributes:
+      label: Stock firmware version
+      description: In the web app under Device → Panel → Firmware, or in the iPixel Color app.
+      placeholder: "23.11"
+  - type: input
+    id: bt
+    attributes:
+      label: Bluetooth module version
+      description: In the web app under Device → Panel → Bluetooth module.
+  - type: input
+    id: product
+    attributes:
+      label: Product
+      description: Its name, or a link to the shop page.
+  - type: textarea
+    id: photos
+    attributes:
+      label: Photos of the board
+      description: >-
+        If you can open the panel without breaking it: sharp photos of the main board, so the markings on the
+        largest chip can be read. Drag them into this box.
+  - type: textarea
+    id: app
+    attributes:
+      label: iPixel Color app
+      description: A screenshot of the device information page in the iPixel Color app. Hide the Bluetooth address.
+  - type: textarea
+    id: probe
+    attributes:
+      label: Probe output
+      description: >-
+        If you can run Python: the output of `python tools/ble/ble_probe.py <ADDRESS>` from a copy of this
+        repository. It only reads from the panel.
+      render: text
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else
+      description: Other panels you have, or what you'd like this one to do.

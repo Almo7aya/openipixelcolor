@@ -100,7 +100,11 @@ reads it (see [Matrix size](docs/PROTOCOL.md#matrix-size) for the full table).
 
 To check a panel: open the web app, connect, and look under **Device → Panel**, or run
 `python tools/ble/ble_probe.py <ADDRESS>` (read-only). The stock firmware reports version 3.x; openipixelcolor
-reports its release number (100, 101, …).
+reports its release number (100, 101, …). The web app installs only on the supported panels above: another
+panel may have another chip or wiring, and a firmware that doesn't start can't be undone, since there is no
+programming port. When a panel that isn't supported yet connects, the web app says so and offers **Report on
+GitHub**: an issue form with the panel's details filled in
+([Support for another panel](https://github.com/Almo7aya/openipixelcolor/issues/new?template=new-panel.yml)).
 
 ## Quick start
 
