@@ -47,8 +47,9 @@ iPixel Color panels come in many sizes (see [Matrix size](docs/PROTOCOL.md#matri
 a different board. A port needs:
 
 1. The board's hardware: the chip, the LED driver, the Bluetooth link and the update path (see
-   [docs/HARDWARE.md](docs/HARDWARE.md) for how the 32 × 32 board was worked out). Never write to a panel's
-   flash before you know the update path works.
+   [docs/HARDWARE.md](docs/HARDWARE.md) for how the 32 × 32 board was worked out, and
+   [docs/OTHER-PANELS.md](docs/OTHER-PANELS.md) for what is known about other panels). Never write to a
+   panel's flash before you know the update path works.
 2. A `firmware/src/app/board.h` entry for it: size, board id, the model's type byte.
 3. Layouts for its size: the screens, effects and clock faces are laid out for 32 × 32 today, and the build
    stops (`screens.c`) until a size has its own.

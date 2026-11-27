@@ -96,7 +96,8 @@ read it (pypixelcolor `lib/device_info.py` and others; the web UI's copy is `web
 | `88` | 192×16 | `93` | 448×32 | | |
 | `89` | 48×24 | | | | |
 
-Seen on real panels: `81`, `83`, `85`. openipixelcolor 101 and later also answer `0xF113` with the exact
+Seen on real panels: `81`, `83`, `85`, `89`, `8F` (more about other panels in [OTHER-PANELS.md](OTHER-PANELS.md)).
+openipixelcolor 101 and later also answer `0xF113` with the exact
 `width(2) height(2)`, the board (1 = P2064AF2) and the type byte (`firmware/src/app/board.h`). Animation files
 carry their size in the header (`w`, `h`); the panel takes only files made for its own size.
 

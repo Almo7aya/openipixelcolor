@@ -244,7 +244,7 @@ tools/
   sim/            PC simulator and its tests, picture generators
   wasm/           builds webui/panel.wasm from firmware/src/app
   ci/             checks the CI runs on the web app
-docs/             PROTOCOL.md (the Bluetooth commands), HARDWARE.md (the board)
+docs/             PROTOCOL.md (the Bluetooth commands), HARDWARE.md (the board), OTHER-PANELS.md
 examples/         a picture through every "Your picture" effect, as GIFs to put on a panel
 design/logos/     the logo's design prototype
 .github/          CI: build and test every push, release firmware changes, publish the web app

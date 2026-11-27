@@ -39,7 +39,8 @@ webui/js/           the web app; main.js lists every module and what it is for
 tools/sim/          simulator, its tests, preview and picture generators
 tools/wasm/         builds webui/panel.wasm from firmware/src/app
 tools/ble/          Bluetooth tools; tools/ci/ checks the CI runs
-docs/               PROTOCOL.md (every command), HARDWARE.md (the board)
+docs/               PROTOCOL.md (every command), HARDWARE.md (the board), OTHER-PANELS.md (what is known
+                    about panels not supported yet)
 ```
 
 ## Build and test
